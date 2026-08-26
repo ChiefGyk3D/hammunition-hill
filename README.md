@@ -23,6 +23,7 @@ monitor above it — the high ground you watch the bands from.
 | **[Architecture](docs/ARCHITECTURE.md)** | How it works and why it is shaped this way. |
 | **[Writing panels](docs/PANELS.md)** | The panel contract. |
 | **[Callsign lookup](docs/CALLSIGN-LOOKUP.md)** | Provider options, trade-offs, and the architectural line. |
+| **[Parity](docs/PARITY.md)** | Feature-by-feature against hamdash.com, including where we deliberately differ. |
 | **[Reuse audit](docs/REUSE.md)** | What is worth borrowing from the sibling projects. |
 
 ---
@@ -118,6 +119,22 @@ Thirteen panels in one grid is unusable, so they are grouped into tabs:
 Edit `web/panels/index.json` to regroup them — a dashboard is an id, a name, and
 a list of panel ids. Your last tab is remembered per browser. A flat `enabled`
 list still works and becomes a single unnamed dashboard.
+
+## Beacons
+
+Eighteen NCDXF/IARU beacons share five frequencies on a fixed three-minute cycle
+synchronised to UTC. Because the schedule is fixed, which beacon is transmitting
+where is **arithmetic on the clock** — this panel needs no network at all.
+
+That makes it the most directly useful thing here when the internet is down and
+the antenna is still up. Tune 14.100, see which beacon should be on, and whether
+you hear it tells you more about whether the band is open to that part of the
+world than any prediction does. Each beacon sends its callsign then four dashes
+at 100 W, 10 W, 1 W and 100 mW; how far down that ladder you can still hear is a
+signal report you take by ear.
+
+The schedule is the schedule — individual beacons go off the air, which is part
+of what makes listening informative.
 
 ## Dials, and numbers
 
@@ -393,6 +410,7 @@ Shipping now:
 | **Geomag & Particles** | 1 | K-index, solar wind, band noise, proton flux as dials |
 | **Band Conditions** | 1 | HamQSL HF conditions, day and night |
 | **World Map** | 1 | Rotatable globe: greyline, DX spots, great-circle paths from your QTH |
+| **NCDXF Beacons** | 0 | Which international beacon is on each band right now, from the clock alone |
 | **Band Plan** | 0 | Which frequencies your licence class may use, by band and mode |
 | **Callsign Lookup** | 0 | Entity, beam heading, distance, and whether you have worked it |
 | **DX Cluster** | 1 | Live spots, filtered by band/mode/continent, coloured by what you need |

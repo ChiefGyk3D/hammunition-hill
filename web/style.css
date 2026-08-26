@@ -427,3 +427,21 @@ canvas.globe:active { cursor: grabbing; }
 .gauge-label.level-good { fill: var(--good); }
 .gauge-label.level-warn { fill: var(--fair); }
 .gauge-label.level-critical { fill: var(--poor); }
+
+/* --- NCDXF beacons ---------------------------------------------------- */
+table.beacons { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12.5px; }
+table.beacons th, table.beacons td { text-align: left; padding: 5px 8px; white-space: nowrap; }
+table.beacons th {
+  font-size: 9.5px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--muted); border-bottom: 1px solid var(--rule);
+}
+table.beacons tbody tr { border-bottom: 1px solid var(--rule-soft, rgba(255,255,255,.04)); }
+table.beacons tbody tr:last-child { border-bottom: 0; }
+.bx-band { color: var(--accent); font-weight: 600; }
+.bx-freq, .bx-brg, .bx-dist { font-variant-numeric: tabular-nums; }
+.bx-call { font-weight: 600; }
+.bx-where { color: var(--muted); }
+.bx-meter { width: 70px; }
+.bx-bar { height: 4px; background: var(--panel-2); border-radius: 2px; overflow: hidden; }
+.bx-fill { height: 100%; background: var(--accent); transition: width .9s linear; }
+@media (prefers-reduced-motion: reduce) { .bx-fill { transition: none; } }
