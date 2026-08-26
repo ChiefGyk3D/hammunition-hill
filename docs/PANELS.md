@@ -8,7 +8,9 @@ web/panels/solar/
 └── panel.js      ES module exporting render()
 ```
 
-Add its id to `web/panels/index.json` to enable it.
+Add its id to a dashboard's `panels` list in `web/panels/index.json` to enable
+it. A dashboard is an id, a name, and a list of panel ids; a panel may appear on
+more than one.
 
 ## Manifest
 

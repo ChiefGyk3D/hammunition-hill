@@ -159,11 +159,17 @@ class Enricher:
             spot["continent"] = entity.continent
             spot["entity_approximate"] = entity.approximate
             spot["path"] = self._path_to(entity.lat, entity.lon)
+            # The map plots from coordinates, so publish them rather than making
+            # the browser reverse a bearing and distance back into a position.
+            spot["entity_lat"] = entity.lat
+            spot["entity_lon"] = entity.lon
         else:
             spot["entity"] = None
             spot["continent"] = None
             spot["entity_approximate"] = False
             spot["path"] = None
+            spot["entity_lat"] = None
+            spot["entity_lon"] = None
 
         if self.log_index is not None:
             spot["needed"] = self.log_index.status(spot["entity"], info.band, info.mode)
