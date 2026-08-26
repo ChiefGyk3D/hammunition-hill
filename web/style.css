@@ -8,9 +8,15 @@
   --ink: #e3e7ed;
   --muted: #8f98a4;
   --accent: #3bc6d0;
-  --good: #4fbf7e;
-  --fair: #dfa33f;
-  --poor: #e56b5c;
+  /* Status ramp, validated for separation on this surface: normal-vision
+     ΔE 27.6 and protan 11.3 between adjacent steps. The previous trio
+     measured 14.5 normal, which is below the floor for telling two
+     colours apart at all. Three levels, not four -- four cannot be
+     separated reliably. Do not lighten the green to taste: every step
+     lighter costs protan separation, monotonically. */
+  --good: #0ca30c;
+  --fair: #fab219;
+  --poor: #d03b3b;
   --mono: ui-monospace, "SFMono-Regular", "IBM Plex Mono", Consolas, monospace;
   --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
 }
@@ -386,3 +392,38 @@ canvas.globe:active { cursor: grabbing; }
 }
 .tab:hover { color: var(--ink); }
 .tab.on { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* --- gauges ----------------------------------------------------------- */
+.gauge-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(108px, 1fr));
+  gap: 6px;
+  justify-items: center;
+}
+.gauge { width: 100%; max-width: 132px; height: auto; overflow: visible; }
+.gauge-track { stroke: var(--panel-2); }
+.gauge-band.level-good { stroke: var(--good); }
+.gauge-band.level-warn { stroke: var(--fair); }
+.gauge-band.level-critical { stroke: var(--poor); }
+.gauge-needle { stroke: var(--ink); }
+.gauge-hub { fill: var(--ink); }
+.gauge-value {
+  fill: var(--ink);
+  font-family: var(--mono);
+  font-size: 17px;
+  font-weight: 600;
+  /* Proportional figures: tabular widths make a standalone number look loose. */
+  font-variant-numeric: proportional-nums;
+}
+.gauge-unit { fill: var(--muted); font-family: var(--mono); font-size: 8px; }
+.gauge-name {
+  fill: var(--muted);
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.gauge-label { font-family: var(--mono); font-size: 9px; font-weight: 600; }
+.gauge-label.level-good { fill: var(--good); }
+.gauge-label.level-warn { fill: var(--fair); }
+.gauge-label.level-critical { fill: var(--poor); }

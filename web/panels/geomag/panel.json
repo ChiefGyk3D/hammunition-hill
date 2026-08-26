@@ -1,0 +1,8 @@
+{
+  "id": "geomag",
+  "name": "Geomag & Particles",
+  "tier": 1,
+  "sources": ["hamqsl", "kindex"],
+  "embed_hosts": [],
+  "description": "K-index, solar wind, band noise, and proton flux as dials — severity at a glance, with the numbers."
+}
