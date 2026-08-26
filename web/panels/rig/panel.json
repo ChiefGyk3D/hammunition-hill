@@ -1,0 +1,8 @@
+{
+  "id": "rig",
+  "name": "Rig",
+  "tier": 1,
+  "sources": ["rig"],
+  "embed_hosts": [],
+  "description": "Dial frequency and mode from Hamlib rigctld. Read-only: this panel cannot change anything on the radio."
+}

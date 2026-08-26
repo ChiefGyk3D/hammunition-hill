@@ -53,8 +53,47 @@ def test_interval_floor_protects_upstreams(tmp_path):
 
 
 def test_missing_required_key(tmp_path):
-    with pytest.raises(ConfigError, match="missing required key 'url'"):
+    with pytest.raises(ConfigError, match="missing required key 'kind'"):
+        parse_config(cfg(sources=[{"id": "x", "url": "https://a.example/f"}]), base_dir=tmp_path)
+
+
+# --- url vs path --------------------------------------------------------
+def test_a_source_needs_either_url_or_path(tmp_path):
+    with pytest.raises(ConfigError, match="exactly one of url or path"):
         parse_config(cfg(sources=[{"id": "x", "kind": "rss"}]), base_dir=tmp_path)
+
+
+def test_a_source_cannot_have_both(tmp_path):
+    raw = cfg(sources=[
+        {"id": "x", "kind": "adif", "url": "https://a.example/f", "path": "log.adi"}
+    ])
+    with pytest.raises(ConfigError, match="exactly one of url or path"):
+        parse_config(raw, base_dir=tmp_path)
+
+
+def test_file_sources_are_recognized(tmp_path):
+    raw = cfg(sources=[{"id": "log", "kind": "adif", "path": "~/log.adi", "interval": 300}])
+    source = parse_config(raw, base_dir=tmp_path).sources[0]
+    assert source.is_file_source
+    assert source.host == ""
+
+
+def test_file_sources_add_nothing_to_the_allowlist(tmp_path):
+    """A local file read must not widen egress policy."""
+    raw = cfg(sources=[{"id": "log", "kind": "adif", "path": "~/log.adi"}])
+    allowed, local = parse_config(raw, base_dir=tmp_path).allowlist()
+    assert allowed == set()
+    assert local == set()
+
+
+def test_cty_dat_path_is_expanded(tmp_path):
+    config = parse_config(cfg(log={"cty_dat": "~/cty.dat"}), base_dir=tmp_path)
+    assert config.cty_dat is not None
+    assert "~" not in str(config.cty_dat)
+
+
+def test_cty_dat_defaults_to_none(tmp_path):
+    assert parse_config(cfg(), base_dir=tmp_path).cty_dat is None
 
 
 def test_allowlist_separates_local_sources(tmp_path):

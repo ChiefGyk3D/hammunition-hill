@@ -24,6 +24,11 @@ from urllib.parse import urlsplit
 # is refused rather than filtered, because a scheme allowlist cannot rot.
 ALLOWED_SCHEMES = frozenset({"http", "https"})
 
+# Long-lived connections: a DX cluster over telnet, rigctld and WSJT-X over
+# their own sockets. Same allowlist and same private-address rule -- only the
+# scheme set differs, so a stream cannot become a way around the policy.
+STREAM_SCHEMES = frozenset({"telnet", "tcp", "udp"})
+
 
 class EgressDenied(Exception):
     """Raised when a fetch is refused by policy. Never caught silently."""
@@ -69,14 +74,15 @@ class EgressGuard:
         # A local host is still a host we are willing to contact.
         return cls(frozenset(norm | loc), frozenset(loc))
 
-    def check(self, url: str) -> str:
+    def check(self, url: str, *, schemes: frozenset[str] = ALLOWED_SCHEMES) -> str:
         """Validate a URL against policy and return its hostname.
 
         Raises :class:`EgressDenied` with a reason an operator can act on.
         """
         parts = urlsplit(url)
-        if parts.scheme not in ALLOWED_SCHEMES:
-            raise EgressDenied(f"{url}: scheme {parts.scheme!r} is not http or https")
+        if parts.scheme not in schemes:
+            allowed = " or ".join(sorted(schemes))
+            raise EgressDenied(f"{url}: scheme {parts.scheme!r} is not {allowed}")
 
         host = (parts.hostname or "").lower().rstrip(".")
         if not host:
@@ -105,6 +111,10 @@ class EgressGuard:
                     f"If that is intentional, mark the source `local = true`."
                 )
         return host
+
+    def check_stream(self, url: str) -> str:
+        """Same policy, for a long-lived socket rather than an HTTP fetch."""
+        return self.check(url, schemes=STREAM_SCHEMES)
 
     def csp_hosts(self) -> list[str]:
         """Hosts in a form a Content-Security-Policy directive can use."""

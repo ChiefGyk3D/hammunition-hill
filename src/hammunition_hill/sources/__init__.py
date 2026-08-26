@@ -9,12 +9,16 @@ from __future__ import annotations
 
 from .base import FetchError, Source
 from .hamqsl import HamQslSource
+from .ics import IcsSource
+from .local import LOCAL_KINDS, get_local, is_local
+from .pota import PotaSource
 from .rss import RssSource
+from .sota import SotaSource
 from .swpc import SwpcSource
 
 REGISTRY: dict[str, Source] = {
     src.kind: src()  # type: ignore[operator]
-    for src in (SwpcSource, HamQslSource, RssSource)
+    for src in (SwpcSource, HamQslSource, RssSource, PotaSource, SotaSource, IcsSource)
 }
 
 
@@ -27,4 +31,12 @@ def get_source(kind: str) -> Source:
         ) from None
 
 
-__all__ = ["REGISTRY", "FetchError", "Source", "get_source"]
+__all__ = [
+    "LOCAL_KINDS",
+    "REGISTRY",
+    "FetchError",
+    "Source",
+    "get_local",
+    "get_source",
+    "is_local",
+]

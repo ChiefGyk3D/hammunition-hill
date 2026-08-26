@@ -30,6 +30,12 @@ Add its id to `web/panels/index.json` to enable it.
 | `tier` | 0, 1, or 2. Rendered as a badge — see below. |
 | `sources` | Snapshot ids this panel reads. Drives the freshness indicator. |
 | `embed_hosts` | Tier 2 hosts. These reach the CSP; nothing else does. |
+| `span` | Optional. Grid columns to occupy, capped at 3. Wide tables want 2. |
+
+**The `sources` list names snapshot ids, which are source ids from
+`config.toml`.** That is a real coupling: rename a source in your config and the
+panel that reads it goes blank. Panels shipped with the project use the ids in
+`config.example.toml`, so keep those unless you are prepared to edit both.
 
 **Declare the tier honestly.** It is shown in the UI so an operator can see at a
 glance which parts of their wall reach outside the house. A panel that loads a
@@ -96,6 +102,27 @@ is an image already.
 
 **Fail inside your own frame.** A throw from `render` is caught and shown in
 your panel. Do not take the dashboard down over one bad field.
+
+## Shared helpers
+
+`web/lib/format.js` carries the pieces most panels need:
+
+| | |
+|---|---|
+| `khz(value)` | Frequency with a thousands separator |
+| `distance(path)` | km or miles, following the viewer's remembered preference |
+| `relativeAge(iso)` | "4m", "2h" |
+| `neededClass(needed)` | Which needed-badge a spot earns, if any |
+| `filterRow(el, {...})` | A row of toggle chips that persists its own selection |
+| `remember(key, value)` / `recall(key, fallback)` | Per-viewer state in localStorage |
+
+`remember` and `recall` both swallow their own errors. Private windows and
+browsers set to block site data throw on access, and a forgotten filter is not
+worth breaking a panel over.
+
+Needed-slot precedence is deliberate and worth keeping consistent: **new entity
+outranks a band slot, which outranks a mode slot.** An operator chasing DXCC
+drops everything for the first and merely notices the third.
 
 ## Styling
 

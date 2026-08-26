@@ -76,3 +76,35 @@ def test_hostnames_are_normalized():
 def test_missing_hostname_is_denied():
     with pytest.raises(EgressDenied, match="no hostname"):
         guard(["example.com"]).check("https:///path")
+
+
+# --- stream schemes -----------------------------------------------------
+def test_stream_schemes_are_separate_from_http(monkeypatch):
+    """A telnet URL must not pass the HTTP check, and vice versa."""
+    monkeypatch.setattr("hammunition_hill.egress.resolve_all", lambda host: [PUBLIC])
+    g = guard(["cluster.example"])
+    with pytest.raises(EgressDenied, match="is not http or https"):
+        g.check("telnet://cluster.example:7300")
+    assert g.check_stream("telnet://cluster.example:7300") == "cluster.example"
+
+
+def test_streams_obey_the_same_allowlist():
+    with pytest.raises(EgressDenied, match="not in the egress allowlist"):
+        guard(["a.example"]).check_stream("telnet://b.example:7300")
+
+
+def test_streams_obey_the_private_address_rule():
+    """A stream is not a way around the LAN guard."""
+    with pytest.raises(EgressDenied, match="private, loopback, or reserved"):
+        guard(["10.0.0.5"]).check_stream("tcp://10.0.0.5:4532")
+
+
+def test_local_streams_are_allowed_when_declared():
+    """rigctld and WSJT-X live on localhost by definition."""
+    g = guard(["127.0.0.1"], local=["127.0.0.1"])
+    assert g.check_stream("tcp://127.0.0.1:4532") == "127.0.0.1"
+
+
+def test_http_scheme_rejected_for_streams():
+    with pytest.raises(EgressDenied, match="is not tcp or telnet or udp"):
+        guard(["a.example"]).check_stream("https://a.example/")

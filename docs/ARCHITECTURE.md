@@ -71,6 +71,56 @@ snapshots. Layout and filters are per-browser via localStorage; anything that
 would need shared server-side state is out of scope until there is a reason and
 a threat model for it.
 
+## Three kinds of source
+
+Everything writes the same snapshot files. What differs is where the data comes
+from and what drives the clock.
+
+| | Driven by | Examples |
+|---|---|---|
+| **Polled** | An interval | SWPC, HamQSL, POTA, SOTA, RSS, iCalendar |
+| **Stream** | A socket that stays open | DX cluster (telnet), WSJT-X (UDP), rigctld (TCP) |
+| **File** | An interval, reading local disk | the ADIF log |
+
+Streams flush a snapshot on a timer rather than per event. A busy cluster
+produces several spots a second; rewriting a file that often would be churn when
+the browser only polls every ten seconds.
+
+File sources run in a thread. A large ADIF log is a blocking read and a blocking
+parse, and blocking the event loop would stall every other source behind it.
+
+Adding streams did not widen the security posture, because they are
+one-directional: a stream emits, and nothing it receives can influence what the
+collector fetches or from where. That is the same property the polled sources
+have.
+
+## Enrichment
+
+A raw cluster line is a callsign and a frequency. What an operator wants to know
+is *where is that, which way do I point, and do I need it?* Those three answers
+are joined in `enrich.py`, at flush time:
+
+```
+cluster line ──┐
+               ├─► prefix table  ──► entity, continent, coordinates
+station grid ──┤
+               ├─► geo           ──► short/long path bearing, distance
+ADIF log ──────┤
+               └─► log index     ──► new entity / new band / new mode
+```
+
+Enrichment happens at flush rather than at ingest, so a log reload is picked up
+by the next flush without the stream knowing anything about the log. The index is
+swapped in wholesale, so a reload never leaves half-updated state behind a
+render.
+
+**Entities are resolved by running the logged callsign through the same prefix
+table the spots use** -- not the log's own DXCC or COUNTRY field. Those are often
+absent and sometimes disagree between logging programs, and using them would give
+"needed" a different notion of entity than the spot has. Consistency matters more
+than authority: if the prefix table is wrong about an entity, it is wrong the
+same way on both sides and the comparison still holds.
+
 ## Modules
 
 | Module | Responsibility |
@@ -78,9 +128,15 @@ a threat model for it.
 | `config.py` | Parse and validate TOML. Every error message says how to fix it. |
 | `egress.py` | The allowlist and the private-address guard. Security core. |
 | `snapshot.py` | The on-disk format and atomic writes. |
-| `collector.py` | One async task per source, each on its own interval. |
+| `collector.py` | One async task per source: polled, stream, or file. |
 | `server.py` | Static files over two directories, with the headers turned up. |
-| `sources/` | One module per upstream kind, registered statically. |
+| `enrich.py` | Joins spots to entity, path, and the log index. |
+| `geo.py` | Maidenhead, great-circle bearing, distance. |
+| `bands.py` | Band plan and mode inference. |
+| `prefix.py` | cty.dat, with a compact built-in fallback. |
+| `adif.py` | Log parsing and the worked/needed index. |
+| `sources/` | Polled and file sources, registered statically. |
+| `streams/` | Long-lived connections, registered statically. |
 | `cli.py` | `hamhill serve` and `hamhill check`. |
 
 ### Snapshot format

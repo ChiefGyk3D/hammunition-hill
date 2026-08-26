@@ -8,9 +8,10 @@ turns a Debian-family install into an amateur radio, SDR, and RF workstation.
 Hammunition builds the shack computer; Hammunition Hill is what you put on the
 monitor above it — the high ground you watch the bands from.
 
-> **Status: v0.1, early.** The architecture is settled and the collector,
-> server, and first panels work end to end. The feature list below is the plan,
-> not a claim about today. See [the roadmap](#roadmap).
+> **Status: v0.3, early but real.** Collector, server, ten panels, DX cluster,
+> POTA/SOTA, contests, rig control, WSJT-X, and log-driven needed-slot colouring
+> all work end to end. VOACAP and satellite passes are still ahead. See
+> [the roadmap](#roadmap).
 
 ---
 
@@ -148,6 +149,18 @@ is not on the roadmap: chasing one would force TLS onto a LAN appliance for a
 single panel, when you are already on the same network as a real
 [OpenWebRX+](https://www.openwebrx.de/) or KiwiSDR that you can point a panel at.
 
+## Callsign resolution
+
+Spots and log entries both resolve through the same prefix table, so "needed" is
+always comparing like with like. Two sources, in order:
+
+1. **cty.dat**, if you point `[log] cty_dat` at one. AD1C's country file is the
+   reference every logging program uses, and any logger you already run probably
+   ships a copy. We read it rather than vendoring a snapshot that would go stale.
+2. **A compact built-in table** otherwise, covering the entities most operators
+   actually see. Approximate by construction, and the Log panel says so when it
+   is in use.
+
 ## Configuration
 
 One TOML file. There is no settings API and no write endpoint — presentation
@@ -186,14 +199,26 @@ tier, the snapshots the panel reads, and any tier 2 hosts it needs — so a pane
 cannot quietly widen the CSP or the egress allowlist. See
 [docs/PANELS.md](docs/PANELS.md).
 
-Shipping in v0.1: **Time** (tier 0), **Solar & Space Weather**, **Band
-Conditions**, and an **RSS feed** panel.
+Shipping now:
+
+| Panel | Tier | What it shows |
+|---|---|---|
+| **Time** | 0 | UTC and local, computed in the browser |
+| **Rig** | 1 | Dial frequency and mode from rigctld |
+| **Solar & Space Weather** | 1 | SFI, A, K, sunspots, GOES X-ray class |
+| **Band Conditions** | 1 | HamQSL HF conditions, day and night |
+| **DX Cluster** | 1 | Live spots, filtered by band/mode/continent, coloured by what you need |
+| **POTA & SOTA** | 1 | Park and summit activations, merged and sorted by band |
+| **WSJT-X** | 1 | Live decodes and status |
+| **Contests** | 1 | Upcoming contests, with anything running now flagged |
+| **Log** | 1 | What your ADIF contains and how it was resolved |
+| **AMSAT News** | 1 | RSS, parsed server-side |
 
 ## Roadmap
 
 | | | |
 |---|---|---|
-| **v0.1** | Skeleton | Collector, static server, tier 0 panels, solar and space weather, RSS. Proves the snapshot architecture end to end. |
+| **v0.1** | Skeleton ✅ | Collector, static server, tier 0 panels, solar and space weather, RSS. Proves the snapshot architecture end to end. |
 | **v0.2** | Spots | DX cluster telnet client, client-side filtering, spot detail with bearing and distance. POTA, SOTA, contest calendar. |
 | **v0.3** | The differentiator | ADIF log ingest and needed-slot spot colouring. `rigctld` and WSJT-X UDP. |
 | **v0.4** | Sky and weather | Satellite passes from cached TLEs, greyline map, local weather and alerts. |
@@ -207,12 +232,15 @@ Parity with the hosted dashboards is the floor, not the goal. The argument for
 local-first is not privacy — it is *access*. A cloud dashboard does not have
 your logbook, your rig, or your antenna.
 
-- **Spot colouring by new DXCC or needed band-slot**, read from your ADIF /
-  Log4OM / CQRLOG / N3FJP log on disk. Every hosted dashboard has to ask you to
-  upload it. This one just reads it. *(v0.3 — this is the one that matters.)*
-- Live frequency and mode from the rig via Hamlib `rigctld`, so spots scope
-  themselves to the band you are actually on.
-- Live FT8 decodes and QSO events from WSJT-X's UDP broadcast.
+- **Spot colouring by new DXCC or needed band-slot** ✅, read from your ADIF log
+  on disk. Every hosted dashboard has to ask you to upload it. This one just
+  reads it. Three independent answers per spot, because operators chase
+  different things: `NEW` (never worked), `BAND` (worked, not on this band),
+  `MODE` (worked, not in this mode group).
+- Live frequency and mode from the rig via Hamlib `rigctld` ✅. Read-only: the
+  client sends two get commands and has no code path that could key a
+  transmitter.
+- Live FT8 decodes and QSO events from WSJT-X's UDP broadcast ✅. Listen-only.
 - Rotator position and one-click beam headings via `rotctld`.
 - Alerting when a needed entity appears on a band that is currently open —
   log, propagation, and spots joined locally.

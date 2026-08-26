@@ -95,6 +95,47 @@ collector to a host the allowlist never approved.
 `trust_env=False` is also set, so ambient `HTTP_PROXY` / `HTTPS_PROXY`
 environment variables never silently reroute the collector's traffic.
 
+### Streams are one-directional
+
+The DX cluster, WSJT-X, and rigctld clients hold sockets open. Each one *emits*;
+nothing any of them receives can change what the collector fetches or from where.
+
+- **DX cluster.** We send only the callsign and the setup commands from your
+  config. No command is ever built from data the cluster sent us. A hostile node
+  can fill your spot list with nonsense -- which the UI treats as untrusted text
+  -- but it cannot make the client do anything.
+- **rigctld.** Read-only, structurally. The client sends two get commands, `f`
+  and `m`. There is no code path that sets frequency, mode, or PTT, because none
+  was written. A dashboard must never be able to key a transmitter, and there is
+  a test that fails if a write path is ever added.
+- **WSJT-X.** Listen-only. We bind a UDP socket and never send. WSJT-X's protocol
+  has reply messages that change the running instance's state; implementing them
+  would make this a remote control with no authentication in front of it.
+
+Stream URLs go through the same allowlist and the same private-address rule as
+HTTP fetches -- only the accepted scheme set differs, so a stream is not a way
+around egress policy. Local streams (rigctld, WSJT-X) are on loopback by
+definition and must be declared `local = true` like any other LAN source.
+
+### Untrusted binary input
+
+WSJT-X datagrams are parsed with a bounded reader: every field is length-checked
+against the datagram it came from, and a string length larger than the maximum
+datagram size is refused rather than allocated. A malformed or hostile datagram
+costs us that datagram and nothing else. Cluster lines are length-capped and
+comments truncated before they reach a snapshot.
+
+### Your log never leaves the machine
+
+The ADIF log is read from disk by a local source that makes no network calls at
+all -- there is no URL involved, so it bypasses the egress guard by construction
+rather than by exception. Callsigns from your log are resolved locally against
+the prefix table. Nothing derived from it is sent anywhere.
+
+This is worth being explicit about because it is the one place where the
+dashboard touches genuinely private data. A hosted dashboard offering the same
+feature has to receive your log; this one does not.
+
 ### Response size cap
 
 Responses are streamed and cut off at 4 MB. An upstream cannot fill a Pi's disk,

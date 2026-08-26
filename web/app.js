@@ -41,6 +41,8 @@ function relativeAge(iso) {
 function buildFrame(manifest) {
   const panel = el("section", "panel");
   panel.dataset.panel = manifest.id;
+  // A panel may ask for more grid columns; the CSS caps it at what fits.
+  if (manifest.span > 1) panel.style.setProperty("--span", String(manifest.span));
 
   const head = el("div", "panel-head");
   head.append(

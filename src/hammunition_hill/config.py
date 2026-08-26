@@ -27,18 +27,27 @@ class ConfigError(Exception):
 
 @dataclass(frozen=True)
 class SourceConfig:
-    """One upstream the collector polls."""
+    """One upstream the collector reads.
+
+    Exactly one of ``url`` or ``path`` is set. A ``path`` source reads a local
+    file and never touches the network, which is how the ADIF log works.
+    """
 
     id: str
     kind: str
-    url: str
+    url: str = ""
+    path: str | None = None
     interval: int = DEFAULT_INTERVAL
     local: bool = False
     options: dict[str, Any] = field(default_factory=dict)
 
     @property
     def host(self) -> str:
-        return (urlsplit(self.url).hostname or "").lower()
+        return (urlsplit(self.url).hostname or "").lower() if self.url else ""
+
+    @property
+    def is_file_source(self) -> bool:
+        return self.path is not None
 
 
 @dataclass(frozen=True)
@@ -66,6 +75,7 @@ class Config:
     web_dir: Path
     station: dict[str, Any] = field(default_factory=dict)
     embed_hosts: tuple[str, ...] = ()
+    cty_dat: Path | None = None
 
     def allowlist(self) -> tuple[set[str], set[str]]:
         """(all hosts the collector may contact, hosts explicitly marked local)."""
@@ -124,11 +134,20 @@ def parse_config(raw: dict[str, Any], *, base_dir: Path) -> Config:
         if not isinstance(options, dict):
             raise ConfigError(f"{where}: options must be a table")
 
+        url = entry.get("url")
+        source_path = entry.get("path")
+        if bool(url) == bool(source_path):
+            raise ConfigError(
+                f"{where}: set exactly one of url or path "
+                f"(url for anything fetched, path for a local file such as an ADIF log)"
+            )
+
         sources.append(
             SourceConfig(
                 id=sid,
                 kind=str(_require(entry, "kind", where)),
-                url=str(_require(entry, "url", where)),
+                url=str(url) if url else "",
+                path=str(source_path) if source_path else None,
                 interval=interval,
                 local=bool(entry.get("local", False)),
                 options=options,
@@ -143,6 +162,11 @@ def parse_config(raw: dict[str, Any], *, base_dir: Path) -> Config:
     if not isinstance(embed, list):
         raise ConfigError("[embeds] allow_hosts must be an array of hostnames")
 
+    # AD1C's country file, if the operator has one. Without it we fall back to
+    # a compact built-in prefix table that is documented as approximate.
+    cty_raw = raw.get("log", {}).get("cty_dat")
+    cty_dat = Path(str(cty_raw)).expanduser() if cty_raw else None
+
     return Config(
         server=server,
         sources=tuple(sources),
@@ -150,6 +174,7 @@ def parse_config(raw: dict[str, Any], *, base_dir: Path) -> Config:
         web_dir=web_dir,
         station=raw.get("station", {}),
         embed_hosts=tuple(str(h) for h in embed),
+        cty_dat=cty_dat,
     )
 
 

@@ -15,8 +15,11 @@ from . import __version__
 from .collector import run_collector
 from .config import Config, ConfigError, ServerConfig, load_config
 from .egress import EgressDenied, EgressGuard
+from .enrich import Enricher, Station
+from .prefix import PrefixTable
 from .server import build_csp, build_server
 from .snapshot import Snapshot, write_snapshot
+from .streams import is_stream
 
 log = logging.getLogger("hammunition_hill")
 
@@ -68,7 +71,18 @@ def _publish_station(config: Config) -> None:
     )
 
 
-def _serve(config: Config, guard: EgressGuard) -> int:
+def build_enricher(config: Config) -> Enricher:
+    """Prefix table plus station location, shared by every source that needs it."""
+    table = PrefixTable(config.cty_dat)
+    station = Station.from_config(config.station)
+    if not station.located:
+        log.warning(
+            "[station] has no grid or lat/lon: bearings and distances will be omitted"
+        )
+    return Enricher(table, station)
+
+
+def _serve(config: Config, guard: EgressGuard, enricher: Enricher) -> int:
     _publish_station(config)
     server = build_server(config)
     bind = f"{config.server.host}:{config.server.port}"
@@ -81,7 +95,7 @@ def _serve(config: Config, guard: EgressGuard) -> int:
     log.info("dashboard on http://%s  (%d sources)", bind, len(config.sources))
 
     try:
-        asyncio.run(run_collector(config, guard))
+        asyncio.run(run_collector(config, guard, enricher))
     except KeyboardInterrupt:
         log.info("shutting down")
     finally:
@@ -90,29 +104,46 @@ def _serve(config: Config, guard: EgressGuard) -> int:
     return 0
 
 
-def _check(config: Config, guard: EgressGuard) -> int:
+def _check(config: Config, guard: EgressGuard, enricher: Enricher) -> int:
     """Validate config and egress policy without fetching anything."""
     print(f"config       : {len(config.sources)} source(s)")
     print(f"data dir     : {config.data_dir}")
     print(f"web dir      : {config.web_dir}")
     print(f"bind         : {config.server.host}:{config.server.port}", end="")
     print("  (loopback only)" if config.server.is_loopback_only else "  ** LAN EXPOSED **")
+
+    station = enricher.station
+    location = f"{station.lat:.3f},{station.lon:.3f}" if station.located else "NOT SET"
+    print(f"station      : {station.callsign or '?'} {station.grid or ''} -> {location}")
+    caveat = ""
+    if enricher.table.approximate:
+        caveat = "  (approximate -- set [log] cty_dat for accuracy)"
+    print(f"prefixes     : {enricher.table.source}{caveat}")
     print(f"csp          : {build_csp(config.embed_hosts)}")
     print()
 
     failures = 0
     for source in config.sources:
+        if source.is_file_source:
+            exists = Path(source.path).expanduser().is_file()  # type: ignore[arg-type]
+            marker = "file" if exists else "MISSING"
+            if not exists:
+                failures += 1
+            print(f"  {marker:<7} {source.id:<20} {source.kind:<10} {source.path}")
+            continue
+
+        check = guard.check_stream if is_stream(source.kind) else guard.check
         try:
-            guard.check(source.url)
+            check(source.url)
         except EgressDenied as exc:
             failures += 1
             print(f"  DENIED  {source.id:<20} {exc}")
         else:
-            marker = "local" if source.local else "ok"
+            marker = "local" if source.local else ("stream" if is_stream(source.kind) else "ok")
             print(f"  {marker:<7} {source.id:<20} {source.kind:<10} {source.host}")
 
     if failures:
-        print(f"\n{failures} source(s) blocked by egress policy.", file=sys.stderr)
+        print(f"\n{failures} source(s) need attention.", file=sys.stderr)
     return 1 if failures else 0
 
 
@@ -154,5 +185,8 @@ def main(argv: list[str] | None = None) -> int:
 
     allowed, local = config.allowlist()
     guard = EgressGuard.build(allowed, local)
+    enricher = build_enricher(config)
 
-    return _check(config, guard) if args.command == "check" else _serve(config, guard)
+    if args.command == "check":
+        return _check(config, guard, enricher)
+    return _serve(config, guard, enricher)

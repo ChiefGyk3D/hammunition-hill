@@ -158,3 +158,116 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outlin
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }
+
+/* --- wide panels ------------------------------------------------------ */
+.panel { grid-column: span min(var(--span, 1), 3); }
+
+/* --- filter chips ----------------------------------------------------- */
+.filters { display: flex; flex-wrap: wrap; gap: 10px 14px; margin-bottom: 10px; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.chip {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  color: var(--muted);
+  background: var(--panel-2);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  padding: 3px 7px;
+  cursor: pointer;
+}
+.chip:hover { color: var(--ink); border-color: var(--muted); }
+.chip.on { color: var(--ground); background: var(--accent); border-color: var(--accent); }
+.needed-toggle.on { background: var(--poor); border-color: var(--poor); color: #fff; }
+
+/* --- spots table ------------------------------------------------------ */
+.scroll { overflow-x: auto; max-height: 60vh; overflow-y: auto; }
+table.spots thead th { position: sticky; top: 0; background: var(--panel); z-index: 1; }
+table.spots { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12px; }
+table.spots th, table.spots td { text-align: left; padding: 4px 8px; white-space: nowrap; }
+table.spots th {
+  font-size: 9.5px; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--muted); border-bottom: 1px solid var(--rule);
+}
+table.spots tbody tr { border-bottom: 1px solid var(--rule-soft, rgba(255,255,255,.04)); }
+.spot-row { cursor: pointer; }
+.spot-row:hover { background: var(--panel-2); }
+.spot-row.selected { background: var(--panel-2); }
+.spot-call { font-weight: 600; display: flex; align-items: center; gap: 6px; }
+.spot-freq, .spot-bearing { font-variant-numeric: tabular-nums; text-align: right; }
+.spot-entity { color: var(--muted); max-width: 16ch; overflow: hidden; text-overflow: ellipsis; }
+.spot-mode.inferred { color: var(--muted); font-style: italic; }
+.spot-time { color: var(--muted); }
+.spot-reports { color: var(--muted); font-size: 10px; }
+
+/* Needed-slot colouring: the whole reason this panel beats a hosted one. */
+.need-badge {
+  font-size: 8.5px; font-weight: 700; letter-spacing: .08em;
+  padding: 1px 4px; border-radius: 2px;
+}
+.need-entity .spot-call, tr.need-entity td { color: var(--poor); }
+.need-badge.need-entity { background: var(--poor); color: #fff; }
+.need-band .spot-call { color: var(--fair); }
+.need-badge.need-band { background: var(--fair); color: var(--ground); }
+.need-mode .spot-call { color: var(--accent); }
+.need-badge.need-mode { background: var(--accent); color: var(--ground); }
+
+/* --- spot detail ------------------------------------------------------ */
+.detail-host td { padding: 0 !important; }
+.detail {
+  background: var(--ground); border-left: 2px solid var(--accent);
+  padding: 8px 12px; display: grid; gap: 2px;
+}
+.detail-row { display: flex; gap: 10px; font-family: var(--mono); font-size: 11.5px; }
+.detail-label { color: var(--muted); min-width: 11ch; }
+.detail-value { color: var(--ink); }
+
+/* --- activations ------------------------------------------------------ */
+ul.activations { list-style: none; margin: 0; padding: 0; }
+ul.activations li { padding: 7px 0; border-bottom: 1px solid var(--rule); }
+ul.activations li:last-child { border-bottom: 0; }
+.act-head { display: flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: 12.5px; }
+.act-program {
+  font-size: 8.5px; font-weight: 700; letter-spacing: .08em;
+  padding: 1px 4px; border-radius: 2px; border: 1px solid currentColor;
+}
+.prog-pota { color: var(--good); }
+.prog-sota { color: var(--accent); }
+.act-call { font-weight: 600; }
+.act-freq { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; }
+.act-where, .act-path { font-family: var(--mono); font-size: 10.5px; color: var(--muted); margin-top: 2px; }
+
+/* --- contests --------------------------------------------------------- */
+ul.contests { list-style: none; margin: 0; padding: 0; }
+ul.contests li {
+  display: flex; gap: 10px; align-items: baseline;
+  padding: 6px 0; border-bottom: 1px solid var(--rule); font-size: 13.5px;
+}
+ul.contests li:last-child { border-bottom: 0; }
+ul.contests li.active { color: var(--good); font-weight: 600; }
+ul.contests a { color: inherit; text-decoration: none; }
+ul.contests a:hover, ul.contests a:focus-visible { text-decoration: underline; }
+.contest-when { margin-left: auto; font-family: var(--mono); font-size: 10.5px; color: var(--muted); }
+ul.contests li.active .contest-when { color: var(--good); }
+
+/* --- WSJT-X ----------------------------------------------------------- */
+.wsjtx-status {
+  display: flex; align-items: center; gap: 8px;
+  font-family: var(--mono); font-size: 11.5px; color: var(--muted);
+  padding-bottom: 7px; margin-bottom: 7px; border-bottom: 1px solid var(--rule);
+}
+.tx-flag {
+  font-size: 9px; font-weight: 700; letter-spacing: .1em;
+  background: var(--poor); color: #fff; padding: 1px 5px; border-radius: 2px;
+}
+ul.decodes { list-style: none; margin: 0; padding: 0; font-family: var(--mono); font-size: 11.5px; }
+ul.decodes li { display: flex; gap: 9px; padding: 2px 0; }
+.decode-snr { font-variant-numeric: tabular-nums; min-width: 4ch; text-align: right; }
+.snr-strong { color: var(--good); }
+.snr-fair { color: var(--fair); }
+.snr-weak { color: var(--muted); }
+.decode-msg { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.decode-at { color: var(--muted); }
+
+.count { font-family: var(--mono); font-size: 10.5px; color: var(--muted); margin: 8px 0 0; }

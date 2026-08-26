@@ -1,0 +1,10 @@
+{
+  "id": "wsjtx",
+  "name": "WSJT-X",
+  "tier": 1,
+  "sources": [
+    "wsjtx"
+  ],
+  "embed_hosts": [],
+  "description": "Live decodes and status from WSJT-X's UDP broadcast. Listen-only."
+}
