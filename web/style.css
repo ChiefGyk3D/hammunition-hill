@@ -342,3 +342,4 @@ ul.decodes li { display: flex; gap: 9px; padding: 2px 0; }
 
 /* --- band plan: grandfathered classes --------------------------------- */
 .chip.grandfathered { border-style: dashed; }
+.bp-guess { color: var(--fair); }

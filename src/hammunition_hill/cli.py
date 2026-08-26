@@ -80,6 +80,9 @@ def _publish_station(config: Config, enricher: Enricher) -> None:
                 "lat": station.lat,
                 "lon": station.lon,
                 "located": station.located,
+                "license_class": station.license_class,
+                "license_certain": station.license_certain,
+                "license_reason": station.license_reason,
             },
         ),
     )
@@ -88,7 +91,7 @@ def _publish_station(config: Config, enricher: Enricher) -> None:
 def build_enricher(config: Config) -> Enricher:
     """Prefix table plus station location, shared by every source that needs it."""
     table = PrefixTable(config.cty_dat)
-    station = Station.from_config(config.station)
+    station = Station.from_config(config.station, table)
     if not station.located:
         log.warning(
             "[station] has no grid or lat/lon: bearings and distances will be omitted"
@@ -148,6 +151,9 @@ def _check(config: Config, guard: EgressGuard, enricher: Enricher) -> int:
     station = enricher.station
     location = f"{station.lat:.3f},{station.lon:.3f}" if station.located else "NOT SET"
     print(f"station      : {station.callsign or '?'} {station.grid or ''} -> {location}")
+    if station.license_class:
+        mark = "" if station.license_certain else "  (guess — set [station] license_class)"
+        print(f"licence      : {station.license_class}{mark}")
     caveat = ""
     if enricher.table.approximate:
         caveat = "  (approximate -- set [log] cty_dat for accuracy)"

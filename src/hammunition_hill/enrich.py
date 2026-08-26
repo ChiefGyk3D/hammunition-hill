@@ -22,6 +22,7 @@ from typing import Any
 from .adif import LogIndex
 from .bands import classify, sort_key
 from .geo import GridError, grid_to_latlon, path
+from .licensing import guess_class
 from .prefix import PrefixTable
 
 log = logging.getLogger(__name__)
@@ -29,16 +30,25 @@ log = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class Station:
-    """Where the operator is. Used for bearings; never transmitted anywhere."""
+    """Who and where the operator is. Used locally; never transmitted anywhere."""
 
     callsign: str | None = None
     grid: str | None = None
     lat: float | None = None
     lon: float | None = None
+    license_class: str | None = None
+    license_certain: bool = False
+    license_reason: str | None = None
 
     @classmethod
-    def from_config(cls, station: dict[str, Any]) -> Station:
-        """Build from the ``[station]`` table, deriving coordinates from the grid."""
+    def from_config(cls, station: dict[str, Any], table: Any = None) -> Station:
+        """Build from the ``[station]`` table, filling in what can be derived.
+
+        Coordinates come from the grid square when not given explicitly, and the
+        licence class is guessed from US callsign format when not configured.
+        A configured value always wins -- the guess is a convenience, not a
+        claim.
+        """
         grid = station.get("grid")
         lat, lon = station.get("lat"), station.get("lon")
 
@@ -52,11 +62,29 @@ class Station:
                         "bearings and distances will be unavailable",
                         grid,
                     )
+        callsign = str(station["callsign"]).upper() if station.get("callsign") else None
+
+        configured = station.get("license_class")
+        if configured:
+            license_class: str | None = str(configured).strip().lower()
+            certain, reason = True, "set in config"
+        elif callsign:
+            guess = guess_class(callsign, table)
+            if guess is not None:
+                license_class, certain, reason = guess.klass, guess.certain, guess.reason
+            else:
+                license_class, certain, reason = None, False, None
+        else:
+            license_class, certain, reason = None, False, None
+
         return cls(
-            callsign=str(station["callsign"]).upper() if station.get("callsign") else None,
+            callsign=callsign,
             grid=str(grid).upper() if grid else None,
             lat=float(lat) if lat is not None else None,
             lon=float(lon) if lon is not None else None,
+            license_class=license_class,
+            license_certain=certain,
+            license_reason=reason,
         )
 
     @property

@@ -41,11 +41,22 @@ panel that reads it goes blank. Panels shipped with the project use the ids in
 glance which parts of their wall reach outside the house. A panel that loads a
 remote image is tier 2 even if everything else about it is local.
 
-- **Tier 0** — computed in the browser. No snapshots, no network. Works with the
+The test is **where the data came from**, not whether a file was involved.
+
+- **Tier 0** — nothing in the panel originated off this machine. Computed in the
+  browser, or read from something local: the station config, the prefix table,
+  the operator's own log, a band plan shipped with the dashboard. Works with the
   internet unplugged.
-- **Tier 1** — reads snapshots the collector wrote. Same-origin only.
-- **Tier 2** — loads content from another host. Needs `embed_hosts`, and the
-  operator has to allowlist those hosts in their config too.
+- **Tier 1** — reads a snapshot the collector fetched from somewhere else.
+  Same-origin by the time the browser sees it, but the data came from upstream.
+- **Tier 2** — the browser loads content from another host. Needs `embed_hosts`,
+  and the operator has to allowlist those hosts in their config too.
+
+So a panel reading `station.json` or `log.json` is still tier 0: those files are
+written from this machine's own config and disk. A panel reading `hamqsl.json`
+is tier 1, because NOAA and N0NBH are upstream. The badge answers "does this
+panel depend on the outside world", which is what an operator wants to know when
+the WAN drops.
 
 ## The module
 

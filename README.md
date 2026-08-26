@@ -110,8 +110,8 @@ able to see at a glance which parts of your wall reach outside the house.
 
 | Tier | What it is | Examples |
 |---|---|---|
-| **0 — offline** | Computed in the browser from data you already have. Works with the internet unplugged. | clocks, greyline, Maidenhead, bearing + distance, satellite passes, band plan |
-| **1 — your host** | Fetched by the collector on a timer, served as same-origin JSON. No third-party code, no CORS, no leaked referrers. | DX spots, solar and space weather, POTA, SOTA, contests, weather alerts, RSS |
+| **0 — offline** | Nothing originated off this machine: computed in the browser, or read from local config, your log, or data shipped with the dashboard. Works with the internet unplugged. | clocks, band plan, callsign lookup, greyline, bearing + distance |
+| **1 — your host** | Fetched by the collector from upstream, served to the browser as same-origin JSON. No third-party code, no CORS, no leaked referrers. | DX spots, solar and space weather, POTA, SOTA, contests, weather alerts, RSS |
 | **2 — foreign** | Content your browser loads from someone else. Off by default, allowlisted per host. | radar loops, lightning maps — and local gear like Pi-Star or OpenWebRX+ |
 
 Two rules do most of the work inside tier 2. **Prefer `<img>` over `<iframe>`**:
@@ -170,6 +170,22 @@ than hidden, so the shape of what you gain by upgrading is visible.
 It is tier 0: the plan ships with the dashboard as a static JSON file, so it
 works with the WAN down, which is exactly when you might be checking a band
 edge.
+
+**It defaults to your own class.** Set a callsign in `[station]` and the panel
+usually opens on the right one — US callsign format tells you a lot, and for a
+Group A call (1x2, 2x1, or a 2x2 beginning with A) it tells you exactly, because
+only an Amateur Extra may hold one. Every other format is a best guess with a
+floor, since vanity lets you hold a call from any group at or below your own, so
+the footer says what it inferred and why. To be exact:
+
+```toml
+[station]
+license_class = "general"
+```
+
+A configured class always wins, and picking a class in the panel always wins
+over both — it is a reference for classes you do not hold as much as for the one
+you do. Non-US callsigns get no guess at all rather than a wrong one.
 
 **It is reference material, not authority.** The footer names the regulation and
 the revision date the file was written against. Part 97 is what governs; check
@@ -270,7 +286,7 @@ Shipping now:
 | **Solar & Space Weather** | 1 | SFI, A, K, sunspots, GOES X-ray class |
 | **Band Conditions** | 1 | HamQSL HF conditions, day and night |
 | **Band Plan** | 0 | Which frequencies your licence class may use, by band and mode |
-| **Callsign Lookup** | 1 | Entity, beam heading, distance, and whether you have worked it |
+| **Callsign Lookup** | 0 | Entity, beam heading, distance, and whether you have worked it |
 | **DX Cluster** | 1 | Live spots, filtered by band/mode/continent, coloured by what you need |
 | **POTA & SOTA** | 1 | Park and summit activations, merged and sorted by band |
 | **WSJT-X** | 1 | Live decodes and status |
