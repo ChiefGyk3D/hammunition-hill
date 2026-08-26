@@ -1,0 +1,8 @@
+{
+  "id": "contests",
+  "name": "Contests",
+  "tier": 1,
+  "sources": ["contests"],
+  "embed_hosts": [],
+  "description": "Upcoming contests from an iCalendar feed, with anything running right now flagged."
+}

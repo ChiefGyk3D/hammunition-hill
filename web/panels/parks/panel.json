@@ -1,0 +1,11 @@
+{
+  "id": "parks",
+  "name": "POTA & SOTA",
+  "tier": 1,
+  "sources": [
+    "pota",
+    "sota"
+  ],
+  "embed_hosts": [],
+  "description": "Current park and summit activations, merged and sorted by band."
+}

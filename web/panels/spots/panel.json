@@ -1,0 +1,11 @@
+{
+  "id": "spots",
+  "name": "DX Cluster",
+  "tier": 1,
+  "sources": [
+    "cluster"
+  ],
+  "embed_hosts": [],
+  "description": "Live cluster spots with band, mode and continent filters, beam headings, and needed-slot colouring from your own log.",
+  "span": 2
+}

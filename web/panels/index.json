@@ -1,0 +1,17 @@
+{
+  "comment": "Panels rendered by the dashboard, in order. Each id must have a directory under web/panels/ containing panel.json and panel.js. A panel's manifest names the snapshot ids it reads, so these must match the source ids in your config.toml.",
+  "enabled": [
+    "clock",
+    "rig",
+    "solar",
+    "bandconditions",
+    "bandplan",
+    "callsign",
+    "spots",
+    "parks",
+    "wsjtx",
+    "contests",
+    "logstats",
+    "feed"
+  ]
+}

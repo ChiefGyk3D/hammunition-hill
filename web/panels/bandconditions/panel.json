@@ -1,0 +1,8 @@
+{
+  "id": "bandconditions",
+  "name": "Band Conditions",
+  "tier": 1,
+  "sources": ["hamqsl"],
+  "embed_hosts": [],
+  "description": "HamQSL calculated HF conditions, day and night, rendered from XML rather than a banner image."
+}

@@ -1,0 +1,8 @@
+{
+  "id": "feed",
+  "name": "AMSAT News",
+  "tier": 1,
+  "sources": ["amsat"],
+  "embed_hosts": [],
+  "description": "RSS parsed and sanitized by the collector. No third-party feed proxy is involved."
+}

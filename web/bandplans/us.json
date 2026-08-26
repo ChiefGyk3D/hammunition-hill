@@ -1,0 +1,876 @@
+{
+  "id": "us",
+  "name": "United States",
+  "authority": "47 CFR Part 97",
+  "revised": "2026-08",
+  "note": "Reference only. Part 97 is authoritative \u2014 check it before transmitting near a band edge.",
+  "grandfathered": "Novice and Advanced are closed to new issue. Existing holders keep their privileges, so both are shown.",
+  "classes": [
+    {
+      "id": "novice",
+      "name": "Novice",
+      "short": "N",
+      "grandfathered": true
+    },
+    {
+      "id": "technician",
+      "name": "Technician",
+      "short": "T"
+    },
+    {
+      "id": "general",
+      "name": "General",
+      "short": "G"
+    },
+    {
+      "id": "advanced",
+      "name": "Advanced",
+      "short": "A",
+      "grandfathered": true
+    },
+    {
+      "id": "extra",
+      "name": "Amateur Extra",
+      "short": "E"
+    }
+  ],
+  "bands": [
+    {
+      "band": "160m",
+      "khz": [
+        1800,
+        2000
+      ],
+      "segments": [
+        {
+          "khz": [
+            1800,
+            2000
+          ],
+          "modes": [
+            "CW",
+            "Digital",
+            "Phone"
+          ],
+          "classes": [
+            "general",
+            "advanced",
+            "extra"
+          ]
+        }
+      ]
+    },
+    {
+      "band": "80m",
+      "khz": [
+        3500,
+        4000
+      ],
+      "segments": [
+        {
+          "khz": [
+            3500,
+            3525
+          ],
+          "modes": [
+            "CW",
+            "Digital"
+          ],
+          "classes": [
+            "extra"
+          ]
+        },
+        {
+          "khz": [
+            3525,
+            3600
+          ],
+          "modes": [
+            "CW"
+          ],
+          "classes": [
+            "novice",
+            "technician",
+            "general",
+            "advanced",
+            "extra"
+          ],
+          "note": "Novice and Technician: 200 W PEP"
+        },
+        {
+          "khz": [
+            3525,
+            3600
+          ],
+          "modes": [
+            "Digital"
+          ],
+          "classes": [
+            "general",
+            "advanced",
+            "extra"
+          ]
+        },
+        {
+          "khz": [
+            3600,
+            3700
+          ],
+          "modes": [
+            "Phone",
+            "Image"
+          ],
+          "classes": [
+            "extra"
+          ]
+        },
+        {
+          "khz": [
+            3700,
+            3800
+          ],
+          "modes": [
+            "Phone",
+            "Image"
+          ],
+          "classes": [
+            "advanced",
+            "extra"
+          ]
+        },
+        {
+          "khz": [
+            3800,
+            4000
+          ],
+          "modes": [
+            "Phone",
+            "Image"
+          ],
+          "classes": [
+            "general",
+            "advanced",
+            "extra"
+          ]
+        }
+      ]
+    },
+    {
+      "band": "60m",
+      "khz": [
+        5330,
+        5405
+      ],
+      "channelized": true,
+      "note": "Five channels, USB (2.8 kHz max) plus CW and digital on the centre. 100 W ERP maximum.",
+      "segments": [
+        {
+          "khz": [
+            5330.5,
+            5330.5
+          ],
+          "modes": [
+            "Phone",
+            "CW",
+            "Digital"
+          ],
+          "classes": [
+            "general",
+            "advanced",
+            "extra"
+          ],
+          "note": "Channel 1"
+        },
+        {
+          "khz": [
+            5346.5,
+            5346.5
+          ],
+          "modes": [
+            "Phone",
+            "CW",
+            "Digital"
+          ],
+          "classes": [
+            "general",
+            "advanced",
+            "extra"
+          ],
+          "note": "Channel 2"
+        },
+        {
+          "khz": [
+            5357.0,
+            5357.0
+          ],
+          "modes": [
+            "Phone",
+            "CW",
+            "Digital"
+          ],
+          "classes": [
+            "general",
+            "advanced",
+            "extra"
+          ],
+          "note": "Channel 3"
+        },
+        {
+          "khz": [
+            5371.5,
+            5371.5
+          ],
+          "modes": [
+            "Phone",
+            "CW",
+            "Digital"
+          ],
+          "classes": [
+            "general",
+            "advanced",
+            "extra"
+          ],
+          "note": "Channel 4"
+        },
+        {
+          "khz": [
+            5403.5,
+            5403.5
+          ],
+          "modes": [
+            "Phone",
+            "CW",
+            "Digital"
+          ],
+          "classes": [
+            "general",
+            "advanced",
+            "extra"
+          ],
+          "note": "Channel 5"
+        }
+      ]
+    },
+    {
+      "band": "40m",
+      "khz": [
+        7000,
+        7300
+      ],
+      "segments": [
+        {
+          "khz": [
+            7000,
+            7025
+          ],
+          "modes": [
+            "CW",
+            "Digital"
+          ],
+          "classes": [
+            "extra"
+          ]
+        },
+        {
+          "khz": [
+            7025,
+            7125
+          ],
+          "modes": [
+            "CW"
+          ],
+          "classes": [
+            "novice",
+            "technician",
+            "general",
+            "advanced",
+            "extra"
+          ],
+          "note": "Novice and Technician: 200 W PEP"
+        },
+        {
+          "khz": [
+            7025,
+            7125
+          ],
+          "modes": [
+            "Digital"
+          ],
+          "classes": [
+            "general",
+            "advanced",
+            "extra"
+          ]
+        },
+        {
+          "khz": [
+            7125,
+            7175
+          ],
+          "modes": [
+            "Phone",
+            "Image"
+          ],
+          "classes": [
+            "advanced",
+            "extra"
+          ]
+        },
+        {
+          "khz": [
+            7175,
+            7300
+          ],
+          "modes": [
+            "Phone",
+            "Image"
+          ],
+          "classes": [
+            "general",
+            "advanced",
+            "extra"
+          ]
+        }
+      ]
+    },
+    {
+      "band": "30m",
+      "khz": [
+        10100,
+        10150
+      ],
+      "note": "CW and digital only \u2014 no phone. 200 W PEP maximum.",
+      "segments": [
+        {
+          "khz": [
+            10100,
+            10150
+          ],
+          "modes": [
+            "CW",
+            "Digital"
+          ],
+          "classes": [
+            "general",
+            "advanced",
+            "extra"
+          ]
+        }
+      ]
+    },
+    {
+      "band": "20m",
+      "khz": [
+        14000,
+        14350
+      ],
+      "segments": [
+        {
+          "khz": [
+            14000,
+            14025
+          ],
+          "modes": [
+            "CW",
+            "Digital"
+          ],
+          "classes": [
+            "extra"
+          ]
+        },
+        {
+          "khz": [
+            14025,
+            14150
+          ],
+          "modes": [
+            "CW",
+            "Digital"
+          ],
+          "classes": [
+            "general",
+            "advanced",
+            "extra"
+          ]
+        },
+        {
+          "khz": [
+            14150,
+            14175
+          ],
+          "modes": [
+            "Phone",
+            "Image"
+          ],
+          "classes": [
+            "extra"
+          ]
+        },
+        {
+          "khz": [
+            14175,
+            14225
+          ],
+          "modes": [
+            "Phone",
+            "Image"
+          ],
+          "classes": [
+            "advanced",
+            "extra"
+          ]
+        },
+        {
+          "khz": [
+            14225,
+            14350
+          ],
+          "modes": [
+            "Phone",
+            "Image"
+          ],
+          "classes": [
+            "general",
+            "advanced",
+            "extra"
+          ]
+        }
+      ]
+    },
+    {
+      "band": "17m",
+      "khz": [
+        18068,
+        18168
+      ],
+      "segments": [
+        {
+          "khz": [
+            18068,
+            18110
+          ],
+          "modes": [
+            "CW",
+            "Digital"
+          ],
+          "classes": [
+            "general",
+            "advanced",
+            "extra"
+          ]
+        },
+        {
+          "khz": [
+            18110,
+            18168
+          ],
+          "modes": [
+            "Phone",
+            "Image"
+          ],
+          "classes": [
+            "general",
+            "advanced",
+            "extra"
+          ]
+        }
+      ]
+    },
+    {
+      "band": "15m",
+      "khz": [
+        21000,
+        21450
+      ],
+      "segments": [
+        {
+          "khz": [
+            21000,
+            21025
+          ],
+          "modes": [
+            "CW",
+            "Digital"
+          ],
+          "classes": [
+            "extra"
+          ]
+        },
+        {
+          "khz": [
+            21025,
+            21200
+          ],
+          "modes": [
+            "CW"
+          ],
+          "classes": [
+            "novice",
+            "technician",
+            "general",
+            "advanced",
+            "extra"
+          ],
+          "note": "Novice and Technician: 200 W PEP"
+        },
+        {
+          "khz": [
+            21025,
+            21200
+          ],
+          "modes": [
+            "Digital"
+          ],
+          "classes": [
+            "general",
+            "advanced",
+            "extra"
+          ]
+        },
+        {
+          "khz": [
+            21200,
+            21225
+          ],
+          "modes": [
+            "Phone",
+            "Image"
+          ],
+          "classes": [
+            "extra"
+          ]
+        },
+        {
+          "khz": [
+            21225,
+            21275
+          ],
+          "modes": [
+            "Phone",
+            "Image"
+          ],
+          "classes": [
+            "advanced",
+            "extra"
+          ]
+        },
+        {
+          "khz": [
+            21275,
+            21450
+          ],
+          "modes": [
+            "Phone",
+            "Image"
+          ],
+          "classes": [
+            "general",
+            "advanced",
+            "extra"
+          ]
+        }
+      ]
+    },
+    {
+      "band": "12m",
+      "khz": [
+        24890,
+        24990
+      ],
+      "segments": [
+        {
+          "khz": [
+            24890,
+            24930
+          ],
+          "modes": [
+            "CW",
+            "Digital"
+          ],
+          "classes": [
+            "general",
+            "advanced",
+            "extra"
+          ]
+        },
+        {
+          "khz": [
+            24930,
+            24990
+          ],
+          "modes": [
+            "Phone",
+            "Image"
+          ],
+          "classes": [
+            "general",
+            "advanced",
+            "extra"
+          ]
+        }
+      ]
+    },
+    {
+      "band": "10m",
+      "khz": [
+        28000,
+        29700
+      ],
+      "segments": [
+        {
+          "khz": [
+            28000,
+            28300
+          ],
+          "modes": [
+            "CW",
+            "Digital"
+          ],
+          "classes": [
+            "novice",
+            "technician",
+            "general",
+            "advanced",
+            "extra"
+          ],
+          "note": "Novice and Technician: 200 W PEP"
+        },
+        {
+          "khz": [
+            28300,
+            28500
+          ],
+          "modes": [
+            "Phone"
+          ],
+          "classes": [
+            "novice",
+            "technician",
+            "general",
+            "advanced",
+            "extra"
+          ],
+          "note": "Novice and Technician: 200 W PEP"
+        },
+        {
+          "khz": [
+            28500,
+            29700
+          ],
+          "modes": [
+            "Phone",
+            "Image"
+          ],
+          "classes": [
+            "general",
+            "advanced",
+            "extra"
+          ],
+          "note": "FM and repeaters above 29000"
+        }
+      ]
+    },
+    {
+      "band": "6m",
+      "khz": [
+        50000,
+        54000
+      ],
+      "segments": [
+        {
+          "khz": [
+            50000,
+            54000
+          ],
+          "modes": [
+            "CW",
+            "Digital",
+            "Phone",
+            "Image"
+          ],
+          "classes": [
+            "technician",
+            "general",
+            "advanced",
+            "extra"
+          ]
+        }
+      ]
+    },
+    {
+      "band": "2m",
+      "khz": [
+        144000,
+        148000
+      ],
+      "segments": [
+        {
+          "khz": [
+            144000,
+            148000
+          ],
+          "modes": [
+            "CW",
+            "Digital",
+            "Phone",
+            "Image"
+          ],
+          "classes": [
+            "technician",
+            "general",
+            "advanced",
+            "extra"
+          ]
+        }
+      ]
+    },
+    {
+      "band": "1.25m",
+      "khz": [
+        222000,
+        225000
+      ],
+      "segments": [
+        {
+          "khz": [
+            222000,
+            225000
+          ],
+          "modes": [
+            "CW",
+            "Digital",
+            "Phone",
+            "Image"
+          ],
+          "classes": [
+            "novice",
+            "technician",
+            "general",
+            "advanced",
+            "extra"
+          ],
+          "note": "Novice: 25 W PEP"
+        }
+      ]
+    },
+    {
+      "band": "70cm",
+      "khz": [
+        420000,
+        450000
+      ],
+      "segments": [
+        {
+          "khz": [
+            420000,
+            450000
+          ],
+          "modes": [
+            "CW",
+            "Digital",
+            "Phone",
+            "Image"
+          ],
+          "classes": [
+            "technician",
+            "general",
+            "advanced",
+            "extra"
+          ]
+        }
+      ]
+    },
+    {
+      "band": "33cm",
+      "khz": [
+        902000,
+        928000
+      ],
+      "segments": [
+        {
+          "khz": [
+            902000,
+            928000
+          ],
+          "modes": [
+            "CW",
+            "Digital",
+            "Phone",
+            "Image"
+          ],
+          "classes": [
+            "technician",
+            "general",
+            "advanced",
+            "extra"
+          ]
+        }
+      ]
+    },
+    {
+      "band": "23cm",
+      "khz": [
+        1240000,
+        1300000
+      ],
+      "segments": [
+        {
+          "khz": [
+            1240000,
+            1270000
+          ],
+          "modes": [
+            "CW",
+            "Digital",
+            "Phone",
+            "Image"
+          ],
+          "classes": [
+            "technician",
+            "general",
+            "advanced",
+            "extra"
+          ]
+        },
+        {
+          "khz": [
+            1270000,
+            1295000
+          ],
+          "modes": [
+            "CW",
+            "Digital",
+            "Phone",
+            "Image"
+          ],
+          "classes": [
+            "novice",
+            "technician",
+            "general",
+            "advanced",
+            "extra"
+          ],
+          "note": "Novice: 5 W PEP"
+        },
+        {
+          "khz": [
+            1295000,
+            1300000
+          ],
+          "modes": [
+            "CW",
+            "Digital",
+            "Phone",
+            "Image"
+          ],
+          "classes": [
+            "technician",
+            "general",
+            "advanced",
+            "extra"
+          ]
+        }
+      ]
+    }
+  ]
+}

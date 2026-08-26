@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="referrer" content="no-referrer">
+<title>Hammunition Hill</title>
+<link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="mark">HH</span>
+      <span class="name">Hammunition&nbsp;Hill</span>
+    </div>
+    <div class="station" id="station"></div>
+    <div class="status" id="status" role="status" aria-live="polite">starting…</div>
+  </header>
+
+  <main id="grid" class="grid"></main>
+
+  <noscript>
+    <p class="noscript">
+      This dashboard renders its panels in the browser and needs JavaScript.
+      All of it is served from this host — nothing is loaded from a third party.
+    </p>
+  </noscript>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

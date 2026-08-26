@@ -1,0 +1,8 @@
+{
+  "id": "logstats",
+  "name": "Log",
+  "tier": 1,
+  "sources": ["log"],
+  "embed_hosts": [],
+  "description": "What your ADIF log contains, and which prefix table resolved it. Read from disk; never uploaded."
+}

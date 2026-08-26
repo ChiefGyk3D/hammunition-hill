@@ -1,0 +1,146 @@
+# Hammunition Hill -- example configuration
+#
+# Copy to config.toml and edit. This file is the only thing that decides what
+# the collector contacts; there is no settings API and no write endpoint, so
+# nothing reachable over HTTP can change any of it.
+
+[server]
+# Loopback by default. Change this only if you understand docs/SECURITY.md:
+# there is no authentication, so the network is the access control.
+host = "127.0.0.1"
+port = 8073
+
+[station]
+# Used for bearings, distances, and greyline. Nothing is sent anywhere -- these
+# numbers are used on this machine and in your browser, and nowhere else.
+callsign = "N0CALL"
+grid = "FN04ga"
+# lat/lon override the grid if you want more precision than a 6-character square.
+# lat = 44.0157
+# lon = -79.4591
+
+[log]
+# AD1C's country file, if you have one. Without it, callsigns resolve through a
+# compact built-in prefix table that is good for common entities and documented
+# as approximate. Any logging program you already run probably ships a copy.
+# cty_dat = "~/.local/share/hammunition-hill/cty.dat"
+
+[paths]
+# Defaults are ./data and ./web relative to this file.
+# data_dir = "/var/lib/hammunition-hill"
+# web_dir  = "/usr/share/hammunition-hill/web"
+
+# --- Tier 1: sources the collector polls -----------------------------------
+# Each one writes /data/<id>.json. Intervals are seconds, floor 30. These are
+# free services run by volunteers and public agencies -- do not hammer them.
+
+[[sources]]
+id = "hamqsl"
+kind = "hamqsl"
+url = "https://www.hamqsl.com/solarxml.php"
+interval = 900
+
+[[sources]]
+id = "kindex"
+kind = "swpc"
+url = "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json"
+interval = 900
+options = { product = "planetary_k_index" }
+
+[[sources]]
+id = "solarflux"
+kind = "swpc"
+url = "https://services.swpc.noaa.gov/json/f107_cm_radio_flux.json"
+interval = 3600
+options = { product = "f107_flux" }
+
+[[sources]]
+id = "xray"
+kind = "swpc"
+url = "https://services.swpc.noaa.gov/json/goes/primary/xrays-1-day.json"
+interval = 600
+options = { product = "xray_flux" }
+
+[[sources]]
+id = "amsat"
+kind = "rss"
+url = "https://www.amsat.org/feed/"
+interval = 3600
+
+[[sources]]
+id = "pota"
+kind = "pota"
+url = "https://api.pota.app/spot/activator"
+interval = 120
+
+[[sources]]
+id = "sota"
+kind = "sota"
+url = "https://api2.sota.org.uk/api/spots/50/all"
+interval = 120
+
+# Any iCalendar feed. Verify the URL before relying on it -- contest calendars
+# move, and the right one for you may be regional or club-specific.
+# [[sources]]
+# id = "contests"
+# kind = "ics"
+# url = "https://www.contestcalendar.com/calendar.ics"
+# interval = 21600
+# options = { label = "Contests", horizon_days = 21 }
+
+# --- Streams: long-lived connections ----------------------------------------
+# These hold a socket open rather than polling. They emit only; nothing they
+# receive can change what the collector fetches or from where.
+
+# A DX cluster needs a real callsign to log in -- clusters do not accept
+# anonymous connections, and node operators can and do ban abusive clients.
+# [[sources]]
+# id = "cluster"
+# kind = "dxcluster"
+# url = "telnet://dxc.nc7j.com:7373"
+# options = { callsign = "N0CALL", commands = ["set/name Chief", "set/ft8"] }
+
+# --- Local: read from this disk, never the network ---------------------------
+# The log is the feature no hosted dashboard can match. Point this at your ADIF
+# export and spots get coloured by what you still need.
+# [[sources]]
+# id = "log"
+# kind = "adif"
+# path = "~/logs/mylog.adi"
+# interval = 300
+
+# WSJT-X: enable Settings -> Reporting -> UDP Server. Listen-only.
+# [[sources]]
+# id = "wsjtx"
+# kind = "wsjtx"
+# url = "udp://127.0.0.1:2237"
+# local = true
+
+# Hamlib rigctld. Read-only: the client sends two get commands and has no code
+# path that could change frequency, mode, or PTT.
+# [[sources]]
+# id = "rig"
+# kind = "rigctl"
+# url = "tcp://127.0.0.1:4532"
+# local = true
+# options = { poll_seconds = 1.0 }
+
+# A source pointing at your own LAN must say so. Without `local = true` the
+# egress guard refuses any host that resolves to a private or loopback address,
+# which is what stops a mistyped or hijacked upstream URL from probing your
+# network.
+#
+# [[sources]]
+# id = "pistar"
+# kind = "rss"
+# url = "http://pi-star.local/feed.xml"
+# interval = 300
+# local = true
+
+# --- Tier 2: foreign content the browser loads directly ---------------------
+# Empty by default. Every host listed here is added to the page's CSP, and is a
+# host your browser then contacts on every dashboard load. Prefer images over
+# iframes: an image cannot run script.
+[embeds]
+allow_hosts = []
+# allow_hosts = ["radar.weather.gov", "www.hamqsl.com"]

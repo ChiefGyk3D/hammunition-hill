@@ -1,0 +1,7 @@
+{
+  "comment": "Available band plans. Add a file here and list its id to offer another country. The panel reads whichever the viewer selects; the schema is validated by tests/test_bandplan.py.",
+  "default": "us",
+  "available": [
+    { "id": "us", "name": "United States", "file": "us.json" }
+  ]
+}
