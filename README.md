@@ -149,6 +149,38 @@ is not on the roadmap: chasing one would force TLS onto a LAN appliance for a
 single panel, when you are already on the same network as a real
 [OpenWebRX+](https://www.openwebrx.de/) or KiwiSDR that you can point a panel at.
 
+## Band plans
+
+Pick Technician, General, or Amateur Extra and the panel shows what that class
+may actually use — segment by segment, with modes and the power limits that
+apply. Bands with no privileges for the selected class are greyed out rather
+than hidden, so the shape of what you gain by upgrading is visible.
+
+It is tier 0: the plan ships with the dashboard as a static JSON file, so it
+works with the WAN down, which is exactly when you might be checking a band
+edge.
+
+**It is reference material, not authority.** The footer names the regulation and
+the revision date the file was written against. Part 97 is what governs; check
+it before transmitting near an edge.
+
+### Correcting or adding one
+
+Band plans live in `web/bandplans/` — `index.json` plus one file per country.
+Correcting a band edge is a one-line JSON change, no Python involved, and
+`tests/test_bandplan.py` validates every file: segments inside their band,
+classes that actually exist, bands ascending in frequency, and band names that
+match `bands.py`. That last check catches drift that would otherwise put spots
+and privileges in different buckets invisibly.
+
+Adding another country is a new file plus a line in `index.json`; the panel
+grows a country selector automatically once there is more than one to choose
+from. **US only for now** — the structure is already country-agnostic, so an
+IARU Region 1 or Region 3 plan is a data contribution rather than a code change.
+
+Novice and Advanced are deliberately omitted: both are closed to new issue, and
+grandfathered holders are better served by Part 97 directly than by a summary.
+
 ## Callsign resolution
 
 Spots and log entries both resolve through the same prefix table, so "needed" is
@@ -207,6 +239,7 @@ Shipping now:
 | **Rig** | 1 | Dial frequency and mode from rigctld |
 | **Solar & Space Weather** | 1 | SFI, A, K, sunspots, GOES X-ray class |
 | **Band Conditions** | 1 | HamQSL HF conditions, day and night |
+| **Band Plan** | 0 | Which frequencies your licence class may use, by band and mode |
 | **DX Cluster** | 1 | Live spots, filtered by band/mode/continent, coloured by what you need |
 | **POTA & SOTA** | 1 | Park and summit activations, merged and sorted by band |
 | **WSJT-X** | 1 | Live decodes and status |

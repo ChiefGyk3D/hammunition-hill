@@ -1,0 +1,9 @@
+{
+  "id": "bandplan",
+  "name": "Band Plan",
+  "tier": 0,
+  "sources": [],
+  "embed_hosts": [],
+  "span": 2,
+  "description": "Which frequencies your licence class may use, by band and mode. Ships with the dashboard and works with the WAN down."
+}

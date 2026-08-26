@@ -91,10 +91,16 @@ if (!data.hamqsl?.data) {
 content originates upstream; the collector sanitizes it, and this is the second
 layer.
 
-**Never fetch anything yourself.** If your panel needs data, it needs a
-collector source. The CSP sets `connect-src 'self'`, so an off-origin fetch will
-fail anyway — but the reason it is a rule is that request-driven fetching is
+**Never fetch off-origin.** If your panel needs data from the network, it needs
+a collector source. The CSP sets `connect-src 'self'`, so an off-origin fetch
+fails anyway — but the reason it is a rule is that request-driven fetching is
 exactly the property this architecture exists to avoid.
+
+Fetching a **static asset that ships with the dashboard** is fine, and is how
+the band plan panel loads `web/bandplans/*.json`. It is same-origin, it is on
+disk before the collector ever runs, and it works with the WAN down. Load it
+once and keep it — tier 0 panels re-render every second, and refetching on each
+tick would be pointless churn.
 
 **Prefer `<img>` to `<iframe>`.** An image cannot run script, reach storage, or
 navigate. Most tier 2 content — radar loops, lightning maps, satellite imagery —
@@ -123,6 +129,18 @@ worth breaking a panel over.
 Needed-slot precedence is deliberate and worth keeping consistent: **new entity
 outranks a band slot, which outranks a mode slot.** An operator chasing DXCC
 drops everything for the first and merely notices the third.
+
+## Reference data
+
+Data that ships with the dashboard rather than arriving from a source lives in
+its own directory under `web/`, not inside a panel. The band plans are the
+worked example: `web/bandplans/` holds `index.json` plus one file per country,
+and `tests/test_bandplan.py` validates every file's structure — segments inside
+their band, classes that actually exist, band names that match `bands.py`.
+
+That split is what makes the data safe to hand-edit. Correcting a band edge
+should be a one-line change to JSON with a test that catches a mistake, not a
+Python edit. Adding another country is a new file plus a line in `index.json`.
 
 ## Styling
 
