@@ -1,0 +1,79 @@
+# Hammunition Hill -- example configuration
+#
+# Copy to config.toml and edit. This file is the only thing that decides what
+# the collector contacts; there is no settings API and no write endpoint, so
+# nothing reachable over HTTP can change any of it.
+
+[server]
+# Loopback by default. Change this only if you understand docs/SECURITY.md:
+# there is no authentication, so the network is the access control.
+host = "127.0.0.1"
+port = 8073
+
+[station]
+# Used by tier 0 panels for bearing, distance, and greyline. Nothing is sent
+# anywhere -- these numbers never leave the browser.
+callsign = "N0CALL"
+grid = "FN04ga"
+
+[paths]
+# Defaults are ./data and ./web relative to this file.
+# data_dir = "/var/lib/hammunition-hill"
+# web_dir  = "/usr/share/hammunition-hill/web"
+
+# --- Tier 1: sources the collector polls -----------------------------------
+# Each one writes /data/<id>.json. Intervals are seconds, floor 30. These are
+# free services run by volunteers and public agencies -- do not hammer them.
+
+[[sources]]
+id = "hamqsl"
+kind = "hamqsl"
+url = "https://www.hamqsl.com/solarxml.php"
+interval = 900
+
+[[sources]]
+id = "kindex"
+kind = "swpc"
+url = "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json"
+interval = 900
+options = { product = "planetary_k_index" }
+
+[[sources]]
+id = "solarflux"
+kind = "swpc"
+url = "https://services.swpc.noaa.gov/json/f107_cm_radio_flux.json"
+interval = 3600
+options = { product = "f107_flux" }
+
+[[sources]]
+id = "xray"
+kind = "swpc"
+url = "https://services.swpc.noaa.gov/json/goes/primary/xrays-1-day.json"
+interval = 600
+options = { product = "xray_flux" }
+
+[[sources]]
+id = "amsat"
+kind = "rss"
+url = "https://www.amsat.org/feed/"
+interval = 3600
+
+# A source pointing at your own LAN must say so. Without `local = true` the
+# egress guard refuses any host that resolves to a private or loopback address,
+# which is what stops a mistyped or hijacked upstream URL from probing your
+# network.
+#
+# [[sources]]
+# id = "pistar"
+# kind = "rss"
+# url = "http://pi-star.local/feed.xml"
+# interval = 300
+# local = true
+
+# --- Tier 2: foreign content the browser loads directly ---------------------
+# Empty by default. Every host listed here is added to the page's CSP, and is a
+# host your browser then contacts on every dashboard load. Prefer images over
+# iframes: an image cannot run script.
+[embeds]
+allow_hosts = []
+# allow_hosts = ["radar.weather.gov", "www.hamqsl.com"]

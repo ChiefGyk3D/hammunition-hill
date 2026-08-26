@@ -1,0 +1,8 @@
+{
+  "id": "solar",
+  "name": "Solar & Space Weather",
+  "tier": 1,
+  "sources": ["hamqsl", "kindex", "solarflux", "xray"],
+  "embed_hosts": [],
+  "description": "SFI, A, K, sunspots and GOES X-ray class from HamQSL and NOAA SWPC."
+}

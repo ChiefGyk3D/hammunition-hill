@@ -1,0 +1,160 @@
+/* Anodized front panel: cool greys, engraved rules, one signal-lamp accent. */
+:root {
+  color-scheme: dark;
+  --ground: #0e1218;
+  --panel: #151a21;
+  --panel-2: #1b222b;
+  --rule: #28313c;
+  --ink: #e3e7ed;
+  --muted: #8f98a4;
+  --accent: #3bc6d0;
+  --good: #4fbf7e;
+  --fair: #dfa33f;
+  --poor: #e56b5c;
+  --mono: ui-monospace, "SFMono-Regular", "IBM Plex Mono", Consolas, monospace;
+  --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 15px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* --- top bar --------------------------------------------------------- */
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 10px 18px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--rule);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.brand { display: flex; align-items: center; gap: 10px; }
+.mark {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: .1em;
+  color: var(--ground);
+  background: var(--accent);
+  padding: 4px 6px;
+  border-radius: 2px;
+}
+.name { font-weight: 600; letter-spacing: -.01em; }
+.station { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.status { margin-left: auto; font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+
+/* --- grid ------------------------------------------------------------ */
+.grid {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  align-items: start;
+}
+
+/* --- panel chrome ---------------------------------------------------- */
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.panel-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--panel-2);
+  border-bottom: 1px solid var(--rule);
+}
+.panel-title {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+/* Tier is visible in the UI on purpose: an operator should be able to see at a
+   glance which panels reach outside the house. */
+.tier {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  padding: 2px 5px;
+  border-radius: 2px;
+  border: 1px solid currentColor;
+}
+.tier-0 { color: var(--good); }
+.tier-1 { color: var(--fair); }
+.tier-2 { color: var(--poor); }
+.panel-age { margin-left: auto; font-family: var(--mono); font-size: 10.5px; color: var(--muted); }
+.panel-age.stale { color: var(--fair); }
+.panel-age.failed { color: var(--poor); }
+.panel-body { padding: 12px; }
+
+/* --- shared readout styles ------------------------------------------- */
+.readouts { display: grid; grid-template-columns: repeat(auto-fit, minmax(84px, 1fr)); gap: 10px; }
+.readout { background: var(--panel-2); border: 1px solid var(--rule); border-radius: 2px; padding: 8px 10px; }
+.readout .label {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.readout .value {
+  font-family: var(--mono);
+  font-size: 22px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  margin-top: 2px;
+}
+.readout .sub { font-family: var(--mono); font-size: 10.5px; color: var(--muted); }
+
+table.bands { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 12px; }
+table.bands th, table.bands td { text-align: left; padding: 5px 8px; border-bottom: 1px solid var(--rule); }
+table.bands th { font-size: 9.5px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+table.bands tr:last-child td { border-bottom: 0; }
+.cond { font-weight: 600; }
+.cond-good { color: var(--good); }
+.cond-fair { color: var(--fair); }
+.cond-poor { color: var(--poor); }
+
+ul.feed { list-style: none; margin: 0; padding: 0; }
+ul.feed li { padding: 7px 0; border-bottom: 1px solid var(--rule); }
+ul.feed li:last-child { border-bottom: 0; }
+ul.feed a { color: var(--ink); text-decoration: none; font-weight: 500; }
+ul.feed a:hover, ul.feed a:focus-visible { color: var(--accent); text-decoration: underline; }
+ul.feed .when { display: block; font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+.clock-main {
+  font-family: var(--mono);
+  font-size: clamp(34px, 7vw, 52px);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.02em;
+  line-height: 1;
+}
+.clock-label { font-family: var(--mono); font-size: 10px; letter-spacing: .14em; color: var(--muted); text-transform: uppercase; }
+.clock-local { font-family: var(--mono); font-size: 15px; color: var(--muted); margin-top: 8px; font-variant-numeric: tabular-nums; }
+
+.empty, .error { font-family: var(--mono); font-size: 12px; color: var(--muted); }
+.error { color: var(--poor); }
+.noscript { padding: 24px; font-family: var(--mono); font-size: 13px; color: var(--muted); }
+
+a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+}

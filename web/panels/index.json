@@ -1,0 +1,4 @@
+{
+  "comment": "Panels rendered by the dashboard, in order. Each id must have a directory under web/panels/ containing panel.json and panel.js.",
+  "enabled": ["clock", "solar", "bandconditions", "feed"]
+}

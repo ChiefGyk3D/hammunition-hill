@@ -1,0 +1,30 @@
+"""Source registry.
+
+Adding a source means adding it here. There is no plugin autoloader and no
+dynamic import by name from config -- a config file should not be able to make
+the collector execute arbitrary code paths.
+"""
+
+from __future__ import annotations
+
+from .base import FetchError, Source
+from .hamqsl import HamQslSource
+from .rss import RssSource
+from .swpc import SwpcSource
+
+REGISTRY: dict[str, Source] = {
+    src.kind: src()  # type: ignore[operator]
+    for src in (SwpcSource, HamQslSource, RssSource)
+}
+
+
+def get_source(kind: str) -> Source:
+    try:
+        return REGISTRY[kind]
+    except KeyError:
+        raise FetchError(
+            f"unknown source kind {kind!r}; available: {', '.join(sorted(REGISTRY))}"
+        ) from None
+
+
+__all__ = ["REGISTRY", "FetchError", "Source", "get_source"]
