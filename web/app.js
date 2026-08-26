@@ -11,6 +11,7 @@
 const GRID = document.getElementById("grid");
 const STATUS = document.getElementById("status");
 const STATION_EL = document.getElementById("station");
+const TABS = document.getElementById("tabs");
 
 // Snapshot poll interval. Files are small and local, so this is cheap; the
 // collector's own upstream intervals are what actually rate-limit anything.
@@ -20,6 +21,10 @@ const POLL_MS = 10_000;
 const snapshots = new Map();
 /** @type {Array<{manifest: object, module: object, root: HTMLElement}>} */
 const panels = [];
+/** @type {Map<string, {manifest: object, module: object}>} loaded panel modules */
+const loaded = new Map();
+
+import { recall, remember } from "./lib/format.js";
 
 const el = (tag, className, text) => {
   const node = document.createElement(tag);
@@ -40,6 +45,20 @@ function relativeAge(iso) {
   if (seconds < 90) return `${Math.round(seconds)}s ago`;
   if (seconds < 5400) return `${Math.round(seconds / 60)}m ago`;
   return `${Math.round(seconds / 3600)}h ago`;
+}
+
+function buildTabs(dashboards, active, onPick) {
+  const bar = el("nav", "tabs");
+  bar.setAttribute("aria-label", "Dashboards");
+  for (const dash of dashboards) {
+    const tab = el("button", "tab", dash.name);
+    tab.type = "button";
+    if (dash.id === active) tab.classList.add("on");
+    tab.setAttribute("aria-current", dash.id === active ? "page" : "false");
+    tab.addEventListener("click", () => onPick(dash.id));
+    bar.append(tab);
+  }
+  return bar;
 }
 
 function buildFrame(manifest) {
@@ -127,15 +146,16 @@ async function poll(station) {
 }
 
 async function main() {
-  let enabled = [];
+  let dashboards = [];
   let station = {};
 
-  // The panel list and each panel's manifest are static files. Station details
-  // come from a snapshot the collector writes at startup, so web/ stays
-  // template-free and can be served by any static file server.
   try {
     const index = await getJSON("./panels/index.json");
-    enabled = index.enabled ?? [];
+    dashboards = index.dashboards ?? [];
+    // A flat `enabled` list still works: it becomes one unnamed dashboard.
+    if (dashboards.length === 0 && index.enabled) {
+      dashboards = [{ id: "all", name: "Dashboard", panels: index.enabled }];
+    }
   } catch (err) {
     STATUS.textContent = "could not load panel index";
     GRID.append(el("p", "error", `panels/index.json: ${err.message}`));
@@ -153,17 +173,48 @@ async function main() {
     .filter(Boolean)
     .join(" \u00b7 ");
 
-  for (const id of enabled) {
-    try {
-      const manifest = await getJSON(`./panels/${id}/panel.json`);
-      const module = await import(`./panels/${id}/panel.js`);
-      const { body, age } = buildFrame(manifest);
-      panels.push({ manifest, module, body, age });
-    } catch (err) {
-      console.error(`panel ${id} failed to load`, err);
-      GRID.append(el("p", "error", `panel ${id}: ${err.message}`));
+  // Load every panel module once, up front. They are small and local, and
+  // loading on tab switch would make the first click on each tab feel slow.
+  for (const dash of dashboards) {
+    for (const id of dash.panels) {
+      if (loaded.has(id)) continue;
+      try {
+        const manifest = await getJSON(`./panels/${id}/panel.json`);
+        const module = await import(`./panels/${id}/panel.js`);
+        loaded.set(id, { manifest, module });
+      } catch (err) {
+        console.error(`panel ${id} failed to load`, err);
+        loaded.set(id, { error: err.message });
+      }
     }
   }
+
+  let active = recall("dashboard", dashboards[0]?.id);
+  if (!dashboards.some((d) => d.id === active)) active = dashboards[0]?.id;
+
+  const show = (id) => {
+    active = id;
+    remember("dashboard", id);
+    panels.length = 0;
+    GRID.replaceChildren();
+
+    const dash = dashboards.find((d) => d.id === id);
+    for (const panelId of dash?.panels ?? []) {
+      const entry = loaded.get(panelId);
+      if (!entry) continue;
+      if (entry.error) {
+        GRID.append(el("p", "error", `panel ${panelId}: ${entry.error}`));
+        continue;
+      }
+      const { body, age } = buildFrame(entry.manifest);
+      panels.push({ manifest: entry.manifest, module: entry.module, body, age });
+    }
+
+    TABS.replaceChildren(buildTabs(dashboards, active, show));
+    for (const entry of panels) renderPanel(entry, station);
+  };
+
+  show(active);
 
   await poll(station);
   setInterval(() => poll(station), POLL_MS);

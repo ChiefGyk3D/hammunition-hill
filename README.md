@@ -104,6 +104,49 @@ What follows from it:
 
 More in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
+## Dashboards
+
+Thirteen panels in one grid is unusable, so they are grouped into tabs:
+
+| | |
+|---|---|
+| **Home** | clocks, rig, solar, band conditions, spots, WSJT-X |
+| **Map** | the globe, with the spot list beside it |
+| **Operating** | callsign lookup, log stats, band plan |
+| **Activity** | POTA/SOTA, contests, news |
+
+Edit `web/panels/index.json` to regroup them — a dashboard is an id, a name, and
+a list of panel ids. Your last tab is remembered per browser. A flat `enabled`
+list still works and becomes a single unnamed dashboard.
+
+## The map
+
+A globe rather than a flat projection, because the thing operators most want to
+see is a great-circle path, and great circles look wrong on Mercator —
+Connecticut to Japan goes over the pole, and only a sphere shows that honestly.
+
+Drag to rotate, scroll or the buttons to zoom, **QTH** to recentre on your
+station, and click a station to select it. Layers toggle independently:
+greyline, spots, arcs, parks, graticule, label.
+
+It is drawn on a 2D canvas with **no WebGL and no library** — the whole thing is
+a projection function and some paths, which keeps the read-the-source promise
+intact. Coastlines are a 60 KB [Natural Earth](https://www.naturalearthdata.com/)
+outline (public domain) that ships with the dashboard, and the greyline is
+computed from the clock, so **the map works with the WAN unplugged**. Regenerate
+the outline with `tools/build_world.py` if you ever need to.
+
+### Finding your grid square
+
+**FIND MY GRID** on the map asks the browser where you are and converts it to a
+Maidenhead locator. The coordinates never leave the browser — the grid is
+computed locally and stored locally, and the panel nudges you to paste it into
+`config.toml` so the collector uses it too.
+
+It needs a secure context, so it works at `http://localhost` and is disabled
+with an explanation on a plain LAN address. That is a browser rule, not
+something this project can opt out of.
+
 ## Three tiers of trust
 
 Every panel declares a tier, and the tier is visible in the UI. You should be
@@ -314,6 +357,7 @@ Shipping now:
 | **Rig** | 1 | Dial frequency and mode from rigctld |
 | **Solar & Space Weather** | 1 | SFI, A, K, sunspots, GOES X-ray class |
 | **Band Conditions** | 1 | HamQSL HF conditions, day and night |
+| **World Map** | 1 | Rotatable globe: greyline, DX spots, great-circle paths from your QTH |
 | **Band Plan** | 0 | Which frequencies your licence class may use, by band and mode |
 | **Callsign Lookup** | 0 | Entity, beam heading, distance, and whether you have worked it |
 | **DX Cluster** | 1 | Live spots, filtered by band/mode/continent, coloured by what you need |
@@ -330,7 +374,7 @@ Shipping now:
 | **v0.1** | Skeleton ✅ | Collector, static server, tier 0 panels, solar and space weather, RSS. Proves the snapshot architecture end to end. |
 | **v0.2** | Spots ✅ | DX cluster telnet client, client-side filtering, spot detail with bearing and distance. POTA, SOTA, contest calendar. |
 | **v0.3** | The differentiator ✅ | ADIF log ingest and needed-slot spot colouring. `rigctld` and WSJT-X UDP. |
-| **v0.4** | Parity | Greyline map, weather alerts, aurora forecast, satellite passes from cached TLEs. Closes the gap below. |
+| **v0.4** | Parity | Weather alerts, aurora forecast, satellite passes from cached TLEs. Greyline and the map are done. |
 | **v0.5** | Other people's shacks | LAN mode hardening, opaque image proxy, tier 2 allowlisting, systemd + Docker + Pi install docs. |
 | **v1.0** | Community | VA3HDL `config.js` importer, panel SDK, example dashboards. |
 | later | Deferred on purpose | WebSocket spot push, VOACAP, [a Grafana version](#deferred-a-grafana-version). And only after all of that, any conversation about a hosted mode — which needs a real authn/authz model, TLS, rate limiting, and a threat model this version deliberately does not have. |
@@ -338,11 +382,11 @@ Shipping now:
 ### What still stands between here and parity
 
 Local and LAN is priority one, and parity with hamdash.com is the gate on
-everything below it. Four things are outstanding:
+everything below it. Three things are outstanding:
 
 | | Where it goes | Notes |
 |---|---|---|
-| **Greyline / day-night map** | v0.4, tier 0 | Solar subpoint maths plus a bundled world outline. Computes offline once shipped. |
+| ~~Greyline / day-night map~~ | ✅ done | Solar subpoint maths plus a bundled world outline. Computes offline. |
 | **Weather alerts** | v0.4, tier 1 | MeteoAlarm and Met Office, plus `api.weather.gov` for US operators. |
 | **Aurora forecast** | v0.4, tier 1 | SWPC's OVATION product; the collector already speaks to that host. |
 | **VOACAP point-to-point** | later | The genuinely hard one. Either bundle the public-domain ITSHFBC binaries and shell out, or ship a simpler MUF/LUF indicator derived from SFI/K first and do the real thing when it earns the effort. |
@@ -448,6 +492,20 @@ The security-critical modules are `egress.py`, `server.py`, and `snapshot.py`.
 Changes there need tests. If a change would add an HTTP endpoint that accepts
 input, it is almost certainly the wrong shape for this project — put the work in
 the collector instead.
+
+## Credits
+
+- Coastlines: [Natural Earth](https://www.naturalearthdata.com/), public domain.
+- Space weather: [NOAA SWPC](https://www.swpc.noaa.gov/) and
+  [HamQSL](https://www.hamqsl.com/) (N0NBH).
+- Activations: [POTA](https://pota.app/) and [SOTA](https://www.sota.org.uk/).
+- Callsign data: [callook.info](https://callook.info/),
+  [HamQTH](https://www.hamqth.com/), [QRZ](https://www.qrz.com/), and the FCC
+  ULS, depending on what you enable.
+
+These are free services run by volunteers and public agencies. The collector
+polls on conservative intervals and caps how often it asks; please do not lower
+those without a reason.
 
 ## License
 
