@@ -1,25 +1,44 @@
 {
-  "comment": "Dashboards and the panels on each. A panel id must have a directory under web/panels/ containing panel.json and panel.js, and its manifest names the snapshot ids it reads — those must match the source ids in your config.toml.",
+  "comment": "Dashboards and the panels on each. A panel id must have a directory under web/panels/ containing panel.json and panel.js, and its manifest names the snapshot ids it reads \u2014 those must match the source ids in your config.toml.",
   "dashboards": [
     {
       "id": "home",
       "name": "Home",
-      "panels": ["clock", "rig", "solar", "bandconditions", "spots", "wsjtx"]
+      "panels": [
+        "clock",
+        "rig",
+        "solar",
+        "bandconditions",
+        "geomag",
+        "spots",
+        "wsjtx"
+      ]
     },
     {
       "id": "map",
       "name": "Map",
-      "panels": ["map", "spots"]
+      "panels": [
+        "map",
+        "spots"
+      ]
     },
     {
       "id": "operating",
       "name": "Operating",
-      "panels": ["callsign", "logstats", "bandplan"]
+      "panels": [
+        "callsign",
+        "logstats",
+        "bandplan"
+      ]
     },
     {
       "id": "activity",
       "name": "Activity",
-      "panels": ["parks", "contests", "feed"]
+      "panels": [
+        "parks",
+        "contests",
+        "feed"
+      ]
     }
   ]
 }

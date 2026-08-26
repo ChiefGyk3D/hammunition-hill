@@ -21,6 +21,7 @@ from typing import Any
 import httpx
 
 from ..config import SourceConfig
+from ..severity import classify
 from .base import FetchError, get_bounded
 
 
@@ -120,4 +121,18 @@ class SwpcSource:
             payload = response.json()
         except ValueError as exc:
             raise FetchError(f"{cfg.url}: response was not JSON ({exc})") from exc
-        return {"product": product, **_PRODUCTS[product](payload)}
+        data = {"product": product, **_PRODUCTS[product](payload)}
+
+        # Attach a dial where the product maps onto a known scale.
+        for scale_id, key in (("kindex", "kp"), ("sfi", "flux"), ("xray", "flux")):
+            if product.startswith(scale_id[:3]) or (product, scale_id) in (
+                ("planetary_k_index", "kindex"),
+                ("f107_flux", "sfi"),
+                ("xray_flux", "xray"),
+            ):
+                gauge = classify(scale_id, data.get(key))
+                if gauge is not None:
+                    data["gauge"] = gauge
+                break
+
+        return data

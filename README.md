@@ -119,6 +119,40 @@ Edit `web/panels/index.json` to regroup them — a dashboard is an id, a name, a
 a list of panel ids. Your last tab is remembered per browser. A flat `enabled`
 list still works and becomes a single unnamed dashboard.
 
+## Dials, and numbers
+
+A bare figure does not tell you whether it is good. "A-index 4" means nothing
+until you know 7 is the quiet threshold, and "C2.1" means nothing until you know
+where C sits between B and X. So every space weather metric is shown as a dial
+*and* a number: the needle and the coloured band give you severity at a glance,
+the figure gives you the precision, and a text label says which is which.
+
+**The classification lives in Python, not in the panel.** Whether K=5 is a storm
+is a fact about geomagnetism, not a drawing decision — so it sits in
+`severity.py` where it is tested, and the renderer only draws what it is handed.
+Thresholds follow NOAA's published scales where they exist (G for geomagnetic,
+R for radio blackout, S for radiation) and operating convention where they do
+not.
+
+Two things about this were measured rather than chosen:
+
+**Three severity levels, not four.** Four status colours cannot be told apart
+reliably — an amber-versus-orange pair measures below the normal-vision
+separation floor before you even consider colour blindness. Three separate
+cleanly (ΔE 27.6 normal, 11.3 protan). The palette this replaced measured 14.5,
+which is below the floor for telling two colours apart *at all*, and it was
+already shipping in Band Conditions.
+
+**Every dial carries a text label.** Colour never carries the meaning alone, so
+the dials work in greyscale, in print, and for a colour-blind reader. Each one
+also has an `aria-label` reading the value and its severity.
+
+One scale is deliberately not its full theoretical range: A-index tops out at 50
+rather than 400, because a 0–100 dial squeezed the quiet zone into an invisible
+sliver — the dial looked alarming while its label said "Quiet", which is the
+worst thing a severity display can do. Above 50 the needle pins, which is the
+right message for a major storm.
+
 ## The map
 
 A globe rather than a flat projection, because the thing operators most want to
@@ -355,7 +389,8 @@ Shipping now:
 |---|---|---|
 | **Time** | 0 | UTC and local, computed in the browser |
 | **Rig** | 1 | Dial frequency and mode from rigctld |
-| **Solar & Space Weather** | 1 | SFI, A, K, sunspots, GOES X-ray class |
+| **Solar & Space Weather** | 1 | Solar flux, sunspots, X-ray and A-index as dials |
+| **Geomag & Particles** | 1 | K-index, solar wind, band noise, proton flux as dials |
 | **Band Conditions** | 1 | HamQSL HF conditions, day and night |
 | **World Map** | 1 | Rotatable globe: greyline, DX spots, great-circle paths from your QTH |
 | **Band Plan** | 0 | Which frequencies your licence class may use, by band and mode |
