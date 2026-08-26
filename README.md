@@ -219,12 +219,64 @@ Shipping now:
 | | | |
 |---|---|---|
 | **v0.1** | Skeleton ✅ | Collector, static server, tier 0 panels, solar and space weather, RSS. Proves the snapshot architecture end to end. |
-| **v0.2** | Spots | DX cluster telnet client, client-side filtering, spot detail with bearing and distance. POTA, SOTA, contest calendar. |
-| **v0.3** | The differentiator | ADIF log ingest and needed-slot spot colouring. `rigctld` and WSJT-X UDP. |
-| **v0.4** | Sky and weather | Satellite passes from cached TLEs, greyline map, local weather and alerts. |
+| **v0.2** | Spots ✅ | DX cluster telnet client, client-side filtering, spot detail with bearing and distance. POTA, SOTA, contest calendar. |
+| **v0.3** | The differentiator ✅ | ADIF log ingest and needed-slot spot colouring. `rigctld` and WSJT-X UDP. |
+| **v0.4** | Parity | Greyline map, weather alerts, aurora forecast, satellite passes from cached TLEs. Closes the gap below. |
 | **v0.5** | Other people's shacks | LAN mode hardening, opaque image proxy, tier 2 allowlisting, systemd + Docker + Pi install docs. |
 | **v1.0** | Community | VA3HDL `config.js` importer, panel SDK, example dashboards. |
-| later | Deferred on purpose | WebSocket spot push, VOACAP. And only after all of that, any conversation about a hosted mode — which needs a real authn/authz model, TLS, rate limiting, and a threat model this version deliberately does not have. |
+| later | Deferred on purpose | WebSocket spot push, VOACAP, [a Grafana version](#deferred-a-grafana-version). And only after all of that, any conversation about a hosted mode — which needs a real authn/authz model, TLS, rate limiting, and a threat model this version deliberately does not have. |
+
+### What still stands between here and parity
+
+Local and LAN is priority one, and parity with hamdash.com is the gate on
+everything below it. Four things are outstanding:
+
+| | Where it goes | Notes |
+|---|---|---|
+| **Greyline / day-night map** | v0.4, tier 0 | Solar subpoint maths plus a bundled world outline. Computes offline once shipped. |
+| **Weather alerts** | v0.4, tier 1 | MeteoAlarm and Met Office, plus `api.weather.gov` for US operators. |
+| **Aurora forecast** | v0.4, tier 1 | SWPC's OVATION product; the collector already speaks to that host. |
+| **VOACAP point-to-point** | later | The genuinely hard one. Either bundle the public-domain ITSHFBC binaries and shell out, or ship a simpler MUF/LUF indicator derived from SFI/K first and do the real thing when it earns the effort. |
+
+Satellite passes are on the same milestone but are *past* parity — hamdash.com
+does not have them.
+
+The one panel we will not match is its browser SDR receiver, and that is a
+choice rather than a gap: chasing WebUSB would force TLS onto a LAN appliance
+for a single panel, when you are already on the same network as a real
+OpenWebRX+ or KiwiSDR you can point a tier 2 panel at.
+
+### Deferred: a Grafana version
+
+Wanted eventually, explicitly **after** parity. Recorded here so the shape is
+not re-derived later.
+
+The good news is that a slice of it works today with no code at all: snapshots
+are already JSON served over HTTP, so Grafana's Infinity datasource can read
+`http://your-host:8073/data/solar.json` and friends directly. That covers
+current-state panels.
+
+What it does *not* cover is the thing Grafana is actually good at. **Snapshots
+have no history** — each write replaces the last, deliberately, because the
+design is "what is true now" and history would mean a database. SFI over six
+months, spots per band over a contest weekend, decodes per hour: none of that is
+answerable from what is on disk. A Grafana version therefore needs an emission
+path, not a rendering change — the collector growing an optional exporter
+(Prometheus endpoint or InfluxDB line protocol) alongside the snapshot writer.
+That is additive and does not disturb the snapshot architecture.
+
+Two things to go in with eyes open:
+
+- **It does not inherit this project's security properties.** Grafana is a full
+  application with authentication, users, plugins, and a database. Whatever the
+  network stance is for that deployment, it is a separate decision from this
+  one, and "the dashboard is safe to expose because it is static files" stops
+  being true the moment the answer is Grafana.
+- **An exporter is an outbound write path.** The collector currently only ever
+  reads. Pushing to a remote InfluxDB would be the first thing it sends
+  anywhere, and it would be sending data derived from the operator's log and
+  location. That wants the same allowlist treatment as everything else, and a
+  default of local-only.
 
 ### What only a local dashboard can do
 
