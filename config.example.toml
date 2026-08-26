@@ -67,6 +67,28 @@ url = "https://services.swpc.noaa.gov/json/goes/primary/xrays-1-day.json"
 interval = 600
 options = { product = "xray_flux" }
 
+# The OVATION aurora forecast. The raw grid is several megabytes; the collector
+# reduces it to the oval boundary and a coarse cell grid before publishing.
+[[sources]]
+id = "aurora"
+kind = "aurora"
+url = "https://services.swpc.noaa.gov/json/ovation_aurora_latest.json"
+interval = 900
+
+# NOAA's own R/S/G storm scales -- the official reading, alongside our dials.
+[[sources]]
+id = "scales"
+kind = "noaa_scales"
+url = "https://services.swpc.noaa.gov/products/noaa-scales.json"
+interval = 900
+
+# Watches, warnings and alerts as SWPC issues them.
+[[sources]]
+id = "alerts"
+kind = "swpc_alerts"
+url = "https://services.swpc.noaa.gov/products/alerts.json"
+interval = 900
+
 [[sources]]
 id = "amsat"
 kind = "rss"

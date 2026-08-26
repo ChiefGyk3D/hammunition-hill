@@ -37,21 +37,28 @@ class Source(Protocol):
     async def fetch(self, client: httpx.AsyncClient, cfg: SourceConfig) -> Any: ...
 
 
-async def get_bounded(client: httpx.AsyncClient, url: str) -> httpx.Response:
-    """GET with a hard size cap, streaming so an oversized body is cut off early."""
+async def get_bounded(
+    client: httpx.AsyncClient, url: str, *, max_bytes: int = MAX_RESPONSE_BYTES
+) -> httpx.Response:
+    """GET with a hard size cap, streaming so an oversized body is cut off early.
+
+    The cap is per-call so a source that genuinely needs more -- the OVATION
+    aurora grid is a quarter of a million points -- can raise it explicitly,
+    rather than the limit being loosened for everything.
+    """
     async with client.stream("GET", url) as response:
         response.raise_for_status()
 
         declared = response.headers.get("content-length")
-        if declared and int(declared) > MAX_RESPONSE_BYTES:
+        if declared and int(declared) > max_bytes:
             raise FetchError(f"{url}: content-length {declared} exceeds cap")
 
         chunks: list[bytes] = []
         total = 0
         async for chunk in response.aiter_bytes():
             total += len(chunk)
-            if total > MAX_RESPONSE_BYTES:
-                raise FetchError(f"{url}: response exceeded {MAX_RESPONSE_BYTES} bytes")
+            if total > max_bytes:
+                raise FetchError(f"{url}: response exceeded {max_bytes} bytes")
             chunks.append(chunk)
 
         response._content = b"".join(chunks)  # noqa: SLF001 - stream() defers this

@@ -43,7 +43,8 @@ const state = {
   lon0: null,
   zoom: recall("map.zoom", 1),
   layers: recall("map.layers", {
-    greyline: true, spots: true, arcs: true, parks: true, graticule: true, labels: true,
+    greyline: true, aurora: true, spots: true, arcs: true,
+    parks: true, graticule: true, labels: true,
   }),
   world: null,
   loading: false,
@@ -138,6 +139,37 @@ function draw(canvas, data, station) {
     });
   }
 
+  // Aurora sits under the spots: it is context, not the subject. Drawn as a
+  // sequential ramp in one hue -- probability is a magnitude, not a status, so
+  // it must not borrow the reserved good/warn/critical colours.
+  if (state.layers.aurora) {
+    const aurora = data.aurora?.data;
+    if (aurora) {
+      for (const [lon, lat, probability] of aurora.cells ?? []) {
+        const p = project(lat, lon, view);
+        if (!p.visible) continue;
+        ctx.globalAlpha = Math.min(0.55, 0.06 + (probability / 100) * 0.6);
+        ctx.fillStyle = accent;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 2.2, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+
+      // The equatorward edge is the line that matters: HF paths crossing it
+      // degrade, and VHF sometimes opens along it.
+      ctx.strokeStyle = accent;
+      ctx.lineWidth = 1.2;
+      ctx.globalAlpha = 0.85;
+      for (const oval of [aurora.north_oval, aurora.south_oval]) {
+        if (oval?.length) {
+          strokePath(ctx, oval.map(([lon, lat]) => ({ lat, lon })), view);
+        }
+      }
+      ctx.globalAlpha = 1;
+    }
+  }
+
   const home = station?.located ? { lat: station.lat, lon: station.lon } : null;
   const points = collectPoints(data);
 
@@ -191,7 +223,7 @@ function draw(canvas, data, station) {
 function layerRow(el, onToggle) {
   const row = el("div", "chips");
   const labels = {
-    greyline: "GREYLINE", spots: "SPOTS", arcs: "ARCS",
+    greyline: "GREYLINE", aurora: "AURORA", spots: "SPOTS", arcs: "ARCS",
     parks: "PARKS", graticule: "GRID", labels: "LABEL",
   };
   for (const [key, label] of Object.entries(labels)) {
@@ -323,6 +355,7 @@ export function render(root, { data, el }) {
   }
 
   const count = collectPoints(data).length;
+  const aurora = data.aurora?.data;
   const sel = state.selected;
   parts.push(
     el(
@@ -330,7 +363,9 @@ export function render(root, { data, el }) {
       "count",
       sel
         ? `${sel.call} · ${sel.entity ?? "?"} · ${sel.band ?? ""} ${sel.mode ?? ""}`.trim()
-        : `${count} stations plotted · drag to rotate`,
+        : `${count} stations plotted${
+            aurora?.peak_probability ? ` · aurora peak ${aurora.peak_probability}%` : ""
+          } · drag to rotate`,
     ),
   );
 

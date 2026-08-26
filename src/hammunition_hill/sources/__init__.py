@@ -11,6 +11,7 @@ the collector execute arbitrary code paths.
 
 from __future__ import annotations
 
+from .aurora import AuroraSource
 from .base import FetchError, Source
 from .hamqsl import HamQslSource
 from .ics import IcsSource
@@ -19,10 +20,21 @@ from .pota import PotaSource
 from .rss import RssSource
 from .sota import SotaSource
 from .swpc import SwpcSource
+from .swpc_text import NoaaScalesSource, SwpcAlertsSource
 
 REGISTRY: dict[str, Source] = {
     src.kind: src()  # type: ignore[operator]
-    for src in (SwpcSource, HamQslSource, RssSource, PotaSource, SotaSource, IcsSource)
+    for src in (
+        SwpcSource,
+        HamQslSource,
+        RssSource,
+        PotaSource,
+        SotaSource,
+        IcsSource,
+        AuroraSource,
+        NoaaScalesSource,
+        SwpcAlertsSource,
+    )
 }
 
 

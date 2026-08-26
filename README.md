@@ -113,6 +113,7 @@ Thirteen panels in one grid is unusable, so they are grouped into tabs:
 |---|---|
 | **Home** | clocks, rig, solar, band conditions, spots, WSJT-X |
 | **Map** | the globe, with the spot list beside it |
+| **Space Weather** | solar and geomagnetic dials, NOAA scales, alerts, band conditions |
 | **Operating** | callsign lookup, log stats, band plan |
 | **Activity** | POTA/SOTA, contests, news |
 
@@ -178,7 +179,15 @@ Connecticut to Japan goes over the pole, and only a sphere shows that honestly.
 
 Drag to rotate, scroll or the buttons to zoom, **QTH** to recentre on your
 station, and click a station to select it. Layers toggle independently:
-greyline, spots, arcs, parks, graticule, label.
+greyline, aurora, spots, arcs, parks, graticule, label.
+
+The **aurora** layer is NOAA's OVATION forecast. The raw product is a
+quarter-million-point grid several megabytes wide, so the collector reduces it
+before publishing: the equatorward edge of the oval in each hemisphere — the
+line that matters, since HF paths crossing it degrade and VHF sometimes opens
+along it — plus a coarse cell grid for shading. Reducing on the collector rather
+than in the browser is the same principle as everywhere else: do the work once,
+on a schedule, and hand every viewer a small file.
 
 It is drawn on a 2D canvas with **no WebGL and no library** — the whole thing is
 a projection function and some paths, which keeps the read-the-source promise
@@ -408,6 +417,7 @@ Shipping now:
 | **Rig** | 1 | Dial frequency and mode from rigctld |
 | **Solar & Space Weather** | 1 | Solar flux, sunspots, X-ray and A-index as dials |
 | **Geomag & Particles** | 1 | K-index, solar wind, band noise, proton flux as dials |
+| **NOAA Scales & Alerts** | 1 | NOAA's own R/S/G storm scales and the alerts SWPC has issued |
 | **Band Conditions** | 1 | HamQSL HF conditions, day and night |
 | **World Map** | 1 | Rotatable globe: greyline, DX spots, great-circle paths from your QTH |
 | **NCDXF Beacons** | 0 | Which international beacon is on each band right now, from the clock alone |
@@ -435,13 +445,13 @@ Shipping now:
 ### What still stands between here and parity
 
 Local and LAN is priority one, and parity with hamdash.com is the gate on
-everything below it. Three things are outstanding:
+everything below it. Two things are outstanding:
 
 | | Where it goes | Notes |
 |---|---|---|
 | ~~Greyline / day-night map~~ | ✅ done | Solar subpoint maths plus a bundled world outline. Computes offline. |
 | **Weather alerts** | v0.4, tier 1 | MeteoAlarm and Met Office, plus `api.weather.gov` for US operators. |
-| **Aurora forecast** | v0.4, tier 1 | SWPC's OVATION product; the collector already speaks to that host. |
+| ~~Aurora forecast~~ | ✅ done | SWPC OVATION, as a globe layer. |
 | **VOACAP point-to-point** | later | The genuinely hard one. Either bundle the public-domain ITSHFBC binaries and shell out, or ship a simpler MUF/LUF indicator derived from SFI/K first and do the real thing when it earns the effort. |
 
 Satellite passes are on the same milestone but are *past* parity — hamdash.com

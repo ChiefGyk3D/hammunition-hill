@@ -445,3 +445,31 @@ table.beacons tbody tr:last-child { border-bottom: 0; }
 .bx-bar { height: 4px; background: var(--panel-2); border-radius: 2px; overflow: hidden; }
 .bx-fill { height: 100%; background: var(--accent); transition: width .9s linear; }
 @media (prefers-reduced-motion: reduce) { .bx-fill { transition: none; } }
+
+/* --- NOAA scales & alerts --------------------------------------------- */
+.scale-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; }
+.scale-tile {
+  background: var(--panel-2);
+  border: 1px solid var(--rule);
+  border-left-width: 3px;
+  border-radius: 2px;
+  padding: 9px 11px;
+}
+.scale-tile.level-good { border-left-color: var(--good); }
+.scale-tile.level-warn { border-left-color: var(--fair); }
+.scale-tile.level-critical { border-left-color: var(--poor); }
+.scale-badge { font-family: var(--mono); font-size: 17px; font-weight: 600; }
+.scale-tile.level-good .scale-badge { color: var(--good); }
+.scale-tile.level-warn .scale-badge { color: var(--fair); }
+.scale-tile.level-critical .scale-badge { color: var(--poor); }
+.scale-name {
+  font-family: var(--mono); font-size: 9.5px; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--muted); margin-top: 1px;
+}
+.scale-text { font-family: var(--mono); font-size: 11.5px; color: var(--ink); margin-top: 4px; }
+
+ul.alerts { list-style: none; margin: 10px 0 0; padding: 0; }
+ul.alerts li { padding: 7px 0; border-bottom: 1px solid var(--rule); }
+ul.alerts li:last-child { border-bottom: 0; }
+.alert-head { display: block; font-size: 13px; color: var(--ink); }
+.alert-when { display: block; font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 2px; }

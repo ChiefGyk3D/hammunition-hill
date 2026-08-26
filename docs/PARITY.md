@@ -93,12 +93,12 @@ Legend: **done** · **partial** · **planned** · **not planned** (with the reas
 | X-ray flux | **done** | Dial, with the R-scale in the label |
 | Geomagnetic K / solar wind | **done** | Dials |
 | Noise / protons | **done** | Dials |
-| NOAA scales | **partial** | G/R/S appear in dial labels; no dedicated panel |
-| Aurora oval | **planned** | SWPC OVATION. Parity gap. |
+| NOAA scales | **done** | R/S/G tiles from NOAA's own product, alongside our dials |
+| Aurora oval | **done** | SWPC OVATION, reduced to an oval boundary and drawn as a globe layer |
 | D-layer absorption | **planned** | solarstorm_scout has a model; needs the solar-zenith fix |
 | Ionospheric map | **planned** | |
 | Solar imagery | **planned** | Tier 2 images (SDO) |
-| SWPC alerts | **planned** | The formal watches and warnings feed |
+| SWPC alerts | **done** | Watches, warnings and summaries as SWPC issues them |
 | Space weather guide | **partial** | Our dial labels explain severity inline, which arguably does this job better than a separate explainer |
 
 ### Community and account
@@ -127,7 +127,7 @@ Worth keeping in view, because these are the reasons for the trade-off:
 
 In order of value per unit of work:
 
-1. Aurora, NOAA scales, SWPC alerts — small, and closes three parity rows.
+1. ~~Aurora, NOAA scales, SWPC alerts.~~ Done.
 2. Weather alerts and the regional radars — one tier 2 image path unlocks most of it.
 3. The MUF / D-layer model from solarstorm_scout, with the solar-zenith fix.
 4. RBN, which is the cluster client pointed somewhere else.
