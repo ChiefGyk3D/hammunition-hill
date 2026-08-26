@@ -23,6 +23,23 @@ const state = {
   loading: false,
 };
 
+/**
+ * Which class to show. Precedence, most specific first:
+ *   1. what this viewer picked, remembered per browser
+ *   2. the station's class -- configured, or guessed from callsign format
+ *   3. the most privileged class in the plan
+ *
+ * Two is the convenience: set your callsign and the panel usually opens on the
+ * right class. It is never sticky -- picking a class always wins, because the
+ * panel is also a reference for classes you do not hold.
+ */
+function activeClass(classes, station) {
+  const known = (id) => classes.some((c) => c.id === id);
+  if (known(state.klass)) return state.klass;
+  if (known(station?.license_class)) return station.license_class;
+  return classes[classes.length - 1].id;
+}
+
 function mhz(khz) {
   // Band edges read as MHz on every chart an operator has ever seen.
   const value = khz / 1000;
@@ -85,7 +102,7 @@ function bandRow(el, band, klass) {
   return row;
 }
 
-export function render(root, { el }) {
+export function render(root, { data, el }) {
   // Load once, then re-render from memory -- this panel ticks every second
   // along with the other tier 0 panels and must not refetch on each tick.
   if (!state.plan && !state.loading) {
@@ -104,7 +121,7 @@ export function render(root, { el }) {
         state.error = err.message;
       } finally {
         state.loading = false;
-        render(root, { el });
+        render(root, { data, el });
       }
     })();
     root.replaceChildren(el("p", "empty", "loading band plan…"));
@@ -119,9 +136,8 @@ export function render(root, { el }) {
 
   const plan = state.plan;
   const classes = plan.classes;
-  const active = classes.some((c) => c.id === state.klass)
-    ? state.klass
-    : classes[classes.length - 1].id;
+  const station = data.station?.data ?? {};
+  const active = activeClass(classes, station);
 
   const parts = [];
 
@@ -137,7 +153,7 @@ export function render(root, { el }) {
       onPick: (id) => {
         state.klass = id;
         remember("bandplan.class", id);
-        render(root, { el });
+        render(root, { data, el });
       },
     }),
   );
@@ -152,7 +168,7 @@ export function render(root, { el }) {
           remember("bandplan.plan", id);
           state.planId = id;
           state.plan = null;
-          render(root, { el });
+          render(root, { data, el });
         },
       }),
     );
@@ -167,6 +183,15 @@ export function render(root, { el }) {
   footer.append(
     el("span", null, `${plan.name} · ${plan.authority} · revised ${plan.revised}`),
   );
+  // Say where the default came from, so a wrong guess is obviously a guess.
+  if (!state.klass && station.license_class === active && station.license_reason) {
+    const note = el(
+      "span",
+      station.license_certain ? null : "bp-guess",
+      station.license_reason,
+    );
+    footer.append(note);
+  }
   if (plan.grandfathered) footer.append(el("span", null, plan.grandfathered));
   footer.append(el("span", "bp-disclaimer", plan.note));
   parts.push(footer);

@@ -15,6 +15,12 @@ port = 8073
 # numbers are used on this machine and in your browser, and nowhere else.
 callsign = "N0CALL"
 grid = "FN04ga"
+# Your licence class, used to default the Band Plan panel. If you leave it out,
+# it is guessed from US callsign format -- exact for a Group A call (1x2, 2x1,
+# or a 2x2 starting with A, which only an Extra may hold) and a best guess
+# otherwise, since vanity calls break the mapping. Non-US calls get no guess.
+# One of: novice, technician, general, advanced, extra
+# license_class = "general"
 # lat/lon override the grid if you want more precision than a 6-character square.
 # lat = 44.0157
 # lon = -79.4591
