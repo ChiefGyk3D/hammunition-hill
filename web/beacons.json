@@ -1,0 +1,178 @@
+{
+ "note": "NCDXF/IARU International Beacon Project. The schedule is fixed and synchronised to UTC, so this needs no network. Individual beacons may be off the air.",
+ "slot_seconds": 10,
+ "cycle_seconds": 180,
+ "bands": [
+  {
+   "index": 0,
+   "name": "20m",
+   "khz": 14100.0
+  },
+  {
+   "index": 1,
+   "name": "17m",
+   "khz": 18110.0
+  },
+  {
+   "index": 2,
+   "name": "15m",
+   "khz": 21150.0
+  },
+  {
+   "index": 3,
+   "name": "12m",
+   "khz": 24930.0
+  },
+  {
+   "index": 4,
+   "name": "10m",
+   "khz": 28200.0
+  }
+ ],
+ "beacons": [
+  {
+   "index": 0,
+   "callsign": "4U1UN",
+   "location": "United Nations, New York",
+   "grid": "FN30as",
+   "lat": 40.75,
+   "lon": -73.97
+  },
+  {
+   "index": 1,
+   "callsign": "VE8AT",
+   "location": "Inuvik, NT, Canada",
+   "grid": "CP38gh",
+   "lat": 68.38,
+   "lon": -133.72
+  },
+  {
+   "index": 2,
+   "callsign": "W6WX",
+   "location": "Mt Umunhum, California",
+   "grid": "CM97bd",
+   "lat": 37.15,
+   "lon": -121.9
+  },
+  {
+   "index": 3,
+   "callsign": "KH6RS",
+   "location": "Maui, Hawaii",
+   "grid": "BL10ts",
+   "lat": 20.79,
+   "lon": -156.46
+  },
+  {
+   "index": 4,
+   "callsign": "ZL6B",
+   "location": "Masterton, New Zealand",
+   "grid": "RE78tw",
+   "lat": -40.95,
+   "lon": 175.61
+  },
+  {
+   "index": 5,
+   "callsign": "VK6RBP",
+   "location": "Rolystone, Australia",
+   "grid": "OF87av",
+   "lat": -32.1,
+   "lon": 116.05
+  },
+  {
+   "index": 6,
+   "callsign": "JA2IGY",
+   "location": "Mt Asama, Japan",
+   "grid": "PM84jk",
+   "lat": 34.45,
+   "lon": 136.79
+  },
+  {
+   "index": 7,
+   "callsign": "RR9O",
+   "location": "Novosibirsk, Russia",
+   "grid": "NO14kx",
+   "lat": 54.98,
+   "lon": 82.89
+  },
+  {
+   "index": 8,
+   "callsign": "VR2B",
+   "location": "Hong Kong",
+   "grid": "OL72bg",
+   "lat": 22.28,
+   "lon": 114.16
+  },
+  {
+   "index": 9,
+   "callsign": "4S7B",
+   "location": "Colombo, Sri Lanka",
+   "grid": "MJ96wv",
+   "lat": 6.91,
+   "lon": 79.87
+  },
+  {
+   "index": 10,
+   "callsign": "ZS6DN",
+   "location": "Pretoria, South Africa",
+   "grid": "KG33rq",
+   "lat": -25.9,
+   "lon": 28.28
+  },
+  {
+   "index": 11,
+   "callsign": "5Z4B",
+   "location": "Kikuyu, Kenya",
+   "grid": "KI88ks",
+   "lat": -1.25,
+   "lon": 36.68
+  },
+  {
+   "index": 12,
+   "callsign": "4X6TU",
+   "location": "Tel Aviv, Israel",
+   "grid": "KM72jb",
+   "lat": 32.05,
+   "lon": 34.78
+  },
+  {
+   "index": 13,
+   "callsign": "OH2B",
+   "location": "Lohja, Finland",
+   "grid": "KP20eh",
+   "lat": 60.25,
+   "lon": 24.4
+  },
+  {
+   "index": 14,
+   "callsign": "CS3B",
+   "location": "Madeira",
+   "grid": "IM12jr",
+   "lat": 32.68,
+   "lon": -16.93
+  },
+  {
+   "index": 15,
+   "callsign": "LU4AA",
+   "location": "Buenos Aires, Argentina",
+   "grid": "GF05tj",
+   "lat": -34.62,
+   "lon": -58.38
+  },
+  {
+   "index": 16,
+   "callsign": "OA4B",
+   "location": "Lima, Peru",
+   "grid": "FH17mw",
+   "lat": -12.05,
+   "lon": -77.05
+  },
+  {
+   "index": 17,
+   "callsign": "YV5B",
+   "location": "Caracas, Venezuela",
+   "grid": "FJ69cc",
+   "lat": 10.42,
+   "lon": -66.98
+  }
+ ]
+}
