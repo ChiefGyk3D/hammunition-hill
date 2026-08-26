@@ -246,15 +246,18 @@ choice rather than a gap: chasing WebUSB would force TLS onto a LAN appliance
 for a single panel, when you are already on the same network as a real
 OpenWebRX+ or KiwiSDR you can point a tier 2 panel at.
 
-### Deferred: a Grafana version
+### Deferred: a Grafana version, as a separate project
 
-Wanted eventually, explicitly **after** parity. Recorded here so the shape is
-not re-derived later.
+Wanted eventually, explicitly **after** parity — and as its own repository
+building on this one's logic, not a mode inside it. The two have different
+shapes: this is a static-file appliance with no database and no authentication,
+and that is a poor foundation to bolt a time-series stack onto. Recorded here so
+the reasoning is not re-derived later.
 
 The good news is that a slice of it works today with no code at all: snapshots
 are already JSON served over HTTP, so Grafana's Infinity datasource can read
 `http://your-host:8073/data/solar.json` and friends directly. That covers
-current-state panels.
+current-state panels, and it needs nothing from this repository but the URL.
 
 What it does *not* cover is the thing Grafana is actually good at. **Snapshots
 have no history** — each write replaces the last, deliberately, because the
@@ -309,10 +312,15 @@ your logbook, your rig, or your antenna.
 - **[Hammunition](https://github.com/ChiefGyk3D/Hammunition)** — provisions the
   workstation this runs on.
 - **[SolarStorm Scout](https://github.com/ChiefGyk3D/solarstorm_scout)** — posts
-  NOAA space weather to Bluesky and Mastodon. It already ingests several of the
-  same SWPC products; where the parsing converges, that logic is worth
-  extracting into a shared library rather than maintaining two readings of the
-  same feed.
+  NOAA space weather to Bluesky and Mastodon. Its propagation model is the
+  pre-VOACAP indicator this roadmap calls for.
+- **[Penguin Overlord](https://github.com/ChiefGyk3D/penguin-overlord)** — a
+  Discord bot whose `radiohead` cog carries a structured ARRL band plan and
+  several SWPC products not yet wired up here.
+
+See **[docs/REUSE.md](docs/REUSE.md)** for what is worth taking from each, what
+needs fixing on the way in, and the MPL-vs-MIT question that has to be settled
+first.
 - **[VA3HDL/hamdashboard](https://github.com/VA3HDL/hamdashboard)** — the
   tile-and-iframe dashboard a lot of hams already run. Excellent at what it
   does. Config compatibility is planned for v1.0.
