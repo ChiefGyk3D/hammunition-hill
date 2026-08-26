@@ -158,6 +158,11 @@ def _check(config: Config, guard: EgressGuard, enricher: Enricher) -> int:
     if enricher.table.approximate:
         caveat = "  (approximate -- set [log] cty_dat for accuracy)"
     print(f"prefixes     : {enricher.table.source}{caveat}")
+    if config.lookup.enabled:
+        endpoint = "  + query endpoint ENABLED" if config.lookup.query_endpoint else ""
+        print(f"lookup       : {config.lookup.provider}{endpoint}")
+    else:
+        print("lookup       : none (prefix table only)")
     print(f"csp          : {build_csp(config.embed_hosts)}")
     print()
 

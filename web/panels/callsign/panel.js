@@ -16,7 +16,7 @@
 // line rather than a missing feature.
 
 import { distance, recall, remember } from "../../lib/format.js";
-import { latLonToGrid, pathTo, prefixTable } from "../../lib/callsign.js";
+import { gridToLatLon, latLonToGrid, pathTo, prefixTable } from "../../lib/callsign.js";
 
 const state = { query: recall("callsign.last", ""), table: null };
 
@@ -27,17 +27,22 @@ function field(el, label, value, extra) {
   return row;
 }
 
-function result(el, call, table, station, worked) {
+function result(el, call, table, station, worked, lookups) {
   const entity = table.lookup(call);
-  if (!entity) {
+  const detail = lookups?.results?.[call.toUpperCase()] ?? null;
+
+  if (!entity && !detail) {
     return [el("p", "empty", `no entity matches ${call.toUpperCase()}`)];
   }
 
   const parts = [];
   const head = el("div", "cs-result");
-  head.append(el("span", "cs-call", call.toUpperCase()), el("span", "cs-entity", entity.name));
+  head.append(
+    el("span", "cs-call", call.toUpperCase()),
+    el("span", "cs-entity", entity?.name ?? detail?.country ?? ""),
+  );
 
-  if (worked) {
+  if (worked && entity) {
     const isWorked = worked.entities.includes(entity.name);
     const isConfirmed = worked.confirmed.includes(entity.name);
     const label = isConfirmed ? "CONFIRMED" : isWorked ? "WORKED" : "NEW ONE";
@@ -46,29 +51,55 @@ function result(el, call, table, station, worked) {
   }
   parts.push(head);
 
-  const detail = el("div", "detail");
-  detail.append(field(el, "Continent", entity.continent ?? "—"));
-  if (entity.cqZone) detail.append(field(el, "CQ zone", String(entity.cqZone)));
-  if (entity.prefix) detail.append(field(el, "Matched", entity.prefix));
+  const rows = el("div", "detail");
 
-  const grid = latLonToGrid(entity.lat, entity.lon, 4);
-  if (grid) detail.append(field(el, "Grid", grid, "entity centre"));
+  // Provider data first when we have it -- a real name and a real grid beat an
+  // entity centroid, and that is the whole point of enabling a provider.
+  if (detail) {
+    if (detail.name) rows.append(field(el, "Name", detail.name));
+    if (detail.grid) rows.append(field(el, "Grid", detail.grid, "reported"));
+    if (detail.state) rows.append(field(el, "Location", detail.state));
+    if (detail.license_class) rows.append(field(el, "Class", detail.license_class));
+    if (detail.expires) rows.append(field(el, "Expires", detail.expires));
+  }
 
-  const path = pathTo(station, entity.lat, entity.lon);
+  if (entity) rows.append(field(el, "Continent", entity.continent ?? "—"));
+  if (entity?.cqZone) rows.append(field(el, "CQ zone", String(entity.cqZone)));
+  if (entity?.prefix) rows.append(field(el, "Matched", entity.prefix));
+
+  // Prefer the reported grid over the entity centroid for the path.
+  let lat = entity?.lat;
+  let lon = entity?.lon;
+  let pathNote = "entity centre";
+  if (detail?.grid) {
+    const fromGrid = gridToLatLon(detail.grid);
+    if (fromGrid) {
+      [lat, lon] = fromGrid;
+      pathNote = "from reported grid";
+    }
+  }
+
+  if (!detail?.grid && entity) {
+    const grid = latLonToGrid(entity.lat, entity.lon, 4);
+    if (grid) rows.append(field(el, "Grid", grid, "entity centre"));
+  }
+
+  const path = pathTo(station, lat, lon);
   if (path) {
-    detail.append(
-      field(el, "Short path", `${path.bearing}° ${path.compass}`),
+    rows.append(
+      field(el, "Short path", `${path.bearing}° ${path.compass}`, pathNote),
       field(el, "Long path", `${path.bearing_long}°`),
       field(el, "Distance", distance(path)),
     );
   } else {
-    detail.append(field(el, "Path", "set [station] grid in config for headings"));
+    rows.append(field(el, "Path", "set [station] grid in config for headings"));
   }
 
-  if (table.approximate) {
-    detail.append(field(el, "Note", "built-in prefix table — approximate"));
+  if (!detail && table.approximate) {
+    rows.append(field(el, "Note", "built-in prefix table — approximate"));
   }
-  parts.push(detail);
+  if (detail) rows.append(field(el, "Source", detail.source));
+  parts.push(rows);
   return parts;
 }
 
@@ -82,6 +113,7 @@ export function render(root, { data, el }) {
 
   const station = data.station?.data ?? {};
   const worked = data.log?.data?.worked ?? null;
+  const lookups = data.lookups?.data ?? null;
 
   const parts = [];
 
@@ -109,12 +141,15 @@ export function render(root, { data, el }) {
 
   const query = state.query.trim();
   if (query.length >= 2) {
-    parts.push(...result(el, query, state.table, station, worked));
+    parts.push(...result(el, query, state.table, station, worked, lookups));
   } else {
     parts.push(el("p", "empty", "type a callsign — resolved locally, nothing is sent anywhere"));
   }
 
-  const foot = el("p", "count", `${state.table.size} prefixes · ${state.table.source}`);
+  const detail = lookups
+    ? ` · ${lookups.resolved} resolved via ${lookups.provider}`
+    : " · no lookup provider";
+  const foot = el("p", "count", `${state.table.size} prefixes${detail}`);
   parts.push(foot);
 
   root.replaceChildren(...parts);

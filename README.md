@@ -22,6 +22,7 @@ monitor above it — the high ground you watch the bands from.
 | **[Security](docs/SECURITY.md)** | The threat model, and why there is no login. **Read before exposing it to anything.** |
 | **[Architecture](docs/ARCHITECTURE.md)** | How it works and why it is shaped this way. |
 | **[Writing panels](docs/PANELS.md)** | The panel contract. |
+| **[Callsign lookup](docs/CALLSIGN-LOOKUP.md)** | Provider options, trade-offs, and the architectural line. |
 | **[Reuse audit](docs/REUSE.md)** | What is worth borrowing from the sibling projects. |
 
 ---
@@ -219,13 +220,41 @@ It resolves **instantly and entirely on your machine.** The collector publishes
 its prefix table as a snapshot; the browser does the lookup itself. The callsign
 you typed never leaves the machine, and no request is made per lookup.
 
-**What it deliberately does not do** is name-and-address lookup. That needs a
-third-party service (QRZ, HamQTH, callook) and a request per callsign, which
-would mean either an HTTP endpoint that accepts input — the one thing this
-architecture exists to avoid — or the browser talking directly to a third party,
-which leaks every callsign you look at and breaks the CSP. Neither is a small
-change, so it is a decision rather than a missing feature. See
-[ARCHITECTURE.md](docs/ARCHITECTURE.md) for the reasoning.
+### Adding name and licence detail
+
+Name, grid, and licence class need a data source that knows about people rather
+than prefixes. That is opt-in, because every option costs something and which
+cost is acceptable is your call:
+
+| Provider | Cost | Coverage |
+|---|---|---|
+| `none` *(default)* | nothing leaves the machine | entity, heading, distance, worked status |
+| `fcc_uls` | ~160 MB weekly download | US — **no per-lookup network at all** |
+| `callook` | one request per callsign | US, free, no account |
+| `hamqth` | account + a request per callsign | worldwide, free |
+| `qrz` | paid subscription + a request per callsign | worldwide, best data |
+
+```toml
+[lookup]
+provider = "callook"
+```
+
+**Resolution is scheduled, not on demand.** The collector works through
+callsigns that already appear in your spots and decodes, capped and cached, so
+no request causes a fetch and the architecture holds. That answers "who is this
+station I am seeing", which is what a dashboard is actually asked.
+
+Looking up *arbitrary* callsigns needs an endpoint that accepts input — the one
+thing this design avoids — so it is separately opt-in
+(`query_endpoint = true`), off by default, and deliberately the narrowest
+endpoint that can do the job: GET only, local index only, strictly validated,
+rate limited, and unable to cause an outbound request.
+
+With a network provider, **the callsigns you are watching go to that provider.**
+That is inherent. `fcc_uls` is the option where nothing leaves the machine.
+
+Full analysis, including why there is no fourth way:
+**[docs/CALLSIGN-LOOKUP.md](docs/CALLSIGN-LOOKUP.md)**.
 
 ## Callsign resolution
 
