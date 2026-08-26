@@ -1,3 +1,7 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """Band plan data validation.
 
 The band plans are hand-edited JSON, which is the point -- correcting one should
@@ -205,8 +209,78 @@ def test_band_edges_agree_with_the_classifier(plan_items):
 
 
 # --- US specifics -------------------------------------------------------
-def test_us_plan_has_the_three_current_classes(plans):
-    assert [c["id"] for c in plans["us"]["classes"]] == ["technician", "general", "extra"]
+def test_us_plan_has_all_five_classes_least_to_most(plans):
+    assert [c["id"] for c in plans["us"]["classes"]] == [
+        "novice", "technician", "general", "advanced", "extra",
+    ]
+
+
+def test_grandfathered_classes_are_marked(plans):
+    """Novice and Advanced are closed to new issue; the UI says so."""
+    grandfathered = {c["id"] for c in plans["us"]["classes"] if c.get("grandfathered")}
+    assert grandfathered == {"novice", "advanced"}
+
+
+def test_us_novice_hf_is_cw_only_below_10m(plans):
+    for band_name in ("80m", "40m", "15m"):
+        band = next(b for b in plans["us"]["bands"] if b["band"] == band_name)
+        novice = [s for s in band["segments"] if "novice" in s["classes"]]
+        assert novice, band_name
+        assert all(s["modes"] == ["CW"] for s in novice), band_name
+
+
+def test_us_novice_has_no_hf_phone_except_ten_metres(plans):
+    """Novice phone exists only in the 28.3-28.5 MHz window."""
+    for band in plans["us"]["bands"]:
+        if band["band"] in ("6m", "2m", "1.25m", "70cm", "33cm", "23cm", "10m"):
+            continue
+        for segment in band["segments"]:
+            if "novice" in segment["classes"]:
+                assert "Phone" not in segment["modes"], band["band"]
+
+
+def test_us_novice_vhf_is_only_222_and_23cm(plans):
+    """Novice above HF is 222-225 MHz and a slice of 23cm -- not 6m, 2m or 70cm."""
+    for band_name in ("6m", "2m", "70cm", "33cm"):
+        band = next(b for b in plans["us"]["bands"] if b["band"] == band_name)
+        assert all("novice" not in s["classes"] for s in band["segments"]), band_name
+    for band_name in ("1.25m", "23cm"):
+        band = next(b for b in plans["us"]["bands"] if b["band"] == band_name)
+        assert any("novice" in s["classes"] for s in band["segments"]), band_name
+
+
+def test_us_advanced_sits_between_general_and_extra(plans):
+    """Advanced gets phone below General's edge but not Extra's bottom slice."""
+    plan = plans["us"]
+    twenty = next(b for b in plan["bands"] if b["band"] == "20m")
+
+    extra_only = [s for s in twenty["segments"] if s["classes"] == ["extra"]]
+    assert any(s["khz"] == [14150, 14175] for s in extra_only)
+
+    adv = [s for s in twenty["segments"] if s["classes"] == ["advanced", "extra"]]
+    assert any(s["khz"] == [14175, 14225] for s in adv)
+
+    gen = [s for s in twenty["segments"] if s["classes"] == ["general", "advanced", "extra"]]
+    assert any(s["khz"] == [14225, 14350] for s in gen)
+
+
+def test_us_advanced_never_has_a_privilege_extra_lacks(plans):
+    """Extra is a superset of every other class."""
+    plan = plans["us"]
+    for band in plan["bands"]:
+        for segment in band["segments"]:
+            if segment["classes"] != ["extra"]:
+                assert "extra" in segment["classes"], f"{band['band']} {segment['khz']}"
+
+
+def test_us_technician_is_a_superset_of_novice_on_hf(plans):
+    """Technicians received the Novice HF segments; nothing should be Novice-only there."""
+    for band in plans["us"]["bands"]:
+        if band["band"] in ("1.25m", "23cm"):
+            continue  # Novice VHF differs from Technician's; not a superset there.
+        for segment in band["segments"]:
+            if "novice" in segment["classes"]:
+                assert "technician" in segment["classes"], f"{band['band']} {segment['khz']}"
 
 
 def test_us_technician_has_no_160m(plans):

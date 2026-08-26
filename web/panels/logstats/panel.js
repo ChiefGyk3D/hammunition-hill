@@ -1,3 +1,7 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 // What the log index knows. This is the panel that tells an operator whether
 // "needed" colouring can be trusted -- if the prefix table is the built-in one,
 // the entity resolution is approximate and this says so.

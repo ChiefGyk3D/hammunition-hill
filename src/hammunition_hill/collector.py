@@ -1,3 +1,7 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """The collector: fixed schedule in, snapshot files out.
 
 Three kinds of work, all writing the same snapshot files:
@@ -164,7 +168,17 @@ async def _stream_loop(
             }
         _write(config, cfg, payload, STREAM_STALE_SECONDS)
 
-    await stream.run(cfg, emit)
+    try:
+        await stream.run(cfg, emit)
+    except asyncio.CancelledError:
+        raise
+    except Exception as exc:  # noqa: BLE001 - one bad stream must not end the run
+        # Streams retry internally; reaching here means setup failed in a way
+        # retrying cannot fix (a bad config, an unusable address). Record it and
+        # let every other source carry on -- and the dashboard keep serving.
+        reason = f"{type(exc).__name__}: {exc}"
+        log.error("stream %s stopped: %s", cfg.id, reason)
+        _write_failure(config, cfg, reason, STREAM_STALE_SECONDS)
 
 
 # --- entry point ----------------------------------------------------------

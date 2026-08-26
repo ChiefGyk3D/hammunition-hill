@@ -1,3 +1,7 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """Callsign to DXCC entity, continent, and approximate coordinates.
 
 Two sources, in order of preference:
@@ -305,6 +309,27 @@ class PrefixTable:
         if not entries:
             raise ValueError("no usable records")
         self._prefixes = sorted(entries, key=lambda row: -len(row[0]))
+
+    def export(self) -> dict[str, object]:
+        """The table in a form the browser can do its own lookups against.
+
+        Published as a snapshot so the callsign panel resolves locally and
+        instantly, with no request per lookup -- which also means the collector
+        keeps its "no request-driven work" property. Entries are longest-first,
+        so the browser's match is the same linear scan this class does.
+        """
+        return {
+            "source": self._source,
+            "approximate": self.approximate,
+            "exact": {
+                call: [e.name, e.continent, e.lat, e.lon, e.cq_zone]
+                for call, e in self._exact.items()
+            },
+            "prefixes": [
+                [prefix, e.name, e.continent, e.lat, e.lon, e.cq_zone]
+                for prefix, e in self._prefixes
+            ],
+        }
 
     def lookup(self, callsign: str) -> Entity | None:
         """Resolve a callsign, longest matching prefix wins."""

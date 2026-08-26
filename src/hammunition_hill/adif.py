@@ -1,3 +1,7 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """ADIF log parsing and the worked/needed index.
 
 This is the feature a hosted dashboard structurally cannot have. Your log is on
@@ -147,6 +151,19 @@ class LogIndex:
             "new_mode": bool(group) and (entity, group) not in self.entity_mode,
             "confirmed": entity in self.confirmed_entities,
             "known": True,
+        }
+
+
+    def worked_summary(self) -> dict[str, object]:
+        """Worked and confirmed entities, for the callsign panel.
+
+        Entity names only -- a few hundred strings. The per-band and per-mode
+        slots stay server-side; publishing those would be a much larger payload
+        for a panel that only needs "have I worked this place".
+        """
+        return {
+            "entities": sorted(self.entities),
+            "confirmed": sorted(self.confirmed_entities),
         }
 
 

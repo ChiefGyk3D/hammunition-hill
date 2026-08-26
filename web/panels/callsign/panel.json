@@ -1,0 +1,8 @@
+{
+  "id": "callsign",
+  "name": "Callsign Lookup",
+  "tier": 1,
+  "sources": ["prefixes", "log", "station"],
+  "embed_hosts": [],
+  "description": "Resolve a callsign to its DXCC entity, beam heading, and distance — instantly, entirely on your own machine."
+}

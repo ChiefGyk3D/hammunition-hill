@@ -1,3 +1,7 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 // Tier 0: privileges by licence class.
 //
 // The plan is a static JSON file that ships with the dashboard, so this panel
@@ -35,6 +39,12 @@ function chipRow(el, { items, active, onPick }) {
   for (const item of items) {
     const chip = el("button", "chip", item.label);
     chip.type = "button";
+    // Novice and Advanced are closed to new issue; a dashed chip says so
+    // without spending a whole line of the panel on it.
+    if (item.grandfathered) {
+      chip.classList.add("grandfathered");
+      chip.title = "Closed to new issue — existing holders keep their privileges";
+    }
     if (item.id === active) chip.classList.add("on");
     chip.setAttribute("aria-pressed", String(item.id === active));
     chip.addEventListener("click", () => onPick(item.id));
@@ -118,7 +128,11 @@ export function render(root, { el }) {
   const controls = el("div", "filters");
   controls.append(
     chipRow(el, {
-      items: classes.map((c) => ({ id: c.id, label: c.name })),
+      items: classes.map((c) => ({
+        id: c.id,
+        label: c.name,
+        grandfathered: c.grandfathered,
+      })),
       active,
       onPick: (id) => {
         state.klass = id;
@@ -152,8 +166,9 @@ export function render(root, { el }) {
   const footer = el("p", "bp-footer");
   footer.append(
     el("span", null, `${plan.name} · ${plan.authority} · revised ${plan.revised}`),
-    el("span", "bp-disclaimer", plan.note),
   );
+  if (plan.grandfathered) footer.append(el("span", null, plan.grandfathered));
+  footer.append(el("span", "bp-disclaimer", plan.note));
   parts.push(footer);
 
   root.replaceChildren(...parts);

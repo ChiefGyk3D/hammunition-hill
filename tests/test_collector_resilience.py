@@ -1,0 +1,159 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+"""One bad source must never take the collector down.
+
+Regression tests for a real failure: a UDP bind conflict on the WSJT-X port
+propagated out of the stream task, through the TaskGroup, and killed every other
+source *and* the HTTP server. A port conflict is an ordinary operator situation
+-- a second instance, or GridTracker already listening -- and the rest of the
+dashboard has no business caring.
+"""
+
+import asyncio
+
+import pytest
+
+from hammunition_hill.collector import _stream_loop
+from hammunition_hill.config import Config, ServerConfig, SourceConfig
+from hammunition_hill.egress import EgressGuard
+from hammunition_hill.enrich import Enricher, Station
+from hammunition_hill.prefix import PrefixTable
+from hammunition_hill.snapshot import read_snapshot
+
+
+@pytest.fixture
+def config(tmp_path):
+    return Config(
+        server=ServerConfig(),
+        sources=(),
+        data_dir=tmp_path / "data",
+        web_dir=tmp_path / "web",
+    )
+
+
+@pytest.fixture
+def enricher():
+    return Enricher(PrefixTable(None), Station.from_config({"grid": "FN31pr"}))
+
+
+@pytest.fixture
+def guard():
+    return EgressGuard.build({"127.0.0.1"}, {"127.0.0.1"})
+
+
+def source(kind="wsjtx", url="udp://127.0.0.1:2237"):
+    return SourceConfig(id="stream", kind=kind, url=url, local=True)
+
+
+async def test_a_stream_that_raises_does_not_propagate(config, guard, enricher, monkeypatch):
+    """The exact shape of the bug: setup fails, and the failure escapes."""
+
+    class Exploding:
+        async def run(self, cfg, emit):
+            raise OSError(98, "Address already in use")
+
+    monkeypatch.setattr("hammunition_hill.collector.build_stream", lambda kind: Exploding())
+    # Must return, not raise.
+    await _stream_loop(guard, source(), config, enricher)
+
+
+async def test_the_failure_is_recorded_as_a_snapshot(config, guard, enricher, monkeypatch):
+    """A dead stream shows up in the UI rather than vanishing silently."""
+
+    class Exploding:
+        async def run(self, cfg, emit):
+            raise OSError(98, "Address already in use")
+
+    monkeypatch.setattr("hammunition_hill.collector.build_stream", lambda kind: Exploding())
+    await _stream_loop(guard, source(), config, enricher)
+
+    snapshot = read_snapshot(config.data_dir, "stream")
+    assert snapshot is not None
+    assert "Address already in use" in snapshot["error"]
+
+
+async def test_cancellation_still_propagates(config, guard, enricher, monkeypatch):
+    """Shutdown must not be swallowed by the catch-all."""
+
+    class Hanging:
+        async def run(self, cfg, emit):
+            await asyncio.Event().wait()
+
+    monkeypatch.setattr("hammunition_hill.collector.build_stream", lambda kind: Hanging())
+    task = asyncio.create_task(_stream_loop(guard, source(), config, enricher))
+    await asyncio.sleep(0)
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+
+
+async def test_a_denied_stream_never_starts(config, enricher, monkeypatch):
+    """Egress policy is checked before the stream is built, not after."""
+    built = False
+
+    def build(kind):
+        nonlocal built
+        built = True
+        raise AssertionError("should not be reached")
+
+    monkeypatch.setattr("hammunition_hill.collector.build_stream", build)
+    closed = EgressGuard.build(set(), set())
+    await _stream_loop(closed, source(), config, enricher)
+
+    assert not built
+    assert "EgressDenied" in read_snapshot(config.data_dir, "stream")["error"]
+
+
+async def test_sibling_sources_survive_a_failing_stream(config, guard, enricher, monkeypatch):
+    """The property that actually matters: everything else keeps running."""
+    survivor_ticks = 0
+
+    class Exploding:
+        async def run(self, cfg, emit):
+            raise OSError(98, "Address already in use")
+
+    async def survivor():
+        nonlocal survivor_ticks
+        for _ in range(3):
+            survivor_ticks += 1
+            await asyncio.sleep(0)
+
+    monkeypatch.setattr("hammunition_hill.collector.build_stream", lambda kind: Exploding())
+
+    async with asyncio.TaskGroup() as group:
+        group.create_task(_stream_loop(guard, source(), config, enricher))
+        group.create_task(survivor())
+
+    assert survivor_ticks == 3
+
+
+# --- station snapshot ---------------------------------------------------
+def test_station_snapshot_carries_derived_coordinates(config, enricher):
+    """Panels compute bearings client-side and need lat/lon, not just a grid.
+
+    Regression: the snapshot published the raw config table, so the callsign
+    panel had a grid square it could not turn into a heading.
+    """
+    from hammunition_hill.cli import _publish_station
+
+    _publish_station(config, enricher)
+    data = read_snapshot(config.data_dir, "station")["data"]
+
+    assert data["grid"] == "FN31PR"
+    assert data["located"] is True
+    assert data["lat"] == pytest.approx(41.73, abs=0.05)
+    assert data["lon"] == pytest.approx(-72.71, abs=0.05)
+
+
+def test_station_snapshot_without_a_grid_says_so(config):
+    """A station with no location must be explicit, not silently zeroed."""
+    from hammunition_hill.cli import _publish_station
+
+    plain = Enricher(PrefixTable(None), Station.from_config({"callsign": "N0CALL"}))
+    _publish_station(config, plain)
+    data = read_snapshot(config.data_dir, "station")["data"]
+
+    assert data["located"] is False
+    assert data["lat"] is None

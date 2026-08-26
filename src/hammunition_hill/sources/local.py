@@ -1,3 +1,7 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """Sources that read a local file rather than making a request.
 
 The ADIF log is the obvious one, and the reason the project exists in this
@@ -59,6 +63,7 @@ class AdifLogSource:
             "mode_slots": len(index.entity_mode),
             "unresolved": index.unresolved,
             "prefix_source": "cty.dat" if not enricher.table.approximate else "built-in",
+            "worked": index.worked_summary(),
         }
 
 

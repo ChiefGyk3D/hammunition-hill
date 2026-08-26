@@ -9,6 +9,11 @@ changing on the way in, and the licence question that goes with it.
 - **[penguin-overlord](https://github.com/ChiefGyk3D/penguin-overlord)** — a
   Discord bot whose `radiohead` cog is 2,600 lines of amateur radio features.
 
+> **Settled:** Hammunition Hill is now MPL-2.0, matching both siblings. Logic
+> ports by copy-paste with headers intact, and there is no per-file bookkeeping
+> or mixed-licence explanation to maintain. The analysis below is kept for the
+> record.
+
 ## Licence: not quite "no issues", but close
 
 Both repositories are **MPL-2.0**, not MIT. MPL is *file-level* copyleft: copy an
@@ -139,7 +144,7 @@ within one cycle.
 
 ## Suggested order
 
-1. Settle the licence question. Nothing ports before this.
+1. ~~Settle the licence question.~~ Done — MPL-2.0 throughout.
 2. Aurora and the NOAA scales — small, closes a parity gap.
 3. The propagation model, with the solar-zenith fix. Closes the largest gap.
 4. The band plan panel as tier 0 reference data.

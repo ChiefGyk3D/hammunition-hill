@@ -1,3 +1,7 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 // Items arrive as plain text with http(s)-only links -- the collector strips
 // markup and rejects other schemes before writing the snapshot. Rendering with
 // textContent keeps that guarantee end to end.

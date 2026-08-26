@@ -1,3 +1,7 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 // POTA and SOTA in one list. Both programs answer the same operator question --
 // "who is out there right now and what can I work?" -- so splitting them across
 // two panels just makes you look twice.

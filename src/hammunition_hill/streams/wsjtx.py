@@ -1,3 +1,7 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """WSJT-X UDP broadcasts.
 
 WSJT-X can multicast every decode, status change, and logged QSO to a UDP port
@@ -23,6 +27,8 @@ from collections import deque
 from datetime import UTC, datetime
 from typing import Any
 from urllib.parse import urlsplit
+
+from .base import with_reconnect
 
 log = logging.getLogger(__name__)
 
@@ -206,17 +212,23 @@ class WsjtxStream:
         port = parts.port or DEFAULT_PORT
         flush_interval = float(cfg.options.get("flush_seconds", 5))
 
-        loop = asyncio.get_running_loop()
-        transport, _ = await loop.create_datagram_endpoint(
-            lambda: _Protocol(self._handle), local_addr=(host, port), reuse_port=False
-        )
-        log.info("%s: listening for WSJT-X on %s:%d", cfg.id, host, port)
+        async def listen() -> None:
+            # The bind lives inside the retry loop on purpose. "Address already
+            # in use" is an ordinary situation -- a second instance, or another
+            # WSJT-X consumer such as GridTracker already holding the port --
+            # and it must not be fatal to anything but this one source.
+            loop = asyncio.get_running_loop()
+            transport, _ = await loop.create_datagram_endpoint(
+                lambda: _Protocol(self._handle), local_addr=(host, port), reuse_port=False
+            )
+            log.info("%s: listening for WSJT-X on %s:%d", cfg.id, host, port)
+            try:
+                while True:
+                    await asyncio.sleep(flush_interval)
+                    if self._dirty:
+                        await emit(self.snapshot())
+                        self._dirty = False
+            finally:
+                transport.close()
 
-        try:
-            while True:
-                await asyncio.sleep(flush_interval)
-                if self._dirty:
-                    await emit(self.snapshot())
-                    self._dirty = False
-        finally:
-            transport.close()
+        await with_reconnect(cfg.id, listen)

@@ -8,10 +8,21 @@ turns a Debian-family install into an amateur radio, SDR, and RF workstation.
 Hammunition builds the shack computer; Hammunition Hill is what you put on the
 monitor above it — the high ground you watch the bands from.
 
-> **Status: v0.3, early but real.** Collector, server, ten panels, DX cluster,
-> POTA/SOTA, contests, rig control, WSJT-X, and log-driven needed-slot colouring
-> all work end to end. VOACAP and satellite passes are still ahead. See
-> [the roadmap](#roadmap).
+> **Status: alpha.** Twelve panels work end to end — DX cluster, POTA/SOTA,
+> contests, rig control, WSJT-X, band plan, callsign lookup, and log-driven
+> needed-slot colouring. Greyline, weather alerts, aurora, and VOACAP are still
+> ahead of parity. Expect rough edges and breaking config changes.
+
+### Documentation
+
+| | |
+|---|---|
+| **[Install](docs/INSTALL.md)** | Get it running, on a Pi or anywhere else. Start here. |
+| **[Configuration](docs/CONFIGURATION.md)** | Every option, every source kind. |
+| **[Security](docs/SECURITY.md)** | The threat model, and why there is no login. **Read before exposing it to anything.** |
+| **[Architecture](docs/ARCHITECTURE.md)** | How it works and why it is shaped this way. |
+| **[Writing panels](docs/PANELS.md)** | The panel contract. |
+| **[Reuse audit](docs/REUSE.md)** | What is worth borrowing from the sibling projects. |
 
 ---
 
@@ -151,8 +162,8 @@ single panel, when you are already on the same network as a real
 
 ## Band plans
 
-Pick Technician, General, or Amateur Extra and the panel shows what that class
-may actually use — segment by segment, with modes and the power limits that
+Pick Novice, Technician, General, Advanced, or Amateur Extra and the panel
+shows what that class may actually use — segment by segment, with modes and the power limits that
 apply. Bands with no privileges for the selected class are greyed out rather
 than hidden, so the shape of what you gain by upgrading is visible.
 
@@ -178,8 +189,27 @@ grows a country selector automatically once there is more than one to choose
 from. **US only for now** — the structure is already country-agnostic, so an
 IARU Region 1 or Region 3 plan is a data contribution rather than a code change.
 
-Novice and Advanced are deliberately omitted: both are closed to new issue, and
-grandfathered holders are better served by Part 97 directly than by a summary.
+Novice and Advanced are included — both are closed to new issue, but existing
+holders keep their privileges, so both appear with a dashed chip marking them as
+grandfathered.
+
+## Callsign lookup
+
+Type a callsign and get its DXCC entity, continent, CQ zone, short and long path
+headings, distance, and — if your log is loaded — whether you have worked that
+entity and whether it is confirmed.
+
+It resolves **instantly and entirely on your machine.** The collector publishes
+its prefix table as a snapshot; the browser does the lookup itself. The callsign
+you typed never leaves the machine, and no request is made per lookup.
+
+**What it deliberately does not do** is name-and-address lookup. That needs a
+third-party service (QRZ, HamQTH, callook) and a request per callsign, which
+would mean either an HTTP endpoint that accepts input — the one thing this
+architecture exists to avoid — or the browser talking directly to a third party,
+which leaks every callsign you look at and breaks the CSP. Neither is a small
+change, so it is a decision rather than a missing feature. See
+[ARCHITECTURE.md](docs/ARCHITECTURE.md) for the reasoning.
 
 ## Callsign resolution
 
@@ -240,6 +270,7 @@ Shipping now:
 | **Solar & Space Weather** | 1 | SFI, A, K, sunspots, GOES X-ray class |
 | **Band Conditions** | 1 | HamQSL HF conditions, day and night |
 | **Band Plan** | 0 | Which frequencies your licence class may use, by band and mode |
+| **Callsign Lookup** | 1 | Entity, beam heading, distance, and whether you have worked it |
 | **DX Cluster** | 1 | Live spots, filtered by band/mode/continent, coloured by what you need |
 | **POTA & SOTA** | 1 | Park and summit activations, merged and sorted by band |
 | **WSJT-X** | 1 | Live decodes and status |
@@ -352,8 +383,8 @@ your logbook, your rig, or your antenna.
   several SWPC products not yet wired up here.
 
 See **[docs/REUSE.md](docs/REUSE.md)** for what is worth taking from each, what
-needs fixing on the way in, and the MPL-vs-MIT question that has to be settled
-first.
+needs fixing on the way in. The licence question is settled: this project is
+MPL-2.0, matching both siblings, so logic ports by copy-paste.
 - **[VA3HDL/hamdashboard](https://github.com/VA3HDL/hamdashboard)** — the
   tile-and-iframe dashboard a lot of hams already run. Excellent at what it
   does. Config compatibility is planned for v1.0.
@@ -375,4 +406,13 @@ the collector instead.
 
 ## License
 
-MIT. See [LICENSE](LICENSE).
+**MPL-2.0.** See [LICENSE](LICENSE).
+
+Mozilla Public License 2.0 is weak, file-level copyleft: you can use this
+alongside proprietary code and consumers are not affected, but improvements to
+these files come back. It also matches
+[Hammunition](https://github.com/ChiefGyk3D/Hammunition),
+[SolarStorm Scout](https://github.com/ChiefGyk3D/solarstorm_scout), and
+[Penguin Overlord](https://github.com/ChiefGyk3D/penguin-overlord), so logic can
+move between the four projects by copy-paste — no per-file licence bookkeeping,
+no mixed-licence explanation.

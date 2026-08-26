@@ -1,3 +1,7 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """RSS and Atom feeds, parsed here rather than in the browser.
 
 VA3HDL's dashboard routes feeds through api.rss2json.com. That hands a third

@@ -315,3 +315,30 @@ ul.decodes li { display: flex; gap: 9px; padding: 2px 0; }
   border-top: 1px solid var(--rule);
 }
 .bp-disclaimer { color: var(--fair); }
+
+/* --- callsign lookup -------------------------------------------------- */
+.cs-form { margin-bottom: 10px; }
+.cs-input {
+  width: 100%;
+  background: var(--panel-2);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 14px;
+  letter-spacing: .06em;
+  padding: 7px 10px;
+  text-transform: uppercase;
+}
+.cs-input::placeholder { color: var(--muted); text-transform: none; letter-spacing: 0; }
+.cs-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.cs-result { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+.cs-call { font-family: var(--mono); font-size: 17px; font-weight: 600; }
+.cs-entity { font-family: var(--mono); font-size: 13px; color: var(--accent); }
+.cs-extra { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+.need-badge.cs-new { background: var(--poor); color: #fff; }
+.need-badge.cs-worked { background: var(--fair); color: var(--ground); }
+.need-badge.cs-confirmed { background: var(--good); color: var(--ground); }
+
+/* --- band plan: grandfathered classes --------------------------------- */
+.chip.grandfathered { border-style: dashed; }

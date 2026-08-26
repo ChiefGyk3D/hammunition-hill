@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Local-first ham radio dashboard with a snapshot architecture and no inbound attack surface"
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "MIT" }
+license = { text = "MPL-2.0" }
 authors = [{ name = "ChiefGyk3D" }]
 keywords = ["ham-radio", "amateur-radio", "dashboard", "propagation", "space-weather"]
 

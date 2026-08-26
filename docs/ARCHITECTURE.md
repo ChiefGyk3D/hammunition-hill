@@ -121,6 +121,54 @@ absent and sometimes disagree between logging programs, and using them would giv
 than authority: if the prefix table is wrong about an entity, it is wrong the
 same way on both sides and the comparison still holds.
 
+## The request-driven line
+
+Some features want the server to do work *because a person asked*, right then.
+That is the one thing this architecture does not do, so it is worth being
+explicit about where the line falls and what it costs.
+
+**Two features sit on it.**
+
+### Callsign lookup
+
+Resolving a callsign to an entity, heading, and distance needs no request at
+all: the collector publishes its prefix table as a snapshot and the browser does
+the lookup itself. Instant, offline, and the callsign never leaves the machine.
+
+Resolving one to a *name and address* is different. It needs a third-party
+service — QRZ, HamQTH, callook — and one request per callsign. There are three
+ways to get that, and all three cost something real:
+
+| | Cost |
+|---|---|
+| An HTTP endpoint that takes a callsign | The server starts parsing input, and a request can steer an outbound fetch. This is the property everything else rests on. |
+| The browser calling the service directly | Requires opening `connect-src`, leaks every callsign you look at to a third party, and puts their JavaScript-shaped responses in your page. |
+| Pre-fetching lookups for calls seen in spots | Keeps the schedule fixed and bounded. Covers "who is this station I am seeing", which is most of the real use. Does not cover "look up an arbitrary call". |
+
+The third is the only one that fits, and it is a reasonable v0.5 feature. The
+first two are not small changes dressed up as features — they are changes to
+what this program *is*.
+
+### Logging QSOs
+
+A logger has to write, and writing means an endpoint that accepts input, which
+means authentication, which means the entire security model this project is
+built around stops applying. It also means owning someone's log data, which is
+a much heavier responsibility than displaying it.
+
+The honest shape, if it is wanted: a **separate program** that writes the log,
+with Hammunition Hill reading the resulting ADIF as it already does. That keeps
+the dashboard read-only and the logger's threat model where it belongs. WSJT-X
+already works exactly this way — it logs, we watch its UDP broadcast.
+
+### The general rule
+
+If a feature needs the server to react to a request, it either belongs in the
+collector on a schedule, in the browser with data already published, or in a
+different program. Adding an endpoint is not off the table forever, but it is a
+decision about the project's identity rather than a feature increment, and it
+should be made deliberately.
+
 ## Modules
 
 | Module | Responsibility |

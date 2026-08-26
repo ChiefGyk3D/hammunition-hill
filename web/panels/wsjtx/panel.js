@@ -1,3 +1,7 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 // WSJT-X decodes, straight off the local UDP broadcast.
 //
 // Listen-only: the collector binds a socket and never sends. WSJT-X's protocol

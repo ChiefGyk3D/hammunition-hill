@@ -1,3 +1,7 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """Frequency to band, and the band-plan segments that imply a mode.
 
 A DX cluster spot carries a frequency in kHz and, usually, nothing else machine

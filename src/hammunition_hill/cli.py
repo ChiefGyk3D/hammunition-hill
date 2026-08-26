@@ -1,3 +1,7 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """Command line entry point."""
 
 from __future__ import annotations
@@ -53,12 +57,16 @@ def _parse_listen(value: str) -> ServerConfig:
     return ServerConfig(host=host, port=port)
 
 
-def _publish_station(config: Config) -> None:
+def _publish_station(config: Config, enricher: Enricher) -> None:
     """Write station details as a snapshot so web/ needs no templating.
 
-    Callsign and grid never leave the browser -- tier 0 panels use them for
-    bearing, distance, and greyline entirely client-side.
+    Publishes the *derived* station, including the coordinates worked out from
+    the grid square -- panels that compute bearings need lat/lon, and making
+    each of them re-parse the grid would be three copies of the same maths.
+
+    None of this leaves the machine. It is used here and in the browser.
     """
+    station = enricher.station
     write_snapshot(
         config.data_dir,
         Snapshot(
@@ -66,7 +74,13 @@ def _publish_station(config: Config) -> None:
             kind="station",
             fetched_at=datetime.now(UTC),
             stale_after_seconds=0,
-            data=dict(config.station),
+            data={
+                "callsign": station.callsign,
+                "grid": station.grid,
+                "lat": station.lat,
+                "lon": station.lon,
+                "located": station.located,
+            },
         ),
     )
 
@@ -82,8 +96,27 @@ def build_enricher(config: Config) -> Enricher:
     return Enricher(table, station)
 
 
+def _publish_prefixes(config: Config, enricher: Enricher) -> None:
+    """Publish the prefix table so the browser can resolve callsigns itself.
+
+    Written once at startup: the table only changes when cty.dat does, and a
+    restart is the natural moment to pick that up.
+    """
+    write_snapshot(
+        config.data_dir,
+        Snapshot(
+            source_id="prefixes",
+            kind="prefixes",
+            fetched_at=datetime.now(UTC),
+            stale_after_seconds=0,
+            data=enricher.table.export(),
+        ),
+    )
+
+
 def _serve(config: Config, guard: EgressGuard, enricher: Enricher) -> int:
-    _publish_station(config)
+    _publish_station(config, enricher)
+    _publish_prefixes(config, enricher)
     server = build_server(config)
     bind = f"{config.server.host}:{config.server.port}"
 

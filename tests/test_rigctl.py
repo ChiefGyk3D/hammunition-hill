@@ -1,3 +1,7 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 """rigctld reply parsing. Read-only by design -- there is no set path to test."""
 
 from hammunition_hill.streams import STREAM_KINDS, build_stream, is_stream

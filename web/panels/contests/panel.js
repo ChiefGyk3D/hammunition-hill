@@ -1,3 +1,7 @@
+// This Source Code Form is subject to the terms of the Mozilla Public
+// License, v. 2.0. If a copy of the MPL was not distributed with this
+// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 // Upcoming contests. A contest that is running right now is the one piece of
 // information here with any urgency, so it gets its own treatment rather than
 // just being the first row.
