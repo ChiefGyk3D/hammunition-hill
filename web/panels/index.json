@@ -23,6 +23,16 @@
       ]
     },
     {
+      "id": "spacewx",
+      "name": "Space Weather",
+      "panels": [
+        "solar",
+        "geomag",
+        "spacewx",
+        "bandconditions"
+      ]
+    },
+    {
       "id": "operating",
       "name": "Operating",
       "panels": [

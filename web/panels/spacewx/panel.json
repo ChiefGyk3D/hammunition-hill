@@ -1,0 +1,9 @@
+{
+  "id": "spacewx",
+  "name": "NOAA Scales & Alerts",
+  "tier": 1,
+  "sources": ["scales", "alerts", "aurora"],
+  "embed_hosts": [],
+  "span": 2,
+  "description": "NOAA's own R/S/G storm scales and the watches and warnings SWPC has issued."
+}
