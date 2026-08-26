@@ -125,3 +125,35 @@ export function latLonToGrid(lat, lon, precision = 6) {
   }
   return grid;
 }
+
+/** Maidenhead to lat/lon centre, mirroring geo.grid_to_latlon. */
+export function gridToLatLon(grid) {
+  const text = String(grid ?? "").trim().toUpperCase();
+  if (!/^[A-R]{2}([0-9]{2}([A-X]{2}([0-9]{2})?)?)?$/.test(text)) return null;
+
+  const A = (c) => c.charCodeAt(0) - 65;
+  let lon = A(text[0]) * 20 - 180;
+  let lat = A(text[1]) * 10 - 90;
+  let lonSpan = 20;
+  let latSpan = 10;
+
+  if (text.length >= 4) {
+    lon += Number(text[2]) * 2;
+    lat += Number(text[3]);
+    lonSpan = 2;
+    latSpan = 1;
+  }
+  if (text.length >= 6) {
+    lon += A(text[4]) * (2 / 24);
+    lat += A(text[5]) * (1 / 24);
+    lonSpan = 2 / 24;
+    latSpan = 1 / 24;
+  }
+  if (text.length >= 8) {
+    lon += Number(text[6]) * (lonSpan / 10);
+    lat += Number(text[7]) * (latSpan / 10);
+    lonSpan /= 10;
+    latSpan /= 10;
+  }
+  return [lat + latSpan / 2, lon + lonSpan / 2];
+}

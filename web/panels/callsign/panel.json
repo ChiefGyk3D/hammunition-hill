@@ -5,8 +5,9 @@
   "sources": [
     "prefixes",
     "log",
-    "station"
+    "station",
+    "lookups"
   ],
   "embed_hosts": [],
-  "description": "Resolve a callsign to its DXCC entity, beam heading, and distance \u2014 instantly, entirely on your own machine."
+  "description": "Resolve a callsign to its DXCC entity, beam heading, and distance \u2014 instantly, on your own machine. Adds name and licence detail when a lookup provider is enabled."
 }

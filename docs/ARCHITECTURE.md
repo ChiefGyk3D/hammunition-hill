@@ -145,9 +145,18 @@ ways to get that, and all three cost something real:
 | The browser calling the service directly | Requires opening `connect-src`, leaks every callsign you look at to a third party, and puts their JavaScript-shaped responses in your page. |
 | Pre-fetching lookups for calls seen in spots | Keeps the schedule fixed and bounded. Covers "who is this station I am seeing", which is most of the real use. Does not cover "look up an arbitrary call". |
 
-The third is the only one that fits, and it is a reasonable v0.5 feature. The
-first two are not small changes dressed up as features — they are changes to
-what this program *is*.
+The third is what ships. The collector resolves callsigns that already appear
+in your spots and decodes, capped and cached, and publishes the results — see
+[CALLSIGN-LOOKUP.md](CALLSIGN-LOOKUP.md) for the providers and their trade-offs.
+
+The first is available but opt-in (`[lookup] query_endpoint = true`), and
+deliberately the narrowest endpoint that can do the job: GET only, local index
+only, strictly validated, rate limited, and structurally unable to cause an
+outbound request. That last property is what keeps "a request cannot make the
+collector fetch anything" true even with the endpoint on.
+
+The second stays off the table. Most of these APIs send no CORS headers, so it
+would not work; where it would, it leaks every callsign you look at.
 
 ### Logging QSOs
 

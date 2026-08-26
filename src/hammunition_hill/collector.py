@@ -27,6 +27,10 @@ import httpx
 from .config import Config, SourceConfig
 from .egress import EgressDenied, EgressGuard
 from .enrich import Enricher
+from .lookup import build_provider
+from .lookup.base import LookupError
+from .lookup.cache import LookupCache
+from .lookup.resolver import Resolver
 from .snapshot import Snapshot, read_snapshot, write_snapshot
 from .sources import FetchError, get_local, get_source, is_local
 from .sources.base import USER_AGENT
@@ -181,6 +185,58 @@ async def _stream_loop(
         _write_failure(config, cfg, reason, STREAM_STALE_SECONDS)
 
 
+# --- callsign lookup ------------------------------------------------------
+async def _lookup_loop(
+    client: httpx.AsyncClient, guard: EgressGuard, config: Config, enricher: Enricher
+) -> None:
+    """Resolve callsigns already present in the operator's own data.
+
+    Nothing here is triggered by a request -- it is another scheduled task, and
+    it works through what the spots and decodes have already surfaced.
+    """
+    try:
+        provider = build_provider(
+            config.lookup.provider, config.lookup.username, config.lookup.password
+        )
+    except (ValueError, LookupError) as exc:
+        log.error("callsign lookup disabled: %s", exc)
+        return
+    if provider is None:
+        return
+
+    cache = LookupCache(
+        config.data_dir,
+        ttl_hours=config.lookup.cache_hours,
+        max_entries=config.lookup.max_entries,
+    )
+    cache.load()
+    resolver = Resolver(
+        provider,
+        cache,
+        guard,
+        max_per_cycle=config.lookup.max_per_cycle,
+        cycle_seconds=config.lookup.cycle_seconds,
+    )
+    if not resolver._allowed():  # noqa: SLF001 - the guard check belongs to the resolver
+        return
+
+    log.info(
+        "callsign lookup: %s, up to %d per %ds",
+        provider.name,
+        resolver.max_per_cycle,
+        resolver.cycle_seconds,
+    )
+
+    cfg = SourceConfig(id="lookups", kind="lookup", url="")
+    while True:
+        try:
+            await resolver.resolve_batch(client, enricher.seen_callsigns())
+            _write(config, cfg, resolver.snapshot(), resolver.cycle_seconds * STALE_MULTIPLIER)
+        except Exception as exc:  # noqa: BLE001 - lookup must never end the run
+            log.warning("lookup cycle failed: %s", exc)
+        await asyncio.sleep(resolver.cycle_seconds)
+
+
 # --- entry point ----------------------------------------------------------
 async def run_collector(config: Config, guard: EgressGuard, enricher: Enricher) -> None:
     """Run every source until cancelled."""
@@ -207,3 +263,8 @@ async def run_collector(config: Config, guard: EgressGuard, enricher: Enricher) 
                 else:
                     coro = _polled_loop(client, guard, cfg, config)
                 group.create_task(coro, name=f"source:{cfg.id}")
+
+            if config.lookup.enabled:
+                group.create_task(
+                    _lookup_loop(client, guard, config, enricher), name="lookup"
+                )

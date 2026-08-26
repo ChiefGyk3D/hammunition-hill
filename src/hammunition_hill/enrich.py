@@ -27,6 +27,9 @@ from .prefix import PrefixTable
 
 log = logging.getLogger(__name__)
 
+# How many recently seen callsigns to keep queued for resolution.
+SEEN_CALLSIGN_LIMIT = 1000
+
 
 @dataclass(frozen=True)
 class Station:
@@ -104,6 +107,23 @@ class Enricher:
         self.table = table
         self.station = station
         self.log_index: LogIndex | None = None
+        # Callsigns seen in spots and decodes, for the lookup resolver to work
+        # through. Bounded, because a contest weekend is a lot of callsigns.
+        self._seen: dict[str, None] = {}
+
+    def note_callsign(self, callsign: str | None) -> None:
+        """Record a callsign as worth resolving, newest last."""
+        if not callsign:
+            return
+        call = callsign.upper()
+        self._seen.pop(call, None)
+        self._seen[call] = None
+        while len(self._seen) > SEEN_CALLSIGN_LIMIT:
+            self._seen.pop(next(iter(self._seen)))
+
+    def seen_callsigns(self) -> list[str]:
+        """Most recently seen first -- resolve what is on screen now."""
+        return list(reversed(self._seen))
 
     def set_log_index(self, index: LogIndex | None) -> None:
         self.log_index = index
@@ -118,6 +138,7 @@ class Enricher:
         call = raw["call"]
         khz = raw["khz"]
         entity = self.table.lookup(call)
+        self.note_callsign(call)
 
         info = classify(khz, raw.get("mode_from_comment"))
         spot: dict[str, Any] = {

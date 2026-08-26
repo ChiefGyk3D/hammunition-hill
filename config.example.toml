@@ -143,6 +143,32 @@ interval = 120
 # interval = 300
 # local = true
 
+# --- Callsign lookup --------------------------------------------------------
+# Off by default. Entity, beam heading, distance, and worked status all work
+# without this -- a provider adds name, grid, and licence detail.
+#
+# Every provider costs something: an account, money, or one request per callsign
+# to a third party. Read docs/CALLSIGN-LOOKUP.md before choosing.
+#
+#   none    prefix table only (default) — nothing leaves the machine
+#   callook free, no account, US only
+#   hamqth  free, worldwide, needs a HamQTH account
+#   qrz     best data, worldwide, needs a paid QRZ XML subscription
+#   fcc_uls designed but not built yet — local FCC download, no per-lookup network
+#
+# [lookup]
+# provider = "callook"
+# username = ""            # hamqth / qrz only
+# password = ""            # keep config.toml chmod 600 if you set these
+# max_per_cycle = 20       # be a good guest to free services
+# cache_hours = 720
+#
+# Resolution is scheduled, not on demand: the collector works through callsigns
+# that already appear in your spots and decodes. To look up arbitrary callsigns
+# you also need the query endpoint, which is the one place the server accepts
+# input — off by default, and documented in docs/CALLSIGN-LOOKUP.md.
+# query_endpoint = false
+
 # --- Tier 2: foreign content the browser loads directly ---------------------
 # Empty by default. Every host listed here is added to the page's CSP, and is a
 # host your browser then contacts on every dashboard load. Prefer images over

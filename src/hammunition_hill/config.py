@@ -72,6 +72,29 @@ class ServerConfig:
 
 
 @dataclass(frozen=True)
+class LookupConfig:
+    """Callsign lookup. Off by default -- see docs/CALLSIGN-LOOKUP.md.
+
+    Every provider except ``none`` costs something: an account, money, or a
+    request per callsign to a third party. Which cost is acceptable is the
+    operator's call, so it is a choice rather than a default.
+    """
+
+    provider: str = "none"
+    username: str | None = None
+    password: str | None = None
+    max_per_cycle: int = 20
+    cycle_seconds: int = 60
+    cache_hours: int = 720
+    max_entries: int = 5000
+    query_endpoint: bool = False
+
+    @property
+    def enabled(self) -> bool:
+        return self.provider not in ("", "none")
+
+
+@dataclass(frozen=True)
 class Config:
     server: ServerConfig
     sources: tuple[SourceConfig, ...]
@@ -80,11 +103,16 @@ class Config:
     station: dict[str, Any] = field(default_factory=dict)
     embed_hosts: tuple[str, ...] = ()
     cty_dat: Path | None = None
+    lookup: LookupConfig = field(default_factory=LookupConfig)
 
     def allowlist(self) -> tuple[set[str], set[str]]:
         """(all hosts the collector may contact, hosts explicitly marked local)."""
+        from .lookup import provider_hosts
+
         allowed = {s.host for s in self.sources if s.host}
         allowed |= {h.lower() for h in self.embed_hosts}
+        # A lookup provider declares its own hosts; nothing else grants it reach.
+        allowed |= set(provider_hosts(self.lookup.provider))
         local = {s.host for s in self.sources if s.local and s.host}
         return allowed, local
 
@@ -171,6 +199,22 @@ def parse_config(raw: dict[str, Any], *, base_dir: Path) -> Config:
     cty_raw = raw.get("log", {}).get("cty_dat")
     cty_dat = Path(str(cty_raw)).expanduser() if cty_raw else None
 
+    lookup_tbl = raw.get("lookup", {})
+    if not isinstance(lookup_tbl, dict):
+        raise ConfigError("[lookup] must be a table")
+    lookup = LookupConfig(
+        provider=str(lookup_tbl.get("provider", "none")).strip().lower(),
+        username=str(lookup_tbl["username"]) if lookup_tbl.get("username") else None,
+        password=str(lookup_tbl["password"]) if lookup_tbl.get("password") else None,
+        max_per_cycle=int(lookup_tbl.get("max_per_cycle", 20)),
+        cycle_seconds=int(lookup_tbl.get("cycle_seconds", 60)),
+        cache_hours=int(lookup_tbl.get("cache_hours", 720)),
+        max_entries=int(lookup_tbl.get("max_entries", 5000)),
+        query_endpoint=bool(lookup_tbl.get("query_endpoint", False)),
+    )
+    if lookup.max_per_cycle < 1:
+        raise ConfigError("[lookup] max_per_cycle must be at least 1")
+
     return Config(
         server=server,
         sources=tuple(sources),
@@ -179,6 +223,7 @@ def parse_config(raw: dict[str, Any], *, base_dir: Path) -> Config:
         station=raw.get("station", {}),
         embed_hosts=tuple(str(h) for h in embed),
         cty_dat=cty_dat,
+        lookup=lookup,
     )
 
 
