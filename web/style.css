@@ -8,6 +8,13 @@
   --ink: #e3e7ed;
   --muted: #8f98a4;
   --accent: #3bc6d0;
+  /* The logo's colours, as their own tokens. Deliberately separate from
+     --accent: the dashboard's accent is cyan and is used by every panel, so
+     repainting it purple is a change worth making on purpose rather than as a
+     side effect of adding a logo. These are used by the mark and nothing else
+     until that decision is made. */
+  --brand: #912795;
+  --brand-ink: #ed9a1c;
   /* Status ramp, validated for separation on this surface: normal-vision
      ΔE 27.6 and protan 11.3 between adjacent steps. The previous trio
      measured 14.5 normal, which is below the floor for telling two
@@ -46,14 +53,11 @@ body {
 }
 .brand { display: flex; align-items: center; gap: 10px; }
 .mark {
-  font-family: var(--mono);
-  font-weight: 700;
-  font-size: 12px;
-  letter-spacing: .1em;
-  color: var(--ground);
-  background: var(--accent);
-  padding: 4px 6px;
-  border-radius: 2px;
+  /* The SVG carries its own colour, so this is only size and shape. */
+  display: block;
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
 }
 .name { font-weight: 600; letter-spacing: -.01em; }
 .station { font-family: var(--mono); font-size: 12px; color: var(--muted); }
