@@ -21,7 +21,7 @@ have. Where the two disagree, this page is the one kept current.
 |---|---|
 | Collector, snapshot architecture, static server | ✅ working |
 | Egress allowlist, CSP, path handling | ✅ working |
-| Panels | ✅ 21 across 6 dashboards |
+| Panels | ✅ 22 across 6 dashboards |
 | Source kinds | ✅ 10 polled, 5 stream, 1 file |
 | Space weather dials | ✅ 8 scales |
 | Your log driving spot colouring | ✅ working |
@@ -35,7 +35,7 @@ have. Where the two disagree, this page is the one kept current.
 | GPS / portable auto-grid | ✅ working |
 | Satellites | ❌ **not written** |
 | RBN | ❌ **not written** |
-| CW / Morse tools | ❌ **not written** |
+| CW / Morse tools | ✅ working |
 | Metrics export to Grafana | ❌ **not written** |
 | Opaque image mode | ❌ **not written** |
 | Packaging (Docker, distro packages) | ❌ **not written** |
@@ -102,9 +102,9 @@ The parts everything else sits on.
 **Activity**, **Field & Weather**. Regroup them by editing
 `web/panels/index.json`.
 
-Six are **tier 0** — they work with the internet unplugged: `bandplan`,
-`beacons`, `callsign`, `clock`, `gps`, `logbook`. Fourteen are tier 1. One is
-tier 2 (`imagery`).
+Seven are **tier 0** — they work with the internet unplugged: `bandplan`,
+`beacons`, `callsign`, `clock`, `cw`, `gps`, `logbook`. Fourteen are tier 1.
+One is tier 2 (`imagery`).
 
 | Feature | Status | Notes |
 |---|---|---|
@@ -123,7 +123,7 @@ tier 2 (`imagery`).
 | Freshness shown, never hidden | ✅ | Stale and blank are different problems and look different |
 | Drag-to-reorder layout | ❌ | Dashboards are configurable in JSON; dragging is not built |
 | "AT YOUR QTH" vs "OPEN ELSEWHERE" band pills | ❌ | Spotted in hamdash; outstanding |
-| CW / Morse reference tools | ❌ | Tier 0, self-contained, promised and not yet built |
+| CW / Morse tools | ✅ | Reference charts, translator, timing, audio playback and Koch practice — see [CW.md](CW.md) |
 | Ionospheric map | ❌ | |
 | Built-in SDR receiver | ⛔ | WebUSB needs a secure context, which would force TLS onto a LAN appliance for one panel. Point a tier 2 panel at your own OpenWebRX+ or KiwiSDR instead. |
 
@@ -204,11 +204,80 @@ tier 2 (`imagery`).
 What is actually being worked on, in order:
 
 1. **RBN**, which is the cluster client pointed somewhere else plus aggregation.
-2. **CW / Morse reference tools** — tier 0, self-contained.
-3. **Satellites**, which needs real orbital mechanics.
-4. **The metrics exporter**, after parity.
+2. **Satellites**, which needs real orbital mechanics.
+3. **The metrics exporter**, after parity.
 
 Smaller items are listed in [PARITY.md](PARITY.md).
+
+## Candidate features
+
+The stated goal is for this to cover most of what an operator needs in one
+place. These are the gaps between here and that, grouped by what they would
+actually change. Nothing here is committed — they are written down so the
+argument for each can be had before the code is.
+
+The ones marked **strong fit** need no new architecture: an existing source
+shape, a tier 0 computation, or the log we already read.
+
+### Operating, day to day
+
+| Idea | Fit | Notes |
+|---|---|---|
+| **Contest logging mode** | strong | The logbook already writes ADIF. A contest needs a serial number, a duplicate check against this contest only, and a rate meter. That is three fields and a filter over data already in memory. |
+| **Rate meter and session stats** | strong | QSOs per hour, best hour, band and mode breakdown for the current session. Pure computation over the log. |
+| **Dupe check while logging** | strong | The needed-slot index already answers a harder question. Same lookup, different predicate. |
+| **Split / VFO awareness** | medium | `rigctld` reports it; the rig panel does not show it. Small, and the sort of thing that costs a contact when it is wrong. |
+| **Antenna rotator control** | medium | `rotctld` is the sibling of `rigctld`, same protocol shape, and the bearing is already computed for every spot. This would be the project's **first outbound command to hardware**, which is a genuine change in posture and needs its own opt-in and its own document. |
+| **Memory channels / frequency list** | strong | A tier 0 table of your own frequencies with click-to-tune via rigctld. |
+
+### Reference, all tier 0
+
+| Idea | Fit | Notes |
+|---|---|---|
+| **More CW: koch lesson plan, callsign practice, QSO simulator** | strong | The koch order and audio exist. A lesson plan is state; callsign practice is the prefix table we already publish; a QSO simulator is a script and a random callsign. |
+| **Phonetic alphabet and Q-signal quiz** | strong | Reference data plus the practice loop CW already has. |
+| **Antenna calculators** | strong | Dipole, vertical, loop lengths from frequency; velocity factor; coax loss per 100 ft per band. Arithmetic and a table. |
+| **Great-circle / grid tools** | strong | Distance and bearing between two arbitrary grids, not just from your station. The maths is already in `geo.py`. |
+| **Licence exam practice** | medium | The question pools are public and large. A pool per class is a big data file and a real maintenance commitment — worth doing only if somebody will keep it current. |
+| **Repeater directory** | medium | RepeaterBook has a public API. Tier 1, one source, but the useful version is filtered by *your* location, which GPS now gives us. |
+| **Band plan by region** | strong | The loader is generic; this is data. IARU Region 1 and 3 files would cover most of the world. |
+
+### Signals and propagation
+
+| Idea | Fit | Notes |
+|---|---|---|
+| **PSK Reporter paths** | strong | Same globe and arc drawing the spots use. Shows where *you* are actually being heard, which is the question the MUF indicator only approximates. |
+| **WSPR spots** | strong | Same shape as PSK Reporter. |
+| **Grayline DX prediction** | strong | We compute the terminator already; the useful version is "which entities are on the greyline with me right now", which is the terminator crossed with the prefix table. |
+| **VOACAP point-to-point** | hard | The genuinely hard one, and still open. Either bundle the public-domain ITSHFBC binaries and shell out, or accept that a path-free indicator is where this stops. |
+| **Sporadic-E and aurora alerting** | medium | We have the aurora oval and the band data. "Tell me when 6m opens" is a threshold and a notification, and notification is a whole capability this project does not have yet. |
+
+### Station and shack
+
+| Idea | Fit | Notes |
+|---|---|---|
+| **SWR / power meter ingest** | medium | Many meters speak serial. Same shape as the NMEA reader, and the same question about which protocol. |
+| **Station equipment inventory** | strong | Tier 0. What you own, serial numbers, purchase dates — the thing everyone keeps in a spreadsheet and cannot find after a theft or a fire. |
+| **Maintenance log** | strong | Antenna inspections, coax replacement, tower climbs. Dates and notes, same shape as the logbook. |
+| **Power budget for portable** | strong | Battery capacity against transmit duty cycle. Arithmetic, and genuinely useful at a POTA site. |
+
+### Integration and export
+
+| Idea | Fit | Notes |
+|---|---|---|
+| **Metrics exporter** | committed | Already on the roadmap. Prometheus or InfluxDB, the first outbound *write* the collector makes. |
+| **LoTW / eQSL / Club Log upload** | medium | Real value, and each is an account plus credentials plus an outbound write. Belongs in the same opt-in category as the logbook and needs the same care. |
+| **QSL card queue** | strong | Which contacts want a card, printed or not. Tier 0, over the log. |
+| **Import from N1MM, Log4OM, WSJT-X logs** | strong | We already parse ADIF. Mostly a question of which dialects to accept. |
+
+### Deliberately not planned
+
+| Idea | Why |
+|---|---|
+| **Built-in SDR receiver** | WebUSB needs a secure context, forcing TLS onto a LAN appliance for one panel. Point a tier 2 panel at your own OpenWebRX+ or KiwiSDR. |
+| **Digital mode decoding in the browser** | WSJT-X and fldigi do this properly and are already on the operator's machine. We read their output instead. |
+| **A hosted multi-user version** | Not until there is a real authn/authz model, TLS, rate limiting, and a threat model this version deliberately does not have. |
+| **Becoming a logging program** | The logbook is deliberately not Log4OM. Contest mode is the boundary; award tracking and QSL management beyond a queue are not. |
 
 ## If you want to help
 

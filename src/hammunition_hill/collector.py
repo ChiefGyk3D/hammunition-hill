@@ -468,9 +468,26 @@ async def _propagation_loop(config: Config, enricher: Enricher) -> None:
 
 # --- entry point ----------------------------------------------------------
 async def run_collector(config: Config, guard: EgressGuard, enricher: Enricher) -> None:
-    """Run every source until cancelled."""
+    """Run every source until cancelled.
+
+    Returning from here shuts the HTTP server down, so this must not return
+    while the dashboard is still worth serving -- and with no sources at all it
+    still is. A tier 0 configuration (CW reference, band plan, clock, callsign
+    lookup, beacons) needs no upstream by definition, and it is precisely the
+    configuration an operator wants portable, where there is no internet to
+    configure a source against.
+
+    Before this, `hamhill serve` with no sources warned and exited immediately,
+    which made the offline case the one case that did not work.
+    """
     if not config.sources:
-        log.warning("no sources configured; the dashboard will show tier 0 panels only")
+        log.info(
+            "no sources configured: serving tier 0 panels only "
+            "(clock, band plan, CW reference, callsign lookup, beacons)"
+        )
+        # The snapshots those panels read are written at startup, so there is
+        # nothing to schedule -- just stay up.
+        await asyncio.Event().wait()
         return
 
     # Load the log before anything else, so the first flush of spots already
