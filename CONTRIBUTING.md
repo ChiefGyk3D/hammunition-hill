@@ -127,10 +127,18 @@ job runs — with its output pointed at `docs/images/`, so what ships in the
 README is what a real Chromium actually rendered against a real collector. Check
 the PNGs in alongside the change that caused them.
 
+Link them by **absolute** `raw.githubusercontent.com` URL, not by relative path.
+`pyproject.toml` sets `readme = "README.md"`, so the README ships as the package
+long description, and PyPI has no repository to resolve `docs/images/` against —
+a relative path renders on github.com and as a blank box everywhere else.
+`twine check --strict` does not look at images, so nothing else would catch it.
+
 `tests/test_docs_images.py` keeps the set honest: every dashboard has an image,
-every image is referenced, nothing is left behind by a rename, and nothing is a
-truncated stub. What it cannot check is whether an image is *current* — only you
-looking at it can say that, which is why the rule above is a rule.
+every image is referenced, every reference resolves to a file that exists,
+nothing is left behind by a rename, nothing is a truncated stub, every link is
+absolute, and none of them point at somebody else's server. What it cannot check
+is whether an image is *current* — only you looking at it can say that, which is
+why the rule above is a rule.
 
 ## Documentation
 
