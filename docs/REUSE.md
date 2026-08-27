@@ -149,3 +149,17 @@ within one cycle.
 3. The propagation model, with the solar-zenith fix. Closes the largest gap.
 4. The band plan panel as tier 0 reference data.
 5. Revisit mode inference only if the region question has a clean answer.
+
+## Ported: the propagation model
+
+`solarstorm_scout`'s `spaceweather.py` is now ported, with three
+corrections rather than as a copy: the UTC-hour solar-noon proxy replaced
+with a real solar zenith at the operator's grid square, a docstring that
+disagreed with its own code reconciled against operating anchors, and
+emoji split out of the return values into the panel where presentation
+belongs. See [PROPAGATION.md](PROPAGATION.md).
+
+Worth stating plainly: the proxy is not a bug in that project. It is a
+global bot with no location, and `abs(utc_hour - 12)` is a reasonable
+simplification when you do not have one. It becomes wrong only when
+carried into a program that knows where its operator is standing.

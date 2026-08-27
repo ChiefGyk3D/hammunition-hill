@@ -580,3 +580,26 @@ ul.wx-alerts { list-style: none; margin: 0; padding: 0; }
 
 /* A stale lookup is still shown, but never as though it were current. */
 .stale-detail .detail-value { color: var(--fair); }
+
+/* --- MUF / propagation -------------------------------------------------- */
+.muf-bands { display: grid; gap: 3px; margin-top: 10px; }
+.muf-band {
+  display: grid;
+  grid-template-columns: 4.5ch 6ch 1fr;
+  gap: 8px;
+  align-items: baseline;
+  padding: 4px 8px;
+  background: var(--panel-2);
+  border-left: 3px solid var(--rule);
+  font-family: var(--mono);
+  font-size: 11.5px;
+}
+.muf-band.level-good { border-left-color: var(--good); }
+.muf-band.level-warn { border-left-color: var(--fair); }
+.muf-band.level-critical { border-left-color: var(--poor); opacity: .75; }
+.muf-name { font-weight: 600; color: var(--ink); }
+.muf-band.level-good .muf-name { color: var(--good); }
+.muf-band.level-warn .muf-name { color: var(--fair); }
+.muf-freq { color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+.muf-reason { color: var(--muted); }
+.readout .unit { font-size: 11px; color: var(--muted); font-weight: 400; }

@@ -88,8 +88,8 @@ Legend: **done** · **partial** · **planned** · **not planned** (with the reas
 | Solar terminator | **done** | The greyline layer on the map |
 | Contest calendar | **done** | |
 | Repeater finder | **planned** | RepeaterBook has a public API |
-| MUF predictor | **planned** | The solarstorm_scout propagation model — see REUSE.md |
-| Propagation prediction | **partial** | Band conditions from HamQSL; VOACAP still deferred |
+| MUF predictor | **done** | Ported from solarstorm_scout with the solar-zenith fix, so it peaks at *your* local noon rather than 12:00 UTC |
+| Propagation prediction | **partial** | Band conditions from HamQSL plus a local MUF/LUF/absorption indicator; VOACAP still deferred and still hard |
 | Education | **not planned** | Better served by the ARRL and existing study sites than by a dashboard |
 
 ### Space weather
@@ -102,7 +102,7 @@ Legend: **done** · **partial** · **planned** · **not planned** (with the reas
 | Noise / protons | **done** | Dials |
 | NOAA scales | **done** | R/S/G tiles from NOAA's own product, alongside our dials |
 | Aurora oval | **done** | SWPC OVATION, reduced to an oval boundary and drawn as a globe layer |
-| D-layer absorption | **planned** | solarstorm_scout has a model; needs the solar-zenith fix |
+| D-layer absorption | **done** | Real solar zenith at the station's grid square |
 | Ionospheric map | **planned** | |
 | Solar imagery | **done** | SDO is an `[[imagery]]` tile like any other |
 | SWPC alerts | **done** | Watches, warnings and summaries as SWPC issues them |
@@ -138,7 +138,9 @@ In order of value per unit of work:
 2. ~~Weather alerts and the regional radars.~~ Done. The tier 2 image path did
    turn out to unlock the radars, lightning and solar imagery at a config line
    each, as expected.
-3. The MUF / D-layer model from solarstorm_scout, with the solar-zenith fix.
+3. ~~The MUF / D-layer model from solarstorm_scout.~~ Done, with the
+   solar-zenith fix — the ported model peaked at 12:00 UTC regardless of where
+   the operator was.
 4. RBN, which is the cluster client pointed somewhere else.
 5. Satellites, which needs real orbital mechanics.
 
