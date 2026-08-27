@@ -175,6 +175,7 @@ BUILT_IN_SNAPSHOTS = {
     "lookups",
     "propagation",
     "morse",
+    "satellites",
     "antenna",
 }
 

@@ -154,6 +154,18 @@ class LoggingConfig:
 
 
 @dataclass(frozen=True)
+class SatellitesConfig:
+    """How high above the horizon counts as a pass.
+
+    Zero is the geometric horizon and nobody has one -- trees, buildings and
+    hills all sit above it. Five degrees is the conventional working floor; a
+    valley station may want fifteen and a hilltop may want two.
+    """
+
+    min_elevation: float = 5.0
+
+
+@dataclass(frozen=True)
 class Config:
     server: ServerConfig
     sources: tuple[SourceConfig, ...]
@@ -166,6 +178,7 @@ class Config:
     logging: LoggingConfig = field(default_factory=LoggingConfig)
     logbooks: tuple[Any, ...] = ()
     imagery: tuple[ImageryTile, ...] = ()
+    satellites: SatellitesConfig = field(default_factory=SatellitesConfig)
 
     def primary_logbook(self) -> Any | None:
         """The book that drives needed-slot colouring."""
@@ -328,6 +341,22 @@ def parse_config(raw: dict[str, Any], *, base_dir: Path) -> Config:
     if sum(1 for b in books if b.primary) > 1:
         raise ConfigError("[[logbooks]]: only one logbook may be marked primary")
 
+    sat_tbl = raw.get("satellites", {})
+    if not isinstance(sat_tbl, dict):
+        raise ConfigError("[satellites] must be a table")
+    min_elevation = sat_tbl.get("min_elevation", 5.0)
+    try:
+        min_elevation = float(min_elevation)
+    except (TypeError, ValueError) as exc:
+        raise ConfigError(
+            f"[satellites] min_elevation must be a number, got {min_elevation!r}"
+        ) from exc
+    if not 0.0 <= min_elevation < 90.0:
+        raise ConfigError(
+            f"[satellites] min_elevation must be between 0 and 90 degrees, got {min_elevation}"
+        )
+    sat_cfg = SatellitesConfig(min_elevation=min_elevation)
+
     logging_tbl = raw.get("logging", {})
     if not isinstance(logging_tbl, dict):
         raise ConfigError("[logging] must be a table")
@@ -447,6 +476,7 @@ def parse_config(raw: dict[str, Any], *, base_dir: Path) -> Config:
         cty_dat=cty_dat,
         lookup=lookup,
         logging=log_cfg,
+        satellites=sat_cfg,
         logbooks=tuple(books),
         imagery=tuple(tiles),
     )

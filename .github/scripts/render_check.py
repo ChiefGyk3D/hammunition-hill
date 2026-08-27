@@ -57,11 +57,28 @@ KINDEX = json.dumps(
 )
 
 
+# A published element set, so the satellite panel renders with content rather
+# than its "no elements yet" state. Without it the populated path -- the pass
+# table, the countdown, the elevation banding -- is never rendered here at all,
+# and a bug in it would ship.
+#
+# The epoch is old, so the predicted times mean nothing. That is fine and worth
+# being clear about: this exercises the layout and the code path, not the
+# astronomy, which tests/test_satellites.py covers with real invariants.
+TLES = """ISS (ZARYA)
+1 25544U 98067A   19343.69339541  .00001764  00000-0  38792-4 0  9991
+2 25544  51.6439 211.2001 0007417  17.6667  85.6398 15.50103472202482
+"""
+
+
 class Upstream(BaseHTTPRequestHandler):
     def do_GET(self) -> None:  # noqa: N802
-        body = KINDEX.encode()
+        if self.path.endswith(".txt"):
+            body, content_type = TLES.encode(), "text/plain"
+        else:
+            body, content_type = KINDEX.encode(), "application/json"
         self.send_response(200)
-        self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
@@ -286,6 +303,13 @@ url = "http://127.0.0.1:{upstream_port}/kindex.json"
 local = true
 interval = 30
 options = {{ product = "planetary_k_index" }}
+
+[[sources]]
+id = "tle"
+kind = "tle"
+url = "http://127.0.0.1:{upstream_port}/amateur.txt"
+local = true
+interval = 86400
 """,
             encoding="utf-8",
         )
@@ -323,9 +347,26 @@ options = {{ product = "planetary_k_index" }}
             else:
                 fail("the dashboard never came up")
 
-            # Let the first collector cycle land so panels have real data and
-            # are not all showing "waiting for the first cycle".
-            time.sleep(6)
+            # Wait for the snapshots this run configures, rather than sleeping a
+            # guessed number of seconds. A fixed sleep is wrong in both
+            # directions: too short and the screenshots catch panels mid-start,
+            # too long and every PR pays for the margin. Waiting on the files
+            # also fails loudly if one never arrives, which a sleep cannot.
+            expected = ["kindex.json", "tle.json", "satellites.json", "propagation.json"]
+            deadline = time.monotonic() + 60
+            while time.monotonic() < deadline:
+                missing = [n for n in expected if not (work / "data" / n).exists()]
+                if not missing:
+                    break
+                time.sleep(0.5)
+            else:
+                fail(f"the collector never produced {', '.join(missing)}")
+
+            # The derived loops write a placeholder before their inputs land, so
+            # the file existing is not the same as the panel having content.
+            # One extra beat covers that; the satellite loop retries in five
+            # seconds and the propagation one in fifteen.
+            time.sleep(16)
 
             result = subprocess.run(  # noqa: S603
                 ["node", str(driver), str(port), str(SHOTS)],  # noqa: S607

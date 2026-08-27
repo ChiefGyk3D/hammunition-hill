@@ -732,6 +732,32 @@ ul.wx-alerts { list-style: none; margin: 0; padding: 0; }
 .tool-row-label { color: var(--muted); }
 .tool-row-value { color: var(--accent); font-weight: 600; white-space: nowrap; }
 .tool-row-note { color: var(--muted); font-size: 10.5px; }
+/* Satellite passes. A dense list: the useful reading is "what is next and how
+   high", so elevation and countdown carry the emphasis and everything else is
+   context. */
+.sat-list { display: grid; gap: 2px; }
+.sat-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) 44px 60px 96px minmax(0, 1fr) 34px;
+  gap: 8px; align-items: baseline; font-family: var(--mono); font-size: 11px;
+  padding: 3px 6px;
+}
+.sat-row:nth-child(odd) { background: var(--panel-2); }
+.sat-now { border-left: 3px solid var(--accent); padding-left: 3px; }
+.sat-name { color: var(--ink); font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+.sat-el { font-weight: 600; text-align: right; }
+/* Three bands, not a gradient: a gradient asks the reader to interpolate. */
+.sat-high { color: var(--good); }
+.sat-mid { color: var(--fair); }
+.sat-low { color: var(--muted); }
+.sat-when { color: var(--accent); }
+.sat-clock, .sat-track, .sat-dur { color: var(--muted); }
+.sat-dur { text-align: right; }
+.sat-note {
+  font-family: var(--mono); font-size: 10.5px; color: var(--muted);
+  margin: 6px 0 0; line-height: 1.5;
+}
+
 .tool-hint {
   font-family: var(--mono); font-size: 10.5px; color: var(--muted);
   margin: 6px 0; line-height: 1.5;

@@ -15,9 +15,21 @@ keywords = ["ham-radio", "amateur-radio", "dashboard", "propagation", "space-wea
 dependencies = ["httpx>=0.27", "defusedxml>=0.7.1"]
 
 [project.optional-dependencies]
+# Satellite pass prediction. Optional because the core install should stay at
+# two dependencies, and because most of the dashboard does not need it.
+#
+# sgp4 is the reference implementation of Spacetrack Report #3 as revised in
+# 2006 -- the model two-line elements are *defined against*, since a TLE is not
+# a state vector but a set of constants fitted for one specific propagator.
+# Reimplementing it would be five hundred lines of orbital mechanics that could
+# not be verified to the same standard. It has no dependencies of its own.
+satellites = ["sgp4>=2.20"]
+
 # PyYAML is test-only: tests/test_workflows.py parses the CI configuration, and
 # a hand-rolled reader for a security check is exactly the wrong economy.
-dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "ruff>=0.5", "PyYAML>=6.0"]
+# sgp4 is here too so CI always exercises the satellite path rather than
+# skipping it -- an optional extra nobody tests is an extra that breaks.
+dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "ruff>=0.5", "PyYAML>=6.0", "sgp4>=2.20"]
 
 [project.scripts]
 hamhill = "hammunition_hill.cli:main"
