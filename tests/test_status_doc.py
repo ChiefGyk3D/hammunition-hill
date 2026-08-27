@@ -166,3 +166,71 @@ def test_no_documentation_page_links_to_a_file_that_does_not_exist():
             if path and not (doc.parent / path).resolve().exists():
                 broken.append(f"{doc.relative_to(ROOT)} -> {target}")
     assert not broken, "broken relative links:\n  " + "\n  ".join(broken)
+
+
+def status_rows() -> dict[str, str]:
+    """Every ``| feature | status | ...`` row in STATUS.md, feature -> status cell.
+
+    Later rows win. A feature named in both the at-a-glance summary and its own
+    section is the case this exists for: the detail row is the one written when
+    the feature lands, and the summary is the one that gets forgotten.
+    """
+    rows: dict[str, str] = {}
+    for line in STATUS.splitlines():
+        if not line.startswith("|"):
+            continue
+        cells = [c.strip() for c in line.strip().strip("|").split("|")]
+        if len(cells) < 2 or set(cells[0]) <= set("- ") or not cells[0]:
+            continue
+        rows[cells[0].strip("*` ").lower()] = cells[1]
+    return rows
+
+
+# Feature as STATUS.md names it -> a callable that is true when it is built.
+# Keep the probe something that would break if the feature were removed, not a
+# mere import of a name.
+BUILT = {
+    "satellites": lambda: __import__("hammunition_hill.satellites", fromlist=["passes"]).passes,
+    "rbn": lambda: __import__("hammunition_hill.streams", fromlist=["STREAM_KINDS"]).STREAM_KINDS[
+        "rbn"
+    ],
+    "licence exam practice": lambda: (
+        __import__("hammunition_hill.exam", fromlist=["build_exam"]).build_exam
+    ),
+    "prometheus metrics endpoint": lambda: (
+        __import__("hammunition_hill.metrics", fromlist=["Registry"]).Registry
+    ),
+}
+
+
+@pytest.mark.parametrize("feature", sorted(BUILT))
+def test_built_features_are_not_described_as_unwritten(feature):
+    """The mirror of the test below, and the failure that actually happened.
+
+    Satellites, RBN and the exporter all shipped, and all three had their own
+    detail row rewritten at the time. The at-a-glance table at the top of the
+    page still said "not written" for every one of them, because updating a
+    summary is a separate act from updating the thing it summarises. A reader
+    who stops at the summary -- which is what a summary is for -- came away
+    believing three shipped subsystems did not exist.
+    """
+    BUILT[feature]()  # raises if the feature is not there, which is the point
+    status = status_rows().get(feature)
+    assert status is not None, f"STATUS.md has no row for {feature!r}"
+    assert "❌" not in status, f"STATUS.md calls {feature!r} unwritten: {status!r}"
+
+
+def test_every_source_kind_is_named_in_the_status_prose():
+    """The counts above this were right while the list beside them was wrong.
+
+    ``N polled, M stream, K file`` was correct and tested. The very next lines
+    enumerate the kinds by name, and that list was missing ``tle`` and ``rbn``
+    -- a count test cannot see a name that is absent when the number is right,
+    because the number is not derived from the list.
+    """
+    from hammunition_hill.sources import REGISTRY
+    from hammunition_hill.sources.local import LOCAL_KINDS
+    from hammunition_hill.streams import STREAM_KINDS
+
+    for kind in sorted({*REGISTRY, *STREAM_KINDS, *LOCAL_KINDS}):
+        assert f"`{kind}`" in STATUS, f"STATUS.md never names the {kind!r} source kind"

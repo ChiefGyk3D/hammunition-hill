@@ -318,3 +318,40 @@ def test_no_ci_script_binds_a_fixed_port():
         )
         literal = re.search(r"^\s*\w*PORT\w*\s*=\s*(\d{4,5})\b", body, re.MULTILINE)
         assert not literal, f"{script.name} hardcodes port {literal.group(1)}"
+
+
+def test_make_lint_runs_ruff_over_the_same_paths_as_ci():
+    """STATUS.md claims ``make check`` reproduces CI, so the scopes must match.
+
+    CI lints ``src/ tests/ .github/scripts/`` and nothing else -- deliberately,
+    because ``docs/`` contains python fences that are prose, laid out to be read
+    rather than to satisfy a formatter. A bare ``ruff format .`` therefore
+    rewrites documentation that CI would never have complained about, and the
+    diff looks like the formatter demanded it. Either the Makefile and the
+    workflow agree, or "run make check before pushing" is bad advice.
+    """
+    makefile = (REPO / "Makefile").read_text(encoding="utf-8")
+    workflow = CI.read_text(encoding="utf-8")
+
+    def scopes(text: str) -> set[frozenset[str]]:
+        """Path arguments of every ruff invocation, one frozenset per command.
+
+        The Makefile spells the tool ``$(RUFF)`` and the workflow spells it
+        ``ruff``, so match either and take the trailing directory arguments.
+        """
+        found = set()
+        for line in text.splitlines():
+            if not re.search(r"(?:\$\(RUFF\)|\bruff\b)\s+(?:check|format)\b", line):
+                continue
+            paths = [word for word in line.split() if word.endswith("/")]
+            if paths:
+                found.add(frozenset(paths))
+        return found
+
+    from_make = scopes(makefile)
+    from_ci = scopes(workflow)
+    assert from_make, "no ruff invocation with explicit paths found in the Makefile"
+    assert from_ci, "no ruff invocation with explicit paths found in the CI workflow"
+    assert from_make == from_ci, (
+        f"make lints {sorted(map(sorted, from_make))}, CI lints {sorted(map(sorted, from_ci))}"
+    )
