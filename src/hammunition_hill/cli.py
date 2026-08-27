@@ -143,7 +143,44 @@ def _publish_imagery(config: Config) -> None:
     )
 
 
+def _web_dir_problem(config: Config) -> str | None:
+    """Why the web directory cannot serve a dashboard, if it cannot.
+
+    The supported install is a git clone, where `web/` sits next to the config.
+    Someone who instead `pip install`s the package gets the CLI and no web
+    assets -- they are not in the wheel -- and without this check the symptom is
+    a dashboard that returns 404 for everything, with nothing in the log saying
+    why. An empty page is a bad way to learn about a packaging boundary.
+    """
+    if not config.web_dir.is_dir():
+        return f"no web directory at {config.web_dir}"
+    if not (config.web_dir / "index.html").is_file():
+        return f"{config.web_dir} has no index.html"
+    if not (config.web_dir / "panels" / "index.json").is_file():
+        return f"{config.web_dir} has no panels/index.json"
+    return None
+
+
+WEB_DIR_HELP = """
+  The dashboard's files are not where this expects them.
+
+  hammunition-hill is installed from a git clone -- the web/ directory lives in
+  the repository, not in the Python package. If you installed with pip alone,
+  clone the repository instead:
+
+      git clone https://github.com/ChiefGyk3D/hammunition-hill
+      cd hammunition-hill && pip install -e .
+
+  Or point [paths] web_dir at a checkout you already have.
+"""
+
+
 def _serve(config: Config, guard: EgressGuard, enricher: Enricher) -> int:
+    if (problem := _web_dir_problem(config)) is not None:
+        print(f"cannot serve: {problem}", file=sys.stderr)
+        print(WEB_DIR_HELP, file=sys.stderr)
+        return 1
+
     _publish_station(config, enricher)
     _publish_prefixes(config, enricher)
     _publish_imagery(config)
@@ -181,11 +218,22 @@ def _serve(config: Config, guard: EgressGuard, enricher: Enricher) -> int:
     return 0
 
 
-def _check(config: Config, guard: EgressGuard, enricher: Enricher) -> int:
-    """Validate config and egress policy without fetching anything."""
+def _check(
+    config: Config, guard: EgressGuard, enricher: Enricher, *, offline: bool = False
+) -> int:
+    """Validate config and egress policy without fetching anything.
+
+    ``offline`` additionally skips DNS. The egress guard resolves every host to
+    check it is not a private address, which is the right thing to do and makes
+    this command depend on working DNS -- awkward on a shack machine with the
+    WAN down, and worse in CI, where a transient resolver blip would fail a
+    build for a reason that has nothing to do with the change under test.
+    """
     print(f"config       : {len(config.sources)} source(s)")
     print(f"data dir     : {config.data_dir}")
-    print(f"web dir      : {config.web_dir}")
+    web_problem = _web_dir_problem(config)
+    web_note = "" if web_problem is None else f"  ** {web_problem} **"
+    print(f"web dir      : {config.web_dir}{web_note}")
     print(f"bind         : {config.server.host}:{config.server.port}", end="")
     print("  (loopback only)" if config.server.is_loopback_only else "  ** LAN EXPOSED **")
 
@@ -216,6 +264,10 @@ def _check(config: Config, guard: EgressGuard, enricher: Enricher) -> int:
     print(f"csp          : {build_csp(config.embed_hosts, config.csp_hosts())}")
     print()
 
+    if offline:
+        print("mode         : offline (skipping DNS; hosts checked against the allowlist only)")
+
+    allowed_hosts, _ = config.allowlist()
     failures = 0
     for source in config.sources:
         if source.is_file_source:
@@ -226,6 +278,17 @@ def _check(config: Config, guard: EgressGuard, enricher: Enricher) -> int:
             print(f"  {marker:<7} {source.id:<20} {source.kind:<10} {source.path}")
             continue
 
+        marker = "local" if source.local else ("stream" if is_stream(source.kind) else "ok")
+        if offline:
+            # Structure only: the kind is registered, the URL parses, the host
+            # is on the allowlist. What is skipped is name resolution.
+            if source.host and source.host not in allowed_hosts:
+                failures += 1
+                print(f"  DENIED  {source.id:<20} {source.host} is not on the allowlist")
+            else:
+                print(f"  {marker:<7} {source.id:<20} {source.kind:<10} {source.host}")
+            continue
+
         check = guard.check_stream if is_stream(source.kind) else guard.check
         try:
             check(source.url)
@@ -233,7 +296,6 @@ def _check(config: Config, guard: EgressGuard, enricher: Enricher) -> int:
             failures += 1
             print(f"  DENIED  {source.id:<20} {exc}")
         else:
-            marker = "local" if source.local else ("stream" if is_stream(source.kind) else "ok")
             print(f"  {marker:<7} {source.id:<20} {source.kind:<10} {source.host}")
 
     if config.imagery:
@@ -245,8 +307,12 @@ def _check(config: Config, guard: EgressGuard, enricher: Enricher) -> int:
         for tile in config.imagery:
             print(f"  browser {tile.id:<20} {tile.group:<10} {tile.host}  every {tile.refresh}s")
 
+    if web_problem is not None:
+        print(WEB_DIR_HELP, file=sys.stderr)
+        failures += 1
+
     if failures:
-        print(f"\n{failures} source(s) need attention.", file=sys.stderr)
+        print(f"\n{failures} problem(s) need attention.", file=sys.stderr)
     return 1 if failures else 0
 
 
@@ -392,6 +458,11 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("-v", "--verbose", action="store_true", help="debug logging")
     parser.add_argument(
+        "--offline",
+        action="store_true",
+        help="check: validate config without DNS, for a machine with no WAN (or CI)",
+    )
+    parser.add_argument(
         "--file",
         type=Path,
         metavar="PATH",
@@ -426,7 +497,7 @@ def main(argv: list[str] | None = None) -> int:
     enricher = build_enricher(config)
 
     if args.command == "check":
-        return _check(config, guard, enricher)
+        return _check(config, guard, enricher, offline=args.offline)
     if args.command == "fcc-import":
         return _fcc_import(config, guard, args.file)
     return _serve(config, guard, enricher)

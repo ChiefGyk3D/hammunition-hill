@@ -39,7 +39,7 @@ have. Where the two disagree, this page is the one kept current.
 | Metrics export to Grafana | ❌ **not written** |
 | Opaque image mode | ❌ **not written** |
 | Packaging (Docker, distro packages) | ❌ **not written** |
-| CI | ❌ **not written** |
+| CI, CodeQL, dependency audit | ✅ working |
 
 ---
 
@@ -59,8 +59,12 @@ The parts everything else sits on.
 | Stream self-healing | ✅ | Exponential backoff; one dead stream cannot take down the run. |
 | `hamhill serve` / `check` / `fcc-import` | ✅ | |
 | Config validation with actionable errors | ✅ | |
-| Tests | ✅ | 660, ruff clean. |
-| CI | ❌ | No workflow. Tests are run by hand before merge. |
+| Tests | ✅ | 952, ruff clean. |
+| CI | ✅ | Nine jobs: lint, pytest across 3.11–3.13 on x86, ARM and macOS, example-config validation, an end-to-end smoke test, a real-browser render of every dashboard, dependency audit, wheel build, and a weekly upstream-liveness check. |
+| CodeQL | ✅ | Python and JavaScript, weekly and per-PR. |
+| Dependabot | ✅ | Actions and pip, weekly. |
+| Tests cannot reach the network | ✅ | Enforced by a conftest guard, not convention. |
+| `make check` reproduces CI locally | ✅ | |
 | Docker image | ❌ | systemd is documented; a container is not built. |
 | Distro packages | ❌ | |
 
@@ -189,6 +193,7 @@ tier 2 (`imagery`).
 | systemd unit | ✅ | Documented in [INSTALL.md](INSTALL.md) |
 | Kiosk / wall display notes | ✅ | |
 | Docker image | ❌ | |
+| `pip install` alone | ❌ | The wheel carries the CLI, not `web/`. A clone is the supported install and the CLI now says so instead of serving 404s. |
 | Hosted / multi-user mode | ⛔ | Not until there is a real authn/authz model, TLS, rate limiting and a threat model this version deliberately does not have. Reach it over ZTNA or a VPN instead — see [SECURITY.md](SECURITY.md). |
 
 ---

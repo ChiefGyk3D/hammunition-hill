@@ -11,3 +11,9 @@ build/
 # Runtime state: snapshots the collector writes, and the operator's own config
 data/
 config.toml
+
+# CI scratch: the browser driver render_check.py writes next to node_modules,
+# and the node_modules that job installs
+node_modules/
+.render-driver.js
+ci-config.toml

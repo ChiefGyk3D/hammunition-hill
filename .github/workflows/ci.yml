@@ -1,0 +1,294 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # Upstream endpoints rot and dependencies grow advisories on their own
+  # schedule, not ours. A weekly run catches that without anyone pushing.
+  schedule:
+    - cron: "17 6 * * 1"
+  workflow_dispatch:
+
+# Read-only by default. No job here needs to write to the repository, and a
+# workflow that cannot write cannot be turned into one that does by a PR.
+permissions:
+  contents: read
+
+# A new push supersedes the previous run for the same ref. Never cancel main:
+# its results are the record of what actually shipped.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+env:
+  PYTHONUNBUFFERED: "1"
+  # Turn warnings into a visible signal rather than scrollback.
+  PYTHONWARNINGS: "default"
+  FORCE_COLOR: "1"
+
+jobs:
+  lint:
+    name: ruff
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - run: pip install --disable-pip-version-check "ruff>=0.5"
+      - name: ruff check
+        run: ruff check --output-format=github src/ tests/ .github/scripts/
+      # `ruff format --check` is deliberately NOT run. This codebase is
+      # hand-formatted and the layout is often load-bearing -- a test that
+      # mirrors a wire format reads as one line per field, and the formatter
+      # wants to split it differently. Turning it on today means a 36-file
+      # churn commit that fights intentional layout, for no defect caught:
+      # line length, import order and the security rules are all enforced by
+      # `ruff check` above. Worth revisiting when there are enough contributors
+      # for style arguments to cost more than the churn would.
+
+  test:
+    name: pytest ${{ matrix.python }} · ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      # One red leg must not hide the state of the others. Finding out that
+      # 3.11 and macOS are also broken costs nothing here and saves a round trip.
+      fail-fast: false
+      matrix:
+        os: [ubuntu-24.04]
+        python: ["3.11", "3.12", "3.13"]
+        include:
+          # The primary deployment target is a Raspberry Pi, so the ARM runner
+          # is not exotic here -- it is the hardware most users will be on.
+          - os: ubuntu-24.04-arm
+            python: "3.13"
+          # A shack laptop is as likely to be a Mac as anything else, and this
+          # is where path and filesystem assumptions surface.
+          - os: macos-14
+            python: "3.13"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: pip install --disable-pip-version-check -e ".[dev]"
+      - name: pytest
+        # -W error promotes DeprecationWarnings to failures. A warning ignored
+        # for three releases becomes a breakage on the fourth.
+        run: pytest -q --durations=10 -W error::DeprecationWarning
+
+  example-config:
+    name: example config still works
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - run: pip install --disable-pip-version-check .
+      - name: hamhill check accepts the shipped example
+        # The file every new user copies. If this breaks, the first experience
+        # of the project is a stack trace. Run from a clean directory so it
+        # cannot accidentally pick up a repo-local config.
+        #
+        # --offline skips DNS. Resolving ten upstream hostnames would make every
+        # PR depend on NOAA's resolver being healthy, and a red build for that
+        # reason teaches people to ignore red builds. The live version of this
+        # check runs on the schedule below, where a genuinely dead upstream is
+        # the news rather than the noise.
+        #
+        # Run from the checkout, because that is precisely what INSTALL.md tells
+        # people to do: clone, copy the example, run it. Appending a [paths]
+        # override here instead would redefine a table the example already
+        # declares, which is invalid TOML -- and would be testing a config no
+        # user will ever have.
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          cp config.example.toml ci-config.toml
+          hamhill check --offline --config ci-config.toml
+      - name: a missing web directory fails loudly
+        # The wheel carries the CLI and not web/. Someone who pip installs
+        # instead of cloning must be told that, not served 404s in silence.
+        run: |
+          mkdir -p /tmp/nodashboard && cd /tmp/nodashboard
+          cp "$GITHUB_WORKSPACE/config.example.toml" config.toml
+          if hamhill check --offline --config config.toml; then
+            echo "::error::check passed with no web directory present"
+            exit 1
+          fi
+          echo "correctly refused"
+      - name: hamhill --version and --help
+        run: |
+          hamhill --version
+          hamhill --help
+
+  smoke:
+    name: end-to-end smoke
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - run: pip install --disable-pip-version-check .
+      - name: collector writes snapshots and the server serves them
+        # Against a local upstream, so this tests our code rather than NOAA's
+        # uptime. Proves the whole loop: fetch -> snapshot -> HTTP -> headers.
+        run: python .github/scripts/smoke.py
+
+  frontend:
+    name: browser render
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+      - run: pip install --disable-pip-version-check .
+      - name: install playwright and chromium
+        # Both are needed and they are different things: `npm install` puts the
+        # module where the driver's require() can find it, and `playwright
+        # install` fetches the matching browser build. Installing only the
+        # browser leaves the driver unable to import the library that drives it.
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.49.0
+          npx playwright@1.49.0 install --with-deps chromium
+      - name: every dashboard renders without a console error
+        # The checks pytest cannot do: that the panels actually load, that no
+        # module throws, and that nothing on the page tries to reach a host the
+        # CSP did not name.
+        run: python .github/scripts/render_check.py
+      - name: upload screenshots
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: dashboard-screenshots
+          path: /tmp/hamhill-render/*.png
+          if-no-files-found: warn
+          retention-days: 7
+
+  audit:
+    name: dependency audit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - run: pip install --disable-pip-version-check pip-audit
+      - name: audit the declared dependencies
+        # Scoped to what this project actually ships, generated from pyproject
+        # so it cannot drift from the real list.
+        #
+        # Auditing the whole environment instead would also report advisories
+        # against the runner's own pip and setuptools -- which we neither ship
+        # nor control, and which would turn this job into a recurring red that
+        # everyone learns to ignore. A check nobody trusts is worse than none.
+        run: |
+          python - <<'PY' > /tmp/requirements.txt
+          import pathlib, tomllib
+          project = tomllib.loads(pathlib.Path("pyproject.toml").read_text())["project"]
+          print("\n".join(project["dependencies"]))
+          PY
+          cat /tmp/requirements.txt
+          pip-audit --strict --progress-spinner off -r /tmp/requirements.txt
+
+  build:
+    name: package builds and installs clean
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - run: pip install --disable-pip-version-check build twine
+      - run: python -m build
+      - name: twine check
+        run: twine check --strict dist/*
+      - name: install the wheel in a clean venv and run it
+        # `pip install -e .` hides missing package data. This catches a panel or
+        # a band plan that works from the source tree and is absent from the
+        # artifact users actually get.
+        run: |
+          python -m venv /tmp/wheeltest
+          /tmp/wheeltest/bin/pip install --disable-pip-version-check dist/*.whl
+          /tmp/wheeltest/bin/hamhill --version
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: dist
+          path: dist/
+          retention-days: 7
+
+  upstreams:
+    name: upstream hosts still resolve
+    # Schedule and manual only. This one talks to the real world, so it must
+    # never be able to fail somebody's pull request -- but a weekly signal that
+    # an upstream host has vanished is exactly what this project needs, because
+    # the alternative is finding out from a blank panel months later.
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.13"
+      - run: pip install --disable-pip-version-check .
+      - name: resolve every host in the example config
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          cp config.example.toml config.toml
+          hamhill check --config config.toml
+
+  # One required check to point branch protection at, so adding a job later
+  # does not mean remembering to update a settings page.
+  all-green:
+    name: all checks passed
+    if: always()
+    needs: [lint, test, example-config, smoke, frontend, audit, build]
+    # `upstreams` is deliberately absent: it is schedule-only and talks to
+    # the real internet, so it must never gate a merge.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: verify every job succeeded
+        run: |
+          echo '${{ toJSON(needs) }}'
+          if echo '${{ toJSON(needs) }}' | grep -qE '"result": *"(failure|cancelled|skipped)"'; then
+            echo "::error::at least one job did not succeed"
+            exit 1
+          fi
+          echo "all jobs succeeded"
