@@ -577,3 +577,6 @@ ul.wx-alerts { list-style: none; margin: 0; padding: 0; }
   font-family: var(--mono); font-size: 10.5px; color: var(--muted);
   margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--rule);
 }
+
+/* A stale lookup is still shown, but never as though it were current. */
+.stale-detail .detail-value { color: var(--fair); }

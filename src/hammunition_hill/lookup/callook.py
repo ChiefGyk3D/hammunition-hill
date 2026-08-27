@@ -34,6 +34,7 @@ class CallookProvider:
     hosts = ("callook.info",)
     needs_credentials = False
     worldwide = False
+    offline = False
 
     async def resolve(self, client: httpx.AsyncClient, callsign: str) -> LookupResult | None:
         url = f"{BASE_URL}/{callsign.upper()}/json"

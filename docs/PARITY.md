@@ -77,7 +77,7 @@ Legend: **done** · **partial** · **planned** · **not planned** (with the reas
 
 | Feature | Status | Notes |
 |---|---|---|
-| Callsign lookup | **done** | Local-first, with optional providers |
+| Callsign lookup | **done** | Ordered provider chains, local-first. The offline FCC ULS index resolves US calls with no network at all, and stale cache entries are still served (flagged) when the WAN is gone — a portable station keeps working. |
 | Bearing calculator | **done** | Inside callsign lookup and on every spot |
 | Band plan | **done** | By licence class, which theirs does not do |
 | Solar terminator | **done** | The greyline layer on the map |
@@ -140,6 +140,8 @@ In order of value per unit of work:
 Smaller, now unblocked by the work above:
 
 - A `meteoalarm` source, for structured EU severity rather than headlines.
+- A GPS source (gpsd / NMEA) for automatic grid square and disciplined time
+  when portable, published at Maidenhead precision rather than raw fix.
 - Field weather conditions, once the `/points` → gridpoint chain is done
   properly rather than by letting a source build URLs from a response.
 - "AT YOUR QTH" vs "OPEN ELSEWHERE" band pills, spotted in the hamdash

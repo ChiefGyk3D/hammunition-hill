@@ -11,7 +11,6 @@ from hammunition_hill.config import parse_config
 from hammunition_hill.egress import EgressGuard
 from hammunition_hill.enrich import SEEN_CALLSIGN_LIMIT, Enricher, Station
 from hammunition_hill.lookup import (
-    PLANNED,
     CredentialsRequired,
     build_provider,
     provider_hosts,
@@ -64,15 +63,17 @@ def test_account_providers_build_with_credentials(name):
 
 
 def test_unknown_provider_lists_the_options():
-    with pytest.raises(ValueError, match="available: none, callook, hamqth, qrz"):
+    with pytest.raises(ValueError, match="available: none, callook, fcc_uls, hamqth, qrz"):
         build_provider("nonsense", None, None)
 
 
-def test_planned_providers_explain_themselves():
-    """'fcc_uls' is designed but unbuilt; the error should say so, not 'unknown'."""
-    assert "fcc_uls" in PLANNED
-    with pytest.raises(ValueError, match="not built yet"):
-        build_provider("fcc_uls", None, None)
+def test_fcc_uls_is_built_now(tmp_path):
+    """It used to be in PLANNED with an error saying so. It is real now."""
+    provider = build_provider("fcc_uls", None, None, data_dir=tmp_path)
+    assert provider is not None
+    assert provider.offline is True
+    # It grants the collector no reach: the import is a separate command.
+    assert provider.hosts == ()
 
 
 @pytest.mark.parametrize("name,host", [

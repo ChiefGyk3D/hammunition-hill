@@ -222,12 +222,37 @@ interval = 120
 #   qrz     best data, worldwide, needs a paid QRZ XML subscription
 #   fcc_uls designed but not built yet — local FCC download, no per-lookup network
 #
+# Providers are an ordered chain, tried left to right. No single source is right
+# for every callsign, so you pick the order:
+#
+#   providers = ["fcc_uls", "qrz"]
+#
+# A local-first chain is usually what you want. The offline FCC index answers US
+# callsigns instantly with no network at all, and declines everything else for
+# free -- so the paid provider behind it only ever sees the calls it is actually
+# needed for, and a park with no signal still resolves most of a US pileup.
+#
+# When the network goes, network providers are skipped rather than waited on,
+# and the offline ones carry on. That is automatic; there is no portable mode
+# to remember to switch on.
+#
+# The old singular form still works and means a chain of one:
+#   provider = "callook"
+#
 # [lookup]
-# provider = "callook"
+# providers = ["fcc_uls", "qrz"]
 # username = ""            # hamqth / qrz only
 # password = ""            # keep config.toml chmod 600 if you set these
 # max_per_cycle = 20       # be a good guest to free services
 # cache_hours = 720
+# serve_stale = true       # publish expired cache entries, flagged, when offline
+# uls_db = ""              # defaults to <data_dir>/fcc_uls.sqlite3
+#
+# fcc_uls needs a one-off import before it can answer:
+#     hamhill fcc-import                 # downloads ~160 MB from the FCC
+#     hamhill fcc-import --file l_amat.zip   # if you already have the file
+# The FCC rebuilds it weekly; re-running monthly is plenty. `hamhill check`
+# tells you how many callsigns are indexed and when.
 #
 # Resolution is scheduled, not on demand: the collector works through callsigns
 # that already appear in your spots and decodes. To look up arbitrary callsigns

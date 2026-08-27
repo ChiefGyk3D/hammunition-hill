@@ -201,7 +201,9 @@ def _check(config: Config, guard: EgressGuard, enricher: Enricher) -> int:
     print(f"prefixes     : {enricher.table.source}{caveat}")
     if config.lookup.enabled:
         endpoint = "  + query endpoint ENABLED" if config.lookup.query_endpoint else ""
-        print(f"lookup       : {config.lookup.provider}{endpoint}")
+        chain = " -> ".join(config.lookup.providers)
+        print(f"lookup       : {chain}{endpoint}")
+        _report_uls(config)
     else:
         print("lookup       : none (prefix table only)")
     print(f"csp          : {build_csp(config.embed_hosts, config.csp_hosts())}")
@@ -241,6 +243,131 @@ def _check(config: Config, guard: EgressGuard, enricher: Enricher) -> int:
     return 1 if failures else 0
 
 
+def _report_uls(config: Config) -> None:
+    """Say whether the offline index actually exists.
+
+    "fcc_uls is configured" and "fcc_uls can answer" are different states, and
+    the gap between them is a command the operator has not run yet. Worth
+    catching here rather than as silent non-resolution later.
+    """
+    if "fcc_uls" not in config.lookup.providers:
+        return
+    from .lookup.uls import DEFAULT_DB_NAME, UlsIndex
+
+    index = UlsIndex(config.lookup.uls_db or (config.data_dir / DEFAULT_DB_NAME))
+    if not index.available:
+        print(f"  fcc_uls    : NO INDEX at {index.path} — run 'hamhill fcc-import'")
+        return
+    meta = index.meta()
+    index.close()
+    count = meta.get("callsigns", "?")
+    when = meta.get("imported_at", "unknown")
+    print(f"  fcc_uls    : {count} callsigns, imported {when}  (offline, no network)")
+
+
+def _fcc_import(config: Config, guard: EgressGuard, source: Path | None) -> int:
+    """Build the offline FCC ULS index.
+
+    A deliberate command rather than a scheduled source. It is a ~160 MB fetch
+    and a few hundred MB of text to chew through, and doing that unattended on
+    a metered hotspot -- which is exactly the connection a portable station is
+    likely to have -- would be a poor surprise. The FCC rebuilds the file weekly;
+    running this monthly is plenty.
+    """
+    from .lookup.uls import DEFAULT_DB_NAME, ULS_COMPLETE_URL, build_index
+
+    db_path = config.lookup.uls_db or (config.data_dir / DEFAULT_DB_NAME)
+
+    if source is None:
+        print(f"downloading {ULS_COMPLETE_URL}")
+        print("  (~160 MB. Use --file if you have already downloaded it.)")
+        try:
+            guard.check(ULS_COMPLETE_URL)
+        except EgressDenied as exc:
+            print(f"refused by egress policy: {exc}", file=sys.stderr)
+            print(
+                "  The FCC host is allowlisted only while this command runs, so this "
+                "usually means a private-address or DNS problem.",
+                file=sys.stderr,
+            )
+            return 1
+        source = config.data_dir / "l_amat.zip"
+        if (rc := _download(ULS_COMPLETE_URL, source)) != 0:
+            return rc
+    elif not source.is_file():
+        print(f"no such file: {source}", file=sys.stderr)
+        return 1
+
+    print(f"reading {source}")
+    try:
+        stats = build_index(source, db_path)
+    except (ValueError, OSError) as exc:
+        print(f"import failed: {exc}", file=sys.stderr)
+        return 1
+
+    print(stats.report())
+    print(f"\nindex written to {db_path}")
+
+    if stats.indexed == 0:
+        # A positional parser against a format we cannot re-verify should shout
+        # rather than leave an empty database that silently resolves nothing.
+        print(
+            "\nNo callsigns were indexed. The record layout may have changed — "
+            "please open an issue with the counts above.",
+            file=sys.stderr,
+        )
+        return 1
+
+    if "fcc_uls" not in config.lookup.providers:
+        print("Add fcc_uls to [lookup] providers to use it.")
+    return 0
+
+
+def _download(url: str, target: Path) -> int:
+    """Stream a large file to disk with visible progress."""
+    import httpx
+
+    from .collector import build_client
+
+    target.parent.mkdir(parents=True, exist_ok=True)
+    tmp = target.with_suffix(".part")
+
+    async def run() -> int:
+        # A 160 MB body over a slow link needs a read timeout measured in
+        # minutes, not the 20 seconds a JSON source gets.
+        timeout = httpx.Timeout(connect=15.0, read=300.0, write=30.0, pool=10.0)
+        try:
+            async with build_client(EgressGuard.build({_host_of(url)}, set())) as client:
+                async with client.stream("GET", url, timeout=timeout) as response:
+                    response.raise_for_status()
+                    total = int(response.headers.get("content-length") or 0)
+                    done = 0
+                    with tmp.open("wb") as handle:
+                        async for chunk in response.aiter_bytes(1 << 20):
+                            handle.write(chunk)
+                            done += len(chunk)
+                            if total:
+                                pct = 100 * done / total
+                                print(f"\r  {done >> 20} / {total >> 20} MiB ({pct:.0f}%)", end="")
+                            else:
+                                print(f"\r  {done >> 20} MiB", end="")
+                    print()
+        except httpx.HTTPError as exc:
+            print(f"\ndownload failed: {exc}", file=sys.stderr)
+            tmp.unlink(missing_ok=True)
+            return 1
+        tmp.replace(target)
+        return 0
+
+    return asyncio.run(run())
+
+
+def _host_of(url: str) -> str:
+    from urllib.parse import urlsplit
+
+    return (urlsplit(url).hostname or "").lower()
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="hamhill",
@@ -258,7 +385,17 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("-v", "--verbose", action="store_true", help="debug logging")
     parser.add_argument(
-        "command", nargs="?", default="serve", choices=("serve", "check"), help="default: serve"
+        "--file",
+        type=Path,
+        metavar="PATH",
+        help="fcc-import: use an already-downloaded l_amat.zip instead of fetching it",
+    )
+    parser.add_argument(
+        "command",
+        nargs="?",
+        default="serve",
+        choices=("serve", "check", "fcc-import"),
+        help="default: serve",
     )
     args = parser.parse_args(argv)
 
@@ -283,4 +420,6 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "check":
         return _check(config, guard, enricher)
+    if args.command == "fcc-import":
+        return _fcc_import(config, guard, args.file)
     return _serve(config, guard, enricher)
