@@ -2,13 +2,12 @@
   "_comment": [
     "The Hammunition Hill palette. The two brand colours are sampled from the",
     "logo artwork itself, not chosen beside it: #912795 and #ed9a1c are the two",
-    "most common chromatic values in docs/images/logo.png, at 2.6% and 1.8% of",
-    "its opaque pixels. brand-deep is the shadow tone the artwork already uses",
-    "under the purple.",
-    "The surface and status ramps are the dashboard's, reproduced here so that",
-    "anything made off this package matches what the product actually looks",
-    "like. web/style.css is the source of truth for those; tests keep the two",
-    "in step."
+    "most common chromatic values in docs/images/logo.png. brand-deep is the",
+    "shadow tone the artwork already uses under the purple.",
+    "The dashboard accent is the brand purple lightened to be readable. #912795",
+    "itself is 2.62:1 against the ground, and the accent is text: active tabs,",
+    "links, callsigns. Same hue, raised to 7.1:1. tests/test_contrast.py holds",
+    "the floor, and web/style.css is the source of truth for these values."
   ],
   "brand": {
     "brand": "#912795",
@@ -22,7 +21,7 @@
     "rule": "#28313c",
     "ink": "#e3e7ed",
     "muted": "#8f98a4",
-    "accent": "#3bc6d0"
+    "accent": "#dc7be0"
   },
   "status": {
     "good": "#0ca30c",

@@ -7,7 +7,14 @@
   --rule: #28313c;
   --ink: #e3e7ed;
   --muted: #8f98a4;
-  --accent: #3bc6d0;
+  /* The accent is the logo's purple, lightened until it is readable.
+     #912795 itself is 2.62:1 against --ground, which fails the 3:1 floor for
+     interface components and is nowhere near the 4.5:1 for text -- and this
+     token is text: active tabs, links, callsigns, band labels. Same hue
+     (298 degrees), raised to 7.1:1. Going further turns it pink before it
+     reaches the cyan's 9.1, which is the trade being made here.
+     tests/test_contrast.py holds the floor. */
+  --accent: #dc7be0;
   /* The logo's colours, as their own tokens, sampled from the artwork rather
      than picked beside it: these are the two most common chromatic values in
      docs/images/logo.png. Deliberately separate from --accent, which is cyan
