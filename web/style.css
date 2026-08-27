@@ -603,3 +603,16 @@ ul.wx-alerts { list-style: none; margin: 0; padding: 0; }
 .muf-freq { color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
 .muf-reason { color: var(--muted); }
 .readout .unit { font-size: 11px; color: var(--muted); font-weight: 400; }
+
+/* --- GPS ---------------------------------------------------------------- */
+.gps-grid {
+  font-family: var(--mono);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  color: var(--accent);
+  margin-bottom: 10px;
+}
+.gps-grid.stale { color: var(--fair); }
+.detail-value.muted { color: var(--muted); font-style: italic; }
+.detail-value.clock-bad { color: var(--poor); }

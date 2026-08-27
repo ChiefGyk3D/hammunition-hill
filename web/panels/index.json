@@ -39,6 +39,7 @@
       "name": "Operating",
       "panels": [
         "beacons",
+        "gps",
         "logbook",
         "callsign",
         "logstats",
@@ -59,6 +60,7 @@
       "name": "Field & Weather",
       "panels": [
         "wxalerts",
+        "gps",
         "clock",
         "imagery"
       ]

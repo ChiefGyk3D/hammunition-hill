@@ -268,6 +268,50 @@ interval = 120
 allow_hosts = []
 # allow_hosts = ["radar.weather.gov", "www.hamqsl.com"]
 
+# --- GPS: automatic grid square when portable --------------------------------
+# Off by default. Two ways to read a receiver; prefer gpsd where you have it,
+# because it shares the device -- reading the serial line directly takes it
+# exclusively, so your logging software will not see it.
+#
+# WHAT GETS PUBLISHED. A snapshot is readable by everyone on your LAN, and a raw
+# fix is your house to a few metres. So the collector truncates to a Maidenhead
+# locator before publishing, and that is also all the dashboard needs: bearings,
+# distances, the greyline, band-plan region and the propagation model are all
+# grid-square work.
+#
+#   precision = 4   ~70 x 35 miles
+#   precision = 6   ~3 x 1.5 miles   (default, and what you print on a QSL card)
+#   precision = 8   ~500 x 250 m
+#
+#   publish_coordinates = true   also publish lat/lon, rounded to match the grid.
+#                                Off by default. Turn it on only if you know who
+#                                can reach this dashboard.
+#   follow = false               show the fix without moving the station. For a
+#                                fixed site with a receiver present for its clock
+#                                rather than its position.
+#
+# gpsd -- the recommended path on Linux:
+#
+# [[sources]]
+# id = "gps"
+# kind = "gpsd"
+# url = "tcp://127.0.0.1:2947"
+# local = true
+# options = { precision = 6 }
+#
+# A bare USB receiver with no gpsd. Needs read access to the device -- usually
+# membership of the `dialout` group, which is not root-equivalent:
+#
+# [[sources]]
+# id = "gps"
+# kind = "nmea"
+# path = "/dev/ttyUSB0"
+# options = { baud = 9600, precision = 6 }
+#
+# The panel also shows your clock error against GPS time. It never sets the
+# clock -- that needs privileges a dashboard should not have, and chrony or
+# gpsd's own PPS handling do it properly.
+
 # --- Tier 2: imagery the browser loads directly ------------------------------
 # Radar, satellite and lightning pictures. Empty by default, and read the cost
 # before you fill it in.

@@ -13,6 +13,8 @@ from __future__ import annotations
 from typing import Any
 
 from .cluster import ClusterStream
+from .gpsd import GpsdStream
+from .nmea import NmeaStream
 from .rigctl import RigctlStream
 from .wsjtx import WsjtxStream
 
@@ -20,6 +22,8 @@ STREAM_KINDS: dict[str, Any] = {
     ClusterStream.kind: ClusterStream,
     WsjtxStream.kind: WsjtxStream,
     RigctlStream.kind: RigctlStream,
+    GpsdStream.kind: GpsdStream,
+    NmeaStream.kind: NmeaStream,
 }
 
 

@@ -1,0 +1,9 @@
+{
+  "id": "gps",
+  "name": "GPS",
+  "tier": 0,
+  "sources": ["gps"],
+  "embed_hosts": [],
+  "span": 1,
+  "description": "Grid square and clock check from a local receiver. Tier 0 — the fix comes from the sky and never leaves this machine."
+}

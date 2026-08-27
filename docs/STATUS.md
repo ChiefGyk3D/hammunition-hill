@@ -21,8 +21,8 @@ have. Where the two disagree, this page is the one kept current.
 |---|---|
 | Collector, snapshot architecture, static server | ✅ working |
 | Egress allowlist, CSP, path handling | ✅ working |
-| Panels | ✅ 20 across 6 dashboards |
-| Source kinds | ✅ 10 polled, 3 stream, 1 file |
+| Panels | ✅ 21 across 6 dashboards |
+| Source kinds | ✅ 10 polled, 5 stream, 1 file |
 | Space weather dials | ✅ 8 scales |
 | Your log driving spot colouring | ✅ working |
 | Rig and WSJT-X integration | ✅ working |
@@ -32,7 +32,7 @@ have. Where the two disagree, this page is the one kept current.
 | Propagation | 🟡 MUF/LUF/absorption indicator; **no VOACAP** |
 | Weather outside the US | 🟡 feeds and images, no structured severity |
 | Callsign query endpoint | ❌ **not written** — config flag exists and does nothing |
-| GPS / portable auto-grid | ❌ **not written** |
+| GPS / portable auto-grid | ✅ working |
 | Satellites | ❌ **not written** |
 | RBN | ❌ **not written** |
 | CW / Morse tools | ❌ **not written** |
@@ -72,7 +72,7 @@ The parts everything else sits on.
 
 **Polled** (10 kinds): `swpc`, `hamqsl`, `rss`, `pota`, `sota`, `ics`, `aurora`,
 `noaa_scales`, `swpc_alerts`, `nws_alerts`.
-**Stream** (3): `dxcluster`, `wsjtx`, `rigctl`.
+**Stream** (5): `dxcluster`, `wsjtx`, `rigctl`, `gpsd`, `nmea`.
 **File** (1): `adif`.
 
 | Feature | Status | Notes |
@@ -94,7 +94,7 @@ The parts everything else sits on.
 | Satellite passes | ❌ | Needs cached TLEs and SGP4 |
 | WWFF / WWBOTA | ❌ | Same shape as POTA/SOTA |
 | Repeater directory | ❌ | RepeaterBook has a public API |
-| GPS (gpsd / NMEA) | ❌ | Planned: auto grid square and disciplined time when portable, published at Maidenhead precision rather than raw fix |
+| GPS (gpsd / NMEA) | ✅ | Auto grid square and a clock check when portable. Published at Maidenhead precision, never a raw fix — see [GPS.md](GPS.md) |
 
 ## Panels
 
@@ -102,8 +102,8 @@ The parts everything else sits on.
 **Activity**, **Field & Weather**. Regroup them by editing
 `web/panels/index.json`.
 
-Five are **tier 0** — they work with the internet unplugged: `clock`,
-`bandplan`, `beacons`, `callsign`, `logbook`. Fourteen are tier 1. One is
+Six are **tier 0** — they work with the internet unplugged: `bandplan`,
+`beacons`, `callsign`, `clock`, `gps`, `logbook`. Fourteen are tier 1. One is
 tier 2 (`imagery`).
 
 | Feature | Status | Notes |
@@ -203,11 +203,10 @@ tier 2 (`imagery`).
 
 What is actually being worked on, in order:
 
-1. **GPS** (gpsd and direct NMEA) for portable auto-grid and disciplined time.
-2. **RBN**, which is the cluster client pointed somewhere else plus aggregation.
-3. **CW / Morse reference tools** — tier 0, self-contained.
-4. **Satellites**, which needs real orbital mechanics.
-5. **The metrics exporter**, after parity.
+1. **RBN**, which is the cluster client pointed somewhere else plus aggregation.
+2. **CW / Morse reference tools** — tier 0, self-contained.
+3. **Satellites**, which needs real orbital mechanics.
+4. **The metrics exporter**, after parity.
 
 Smaller items are listed in [PARITY.md](PARITY.md).
 

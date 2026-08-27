@@ -147,8 +147,6 @@ In order of value per unit of work:
 Smaller, now unblocked by the work above:
 
 - A `meteoalarm` source, for structured EU severity rather than headlines.
-- A GPS source (gpsd / NMEA) for automatic grid square and disciplined time
-  when portable, published at Maidenhead precision rather than raw fix.
 - Field weather conditions, once the `/points` → gridpoint chain is done
   properly rather than by letting a source build URLs from a response.
 - "AT YOUR QTH" vs "OPEN ELSEWHERE" band pills, spotted in the hamdash
