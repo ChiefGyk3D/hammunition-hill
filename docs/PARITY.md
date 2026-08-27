@@ -42,8 +42,8 @@ Legend: **done** · **partial** · **planned** · **not planned** (with the reas
 | Live map | **done** | Rotatable globe, greyline, spots, great-circle arcs |
 | DX spots | **done** | Telnet cluster, filtered client-side, coloured by what you need |
 | Beacons | **done** | NCDXF/IARU schedule, computed offline |
-| RBN spots | **planned** | Same telnet shape as the cluster; largely a config away |
-| RBN band SNR / path matrix | **planned** | Needs aggregation over the RBN feed |
+| RBN spots | **done** | Its own line parser rather than the cluster's, which turned out to matter: the formats differ |
+| RBN band SNR / path matrix | **done** | Aggregated by band and mode, bounded so a busy night cannot grow memory without limit — see [RBN.md](RBN.md) |
 | HF signals | **partial** | Covered by spots; a dedicated view is not obviously additive |
 | FT8 digimodes | **partial** | We show *your* decodes from WSJT-X, which they cannot. A PSK Reporter view of everyone else's is separate work. |
 | FT8 propagation globes | **planned** | PSK Reporter paths on the globe we already have |
@@ -56,7 +56,7 @@ Legend: **done** · **partial** · **planned** · **not planned** (with the reas
 | SOTA | **done** | |
 | WWFF / WWBOTA | **planned** | Same source shape as POTA/SOTA |
 | Contests | **done** | Generic iCalendar, so any calendar works |
-| Satellites | **planned** | Needs cached TLEs and SGP4; v0.4 |
+| Satellites | **done** | Cached TLEs, SGP4 behind an optional extra, look angles and Doppler. Passes found by bisection rather than by scanning — see [SATELLITES.md](SATELLITES.md) |
 | QSO log | **done** | Reversed an earlier decision. A write endpoint does not need authentication here, because the network is already the access control — see [LOGBOOK.md](LOGBOOK.md) for the three defences that do the work instead. Multiple logbooks, plain ADIF, append-only, off by default. |
 
 ### Weather
@@ -90,7 +90,7 @@ Legend: **done** · **partial** · **planned** · **not planned** (with the reas
 | Repeater finder | **planned** | RepeaterBook has a public API |
 | MUF predictor | **done** | Ported from solarstorm_scout with the solar-zenith fix, so it peaks at *your* local noon rather than 12:00 UTC |
 | Propagation prediction | **partial** | Band conditions from HamQSL plus a local MUF/LUF/absorption indicator; VOACAP still deferred and still hard |
-| Education | **not planned** | Better served by the ARRL and existing study sites than by a dashboard |
+| Education | **done** | Reversed. Licence exam practice from the official NCVEC pools for all three US elements, which ship with the project: five study modes, and exams built the way a real one is — one question from each group. The argument against was that study sites do it better; what they do not do is work with the WAN down, which is the whole premise here. See [EXAM.md](EXAM.md) |
 
 ### Space weather
 
@@ -141,8 +141,13 @@ In order of value per unit of work:
 3. ~~The MUF / D-layer model from solarstorm_scout.~~ Done, with the
    solar-zenith fix — the ported model peaked at 12:00 UTC regardless of where
    the operator was.
-4. RBN, which is the cluster client pointed somewhere else.
-5. Satellites, which needs real orbital mechanics.
+4. ~~RBN, which is the cluster client pointed somewhere else.~~ Done, and it
+   was not: the RBN line format differs from the cluster's enough to need its
+   own parser.
+5. ~~Satellites, which needs real orbital mechanics.~~ Done, against cached
+   TLEs, with SGP4 itself borrowed rather than reimplemented.
+6. ~~Licence exam practice.~~ Done, which reverses the "not planned" this page
+   carried for it.
 
 Smaller, now unblocked by the work above:
 
@@ -151,4 +156,5 @@ Smaller, now unblocked by the work above:
   properly rather than by letting a source build URLs from a response.
 - "AT YOUR QTH" vs "OPEN ELSEWHERE" band pills, spotted in the hamdash
   screenshots and still outstanding.
-- CW/Morse reference tools — tier 0, self-contained, promised and not yet built.
+- ~~CW/Morse reference tools — tier 0, self-contained, promised and not yet
+  built.~~ Done: reference, translator, audio, and a four-drill trainer.

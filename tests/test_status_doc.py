@@ -262,3 +262,38 @@ def test_the_tier_breakdown_adds_up_to_the_panel_count():
             or f"{word} is tier {tier}" in STATUS
             or (f"{word} are tier {tier}" in STATUS)
         ), f"STATUS.md does not say {word} panels are tier {tier}"
+
+
+PARITY = (ROOT / "docs" / "PARITY.md").read_text(encoding="utf-8")
+
+# Row label as PARITY.md writes it -> a probe that is true when it is built.
+PARITY_BUILT = {
+    "RBN spots": lambda: __import__(
+        "hammunition_hill.streams", fromlist=["STREAM_KINDS"]
+    ).STREAM_KINDS["rbn"],
+    "Satellites": lambda: __import__("hammunition_hill.satellites", fromlist=["passes"]).passes,
+    "Education": lambda: __import__("hammunition_hill.exam", fromlist=["build_exam"]).build_exam,
+}
+
+
+@pytest.mark.parametrize("feature", sorted(PARITY_BUILT))
+def test_parity_does_not_call_a_built_feature_planned(feature):
+    """The comparison page drifts the same way the status page did, and worse.
+
+    PARITY.md carried four stale rows at once: RBN spots and its SNR matrix,
+    satellites, and -- the one that actually contradicted the product --
+    Education marked "not planned" with the reasoning that study sites do it
+    better, while licence exam practice was built, documented, and shipping
+    three question pools.
+
+    A comparison against someone else's product is exactly the page a reader
+    trusts to be current, because its whole purpose is to be a snapshot of two
+    moving things.
+    """
+    PARITY_BUILT[feature]()
+    rows = [line for line in PARITY.splitlines() if line.startswith(f"| {feature} |")]
+    assert rows, f"PARITY.md has no row for {feature!r}"
+    for row in rows:
+        assert "**planned**" not in row and "**not planned**" not in row, (
+            f"PARITY.md calls {feature!r} planned: {row}"
+        )

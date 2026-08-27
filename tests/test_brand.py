@@ -34,6 +34,11 @@ PALETTE = json.loads((BRAND / "palette.json").read_text(encoding="utf-8"))
 CSS = (ROOT / "web" / "style.css").read_text(encoding="utf-8")
 DOC = (ROOT / "docs" / "BRANDING.md").read_text(encoding="utf-8")
 
+# The citation for why the mark is not the HH monogram. Kept as a whole URL
+# so the check below can compare parsed links rather than search for a
+# hostname anywhere in the page.
+CITATION = "https://www.adl.org/resources/hate-symbol/hh"
+
 MARKS = sorted(BRAND.glob("mark*.svg"))
 RASTERS = sorted(BRAND.glob("*.png"))
 
@@ -116,7 +121,15 @@ def test_the_mark_is_not_the_letters():
         text = svg.read_text(encoding="utf-8")
         drawing = re.sub(r"<!--.*?-->", "", text, flags=re.S)
         assert "HH" not in drawing, f"{svg.name}: the mark must not be the HH monogram"
-    assert "adl.org" in DOC, "BRANDING.md must keep the reference for why"
+    # Compare parsed link targets, not a substring of the page. CodeQL flags
+    # `"adl.org" in text` as incomplete URL sanitization, and while nothing
+    # here is sanitizing anything, the rule has a point: a bare hostname
+    # matches at any position, so this assertion would also have passed on
+    # "notadl.org.example" or on the domain appearing in prose.
+    links = set(re.findall(r"\]\((https?://[^)\s]+)\)", DOC))
+    assert CITATION in links, (
+        f"BRANDING.md must keep the reference for why; its links are {sorted(links)}"
+    )
 
 
 @pytest.mark.parametrize("name", ["brand", "brand-ink", "brand-deep"])
