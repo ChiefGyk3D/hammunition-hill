@@ -14,8 +14,6 @@
 // D-layer absorption" tell an operator something they can act on, which a
 // bare colour cannot.
 
-const LEVEL_ORDER = { good: 0, warn: 1, critical: 2 };
-
 function readout(el, label, value, unit, sub) {
   const box = el("div", "readout");
   box.append(el("div", "label", label), el("div", "value", value));
