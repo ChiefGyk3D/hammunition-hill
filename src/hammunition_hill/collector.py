@@ -291,6 +291,124 @@ async def _logbook_loop(config: Config) -> None:
         await asyncio.sleep(LOGBOOK_REFRESH_SECONDS)
 
 
+# --- derived propagation --------------------------------------------------
+PROPAGATION_REFRESH_SECONDS = 300
+
+# While the inputs have not arrived yet, retry quickly instead of sleeping the
+# full cycle. On a cold start the polled sources are a second or two behind
+# this loop, and waiting five minutes to notice would leave the panel reading
+# "waiting for solar flux" long after the flux was on disk.
+PROPAGATION_STARTUP_RETRY_SECONDS = 15
+
+
+def _first_number(*candidates: Any) -> float | None:
+    """The first candidate that is a usable number. Upstreams disagree on type."""
+    for value in candidates:
+        if value is None:
+            continue
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            continue
+        return number
+    return None
+
+
+async def _propagation_loop(config: Config, enricher: Enricher) -> None:
+    """Recompute the propagation indicator from snapshots already on disk.
+
+    A derived source: it reads what other sources have already fetched and adds
+    no network of its own. That is why it is a loop here rather than a kind in
+    the source registry -- there is no URL, and giving it one would mean
+    inventing a fetch it does not make.
+
+    It recomputes on a timer even when the inputs have not changed, because its
+    largest input *is* the clock: the sun moves, so the answer at 14:00 differs
+    from the answer at 09:00 on identical flux and K numbers.
+    """
+    from .propagation import conditions
+
+    cfg = SourceConfig(id="propagation", kind="propagation", url="")
+    station = enricher.station
+
+    while True:
+        try:
+            if not station.located:
+                _write(
+                    config,
+                    cfg,
+                    {
+                        "available": False,
+                        "reason": "no [station] grid or lat/lon — "
+                        "the model needs your location to know where the sun is",
+                    },
+                    PROPAGATION_REFRESH_SECONDS * STALE_MULTIPLIER,
+                )
+                # Not a startup race: this one needs the operator to edit config,
+                # so there is nothing to be gained by asking again sooner.
+                await asyncio.sleep(PROPAGATION_REFRESH_SECONDS)
+                continue
+
+            flux_snapshot = read_snapshot(config.data_dir, "solarflux") or {}
+            k_snapshot = read_snapshot(config.data_dir, "kindex") or {}
+            hamqsl = read_snapshot(config.data_dir, "hamqsl") or {}
+
+            flux_data = flux_snapshot.get("data") or {}
+            k_data = k_snapshot.get("data") or {}
+            ham_data = hamqsl.get("data") or {}
+
+            # SWPC first, HamQSL as the fallback: both carry these numbers and
+            # an operator may be running either, or one may be stale.
+            sfi = _first_number(flux_data.get("flux"), ham_data.get("sfi"))
+            k_index = _first_number(k_data.get("kp"), ham_data.get("kindex"))
+
+            missing = [
+                name
+                for name, value in (("solar flux", sfi), ("K index", k_index))
+                if value is None
+            ]
+            if missing:
+                _write(
+                    config,
+                    cfg,
+                    {
+                        "available": False,
+                        "reason": f"waiting for {' and '.join(missing)} "
+                        f"— configure a swpc or hamqsl source",
+                    },
+                    PROPAGATION_REFRESH_SECONDS * STALE_MULTIPLIER,
+                )
+                await asyncio.sleep(PROPAGATION_STARTUP_RETRY_SECONDS)
+                continue
+
+            result = conditions(
+                sfi=sfi,
+                k_index=k_index,
+                latitude=station.lat,
+                longitude=station.lon,
+                moment=_now(),
+            )
+            _write(
+                config,
+                cfg,
+                {
+                    "available": True,
+                    "sfi": sfi,
+                    "k_index": k_index,
+                    "grid": station.grid,
+                    **result.to_dict(),
+                },
+                PROPAGATION_REFRESH_SECONDS * STALE_MULTIPLIER,
+            )
+        except Exception as exc:  # noqa: BLE001 - a model error must not end the run
+            log.warning("propagation model failed: %s", exc)
+            _write_failure(
+                config, cfg, f"{type(exc).__name__}: {exc}",
+                PROPAGATION_REFRESH_SECONDS * STALE_MULTIPLIER,
+            )
+        await asyncio.sleep(PROPAGATION_REFRESH_SECONDS)
+
+
 # --- entry point ----------------------------------------------------------
 async def run_collector(config: Config, guard: EgressGuard, enricher: Enricher) -> None:
     """Run every source until cancelled."""
@@ -320,6 +438,8 @@ async def run_collector(config: Config, guard: EgressGuard, enricher: Enricher) 
 
             if config.logbooks:
                 group.create_task(_logbook_loop(config), name="logbooks")
+
+            group.create_task(_propagation_loop(config, enricher), name="propagation")
 
             if config.lookup.enabled:
                 group.create_task(

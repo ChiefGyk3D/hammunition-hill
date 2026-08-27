@@ -20,7 +20,7 @@ finished, so here is exactly where things stand:
 |---|---|
 | Collector, snapshot architecture, static server | ✅ working |
 | Egress allowlist, CSP, path handling | ✅ working |
-| Panels | ✅ 19 across 6 dashboards |
+| Panels | ✅ 20 across 6 dashboards |
 | Source kinds | ✅ 10 polled, 3 stream, 1 file |
 | Space weather dials | ✅ 8 scales |
 | Map — rotatable globe, greyline, spots, aurora | ✅ working |
@@ -30,7 +30,8 @@ finished, so here is exactly where things stand:
 | Callsign lookup — 4 providers, chained, offline-capable | ✅ working |
 | Weather alerts and tier 2 imagery | ✅ working |
 | Band plans | 🟡 US only — international is a data contribution, not code |
-| Propagation | 🟡 band conditions only; **no MUF, no VOACAP** |
+| Propagation — MUF, LUF, D-layer absorption | ✅ working |
+| VOACAP point-to-point | ❌ **not written** |
 | Weather outside the US | 🟡 feeds and maps; no structured severity |
 | Callsign query endpoint | ❌ **not written** — the config flag parses and does nothing |
 | GPS / portable auto-grid | ❌ **not written** |
@@ -62,6 +63,7 @@ hardware finds it faster than we can.
 | **[Architecture](docs/ARCHITECTURE.md)** | How it works and why it is shaped this way. |
 | **[Writing panels](docs/PANELS.md)** | The panel contract. |
 | **[Callsign lookup](docs/CALLSIGN-LOOKUP.md)** | Provider options, trade-offs, and the architectural line. |
+| **[Propagation](docs/PROPAGATION.md)** | The MUF/LUF indicator, what it is worth, and what it is not. |
 | **[Imagery & weather](docs/IMAGERY.md)** | Weather alerts, radar and satellite tiles, and what a tier 2 tile costs you. |
 | **[Contributing](CONTRIBUTING.md)** | `make check` before you push, and what CI enforces. |
 | **[CLAUDE.md](CLAUDE.md)** | Architecture invariants and standing conventions, for humans and agents alike. |
@@ -150,7 +152,7 @@ More in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Dashboards
 
-Nineteen panels in one grid is unusable, so they are grouped into tabs:
+Twenty panels in one grid is unusable, so they are grouped into tabs:
 
 | | |
 |---|---|

@@ -1,0 +1,9 @@
+{
+  "id": "propagation",
+  "name": "MUF & Absorption",
+  "tier": 1,
+  "sources": ["propagation"],
+  "embed_hosts": [],
+  "span": 2,
+  "description": "An indicator, not a prediction: MUF, LUF and D-layer absorption computed from solar flux, K index, and the sun's height above your own station."
+}

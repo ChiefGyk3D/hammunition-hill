@@ -21,7 +21,7 @@ have. Where the two disagree, this page is the one kept current.
 |---|---|
 | Collector, snapshot architecture, static server | ✅ working |
 | Egress allowlist, CSP, path handling | ✅ working |
-| Panels | ✅ 19 across 6 dashboards |
+| Panels | ✅ 20 across 6 dashboards |
 | Source kinds | ✅ 10 polled, 3 stream, 1 file |
 | Space weather dials | ✅ 8 scales |
 | Your log driving spot colouring | ✅ working |
@@ -29,7 +29,7 @@ have. Where the two disagree, this page is the one kept current.
 | Logbook | ✅ working, off by default |
 | Callsign lookup | ✅ 4 providers, chained, offline-capable |
 | Band plans | 🟡 US only |
-| Propagation prediction | 🟡 band conditions only; no MUF, no VOACAP |
+| Propagation | 🟡 MUF/LUF/absorption indicator; **no VOACAP** |
 | Weather outside the US | 🟡 feeds and images, no structured severity |
 | Callsign query endpoint | ❌ **not written** — config flag exists and does nothing |
 | GPS / portable auto-grid | ❌ **not written** |
@@ -103,7 +103,7 @@ The parts everything else sits on.
 `web/panels/index.json`.
 
 Five are **tier 0** — they work with the internet unplugged: `clock`,
-`bandplan`, `beacons`, `callsign`, `logbook`. Thirteen are tier 1. One is
+`bandplan`, `beacons`, `callsign`, `logbook`. Fourteen are tier 1. One is
 tier 2 (`imagery`).
 
 | Feature | Status | Notes |
@@ -148,10 +148,11 @@ tier 2 (`imagery`).
 | Feature | Status | Notes |
 |---|---|---|
 | Band conditions | ✅ | From HamQSL |
+| MUF / LUF / D-layer absorption | ✅ | Computed locally from SFI, K and solar zenith at your station. Tier 1 (its inputs are fetched); the arithmetic never leaves the machine. |
 | Solar terminator / greyline | ✅ | Computed offline from the solar subpoint |
-| MUF predictor | ❌ | The solarstorm_scout model, with the solar-zenith fix — next up |
-| D-layer absorption | ❌ | Same milestone |
-| VOACAP point-to-point | ❌ | The genuinely hard one. Either bundle the public-domain ITSHFBC binaries and shell out, or ship a simpler MUF/LUF indicator first. |
+| MUF predictor | ✅ | Derived from SFI, K and the sun's height over *your* station. An indicator, not a prediction — see [PROPAGATION.md](PROPAGATION.md) |
+| D-layer absorption | ✅ | Real solar zenith at your grid square, not a UTC-hour proxy |
+| VOACAP point-to-point | ❌ | The genuinely hard one, and still open: this indicator is not it. Either bundle the public-domain ITSHFBC binaries and shell out, or accept that a path-free estimate is where this stops. |
 | FT8 propagation globes | ❌ | Needs PSK Reporter |
 
 ## Weather
@@ -202,12 +203,11 @@ tier 2 (`imagery`).
 
 What is actually being worked on, in order:
 
-1. **MUF / D-layer model** from solarstorm_scout, with the solar-zenith fix.
-2. **GPS** (gpsd and direct NMEA) for portable auto-grid and disciplined time.
-3. **RBN**, which is the cluster client pointed somewhere else plus aggregation.
-4. **CW / Morse reference tools** — tier 0, self-contained.
-5. **Satellites**, which needs real orbital mechanics.
-6. **The metrics exporter**, after parity.
+1. **GPS** (gpsd and direct NMEA) for portable auto-grid and disciplined time.
+2. **RBN**, which is the cluster client pointed somewhere else plus aggregation.
+3. **CW / Morse reference tools** — tier 0, self-contained.
+4. **Satellites**, which needs real orbital mechanics.
+5. **The metrics exporter**, after parity.
 
 Smaller items are listed in [PARITY.md](PARITY.md).
 

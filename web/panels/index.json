@@ -8,6 +8,7 @@
         "clock",
         "rig",
         "solar",
+        "propagation",
         "bandconditions",
         "geomag",
         "spots",
@@ -28,6 +29,7 @@
       "panels": [
         "solar",
         "geomag",
+        "propagation",
         "spacewx",
         "bandconditions"
       ]

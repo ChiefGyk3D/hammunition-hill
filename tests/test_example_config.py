@@ -141,7 +141,17 @@ def test_example_source_ids_are_unique():
 
 # --- the coupling that actually breaks panels -----------------------------
 # Snapshots the collector publishes without a [[sources]] entry.
-BUILT_IN_SNAPSHOTS = {"station", "prefixes", "imagery", "logbooks", "lookups"}
+# Snapshots the collector publishes without a [[sources]] entry: config it
+# derives, and the propagation model, which reads other snapshots rather than
+# fetching anything of its own.
+BUILT_IN_SNAPSHOTS = {
+    "station",
+    "prefixes",
+    "imagery",
+    "logbooks",
+    "lookups",
+    "propagation",
+}
 
 
 def test_every_shipped_panel_can_get_its_data():
