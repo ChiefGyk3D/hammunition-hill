@@ -46,7 +46,8 @@
         "callsign",
         "logstats",
         "bandplan",
-        "tools"
+        "tools",
+        "exam"
       ]
     },
     {

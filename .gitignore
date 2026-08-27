@@ -10,6 +10,9 @@ build/
 
 # Runtime state: snapshots the collector writes, and the operator's own config
 data/
+# ...but not the question pools, which are package data rather than a runtime
+# snapshot directory. `data/` above is meant to ignore the collector's output.
+!src/hammunition_hill/data/
 config.toml
 
 # CI scratch: the browser driver render_check.py writes next to node_modules,

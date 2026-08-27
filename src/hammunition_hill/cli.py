@@ -23,7 +23,7 @@ from .egress import EgressDenied, EgressGuard
 from .enrich import Enricher, Station
 from .prefix import PrefixTable
 from .server import build_csp, build_server
-from .snapshot import Snapshot, write_snapshot
+from .snapshot import Snapshot, read_snapshot, write_snapshot
 from .streams import is_stream
 
 log = logging.getLogger("hammunition_hill")
@@ -224,6 +224,38 @@ def _publish_antenna(config: Config) -> None:
     )
 
 
+def _publish_exams(config: Config) -> None:
+    """Publish the question pools that ship with this package.
+
+    Shipped rather than imported, because a pool changes every four years and
+    making every operator run a command to get one would mean most of them never
+    do. They are the official releases, parsed once by `hamhill exam-import` and
+    checked in with their provenance and their effective dates.
+
+    An operator who imports a newer pool keeps it. The shipped copy is written
+    only when there is no snapshot for that element, or when the snapshot on
+    disk is itself a shipped one -- so upgrading the package refreshes what it
+    shipped and never overwrites what somebody imported.
+    """
+    from .exam import shipped_pools
+
+    for element_id, payload in shipped_pools().items():
+        source_id = f"exam-{element_id}"
+        existing = read_snapshot(config.data_dir, source_id)
+        if existing is not None and not (existing.get("data") or {}).get("shipped"):
+            continue
+        write_snapshot(
+            config.data_dir,
+            Snapshot(
+                source_id=source_id,
+                kind="exam",
+                fetched_at=datetime.now(UTC),
+                stale_after_seconds=0,
+                data=payload,
+            ),
+        )
+
+
 def _serve(config: Config, guard: EgressGuard, enricher: Enricher) -> int:
     if (problem := _web_dir_problem(config)) is not None:
         print(f"cannot serve: {problem}", file=sys.stderr)
@@ -235,6 +267,7 @@ def _serve(config: Config, guard: EgressGuard, enricher: Enricher) -> int:
     _publish_imagery(config)
     _publish_morse(config)
     _publish_antenna(config)
+    _publish_exams(config)
 
     bind = f"{config.server.host}:{config.server.port}"
     try:
@@ -386,6 +419,103 @@ def _report_uls(config: Config) -> None:
     print(f"  fcc_uls    : {count} callsigns, imported {when}  (offline, no network)")
 
 
+EXAM_POOL_SOURCES = (
+    "https://www.arrl.org/question-pools",
+    "https://www.ncvec.org/page.php?id=356",
+)
+
+
+def _exam_import(config: Config, sources: list[Path] | None) -> int:
+    """Turn a downloaded NCVEC pool into the JSON the panel serves.
+
+    A deliberate command and not a source, for a different reason than the FCC
+    importer: the pools are not fetched here at all. They change once every four
+    years, they are published as a plain-text file behind a page rather than at
+    a stable URL, and vendoring somebody else's copy of an exam syllabus into
+    this repository would mean shipping study material nobody here verified.
+
+    So the operator downloads the file and points this at it. One command every
+    four years, against the authoritative copy, is the right trade.
+    """
+    from .exam import ELEMENT_BY_ID, check_pool, parse_pool, read_source
+
+    if not sources:
+        print(
+            "usage: hamhill exam-import --file <pool.pdf> [--file <part2.pdf> ...]", file=sys.stderr
+        )
+        print(file=sys.stderr)
+        print("Download the pool for the element you want from:", file=sys.stderr)
+        for url in EXAM_POOL_SOURCES:
+            print(f"  {url}", file=sys.stderr)
+        print(file=sys.stderr)
+        print(
+            "Each element is a separate file, and each is valid for four years.",
+            file=sys.stderr,
+        )
+        print(
+            "Repeat --file, in order, if you have one pool split across several "
+            "documents; they are joined before parsing.",
+            file=sys.stderr,
+        )
+        return 2
+
+    chunks = []
+    for path in sources:
+        try:
+            chunks.append(read_source(path))
+        except OSError as exc:
+            print(f"cannot read {path}: {exc}", file=sys.stderr)
+            return 1
+        except ValueError as exc:
+            print(f"{path}: {exc}", file=sys.stderr)
+            return 1
+    # Joined in the order given. A pool split across documents is split
+    # mid-pool, so the order is the operator's to get right and there is no way
+    # to check it beyond the reconciliation below noticing the hole.
+    text = "\n".join(chunks)
+    source = sources[0]
+
+    try:
+        pool = parse_pool(text, source=source.name)
+    except ValueError as exc:
+        print(f"{source}: {exc}", file=sys.stderr)
+        print(
+            "  Expected the plain-text pool as published, not a PDF or a Word file.",
+            file=sys.stderr,
+        )
+        return 1
+
+    for problem in check_pool(pool):
+        print(f"warning: {problem}")
+
+    status = pool.status()
+    if status == "expired":
+        print(f"warning: this pool expired after {pool.valid_until} — check for a newer release")
+    elif status == "unknown":
+        print("warning: no validity years in the header; the panel will say so")
+
+    target = config.data_dir / f"exam-{pool.element_id}.json"
+    config.data_dir.mkdir(parents=True, exist_ok=True)
+    write_snapshot(
+        config.data_dir,
+        Snapshot(
+            source_id=f"exam-{pool.element_id}",
+            kind="exam",
+            fetched_at=datetime.now(UTC),
+            stale_after_seconds=0,
+            data=pool.to_dict(),
+        ),
+    )
+    element = ELEMENT_BY_ID[pool.element_id]
+    print(
+        f"{pool.name}: {len(pool.questions)} questions in {len(pool.groups)} groups "
+        f"(element {element['element']}, {pool.exam_length}-question exam, "
+        f"pass at {pool.pass_mark})"
+    )
+    print(f"wrote {target}")
+    return 0
+
+
 def _fcc_import(config: Config, guard: EgressGuard, source: Path | None) -> int:
     """Build the offline FCC ULS index.
 
@@ -514,13 +644,18 @@ def main(argv: list[str] | None = None) -> int:
         "--file",
         type=Path,
         metavar="PATH",
-        help="fcc-import: use an already-downloaded l_amat.zip instead of fetching it",
+        action="append",
+        help=(
+            "fcc-import: use an already-downloaded l_amat.zip instead of fetching it. "
+            "exam-import: the pool file to read; repeat for a pool split across "
+            "several documents."
+        ),
     )
     parser.add_argument(
         "command",
         nargs="?",
         default="serve",
-        choices=("serve", "check", "fcc-import"),
+        choices=("serve", "check", "fcc-import", "exam-import"),
         help="default: serve",
     )
     args = parser.parse_args(argv)
@@ -547,5 +682,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "check":
         return _check(config, guard, enricher, offline=args.offline)
     if args.command == "fcc-import":
-        return _fcc_import(config, guard, args.file)
+        return _fcc_import(config, guard, args.file[0] if args.file else None)
+    if args.command == "exam-import":
+        return _exam_import(config, args.file)
     return _serve(config, guard, enricher)
