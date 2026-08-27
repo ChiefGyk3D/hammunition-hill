@@ -180,6 +180,8 @@ should be made deliberately.
 
 ## Modules
 
+**The spine** — everything else sits on these.
+
 | Module | Responsibility |
 |---|---|
 | `config.py` | Parse and validate TOML. Every error message says how to fix it. |
@@ -187,14 +189,44 @@ should be made deliberately.
 | `snapshot.py` | The on-disk format and atomic writes. |
 | `collector.py` | One async task per source: polled, stream, or file. |
 | `server.py` | Static files over two directories, with the headers turned up. |
+| `cli.py` | `hamhill serve`, `check`, `fcc-import`, `exam-import`. |
+| `sources/` | Polled and file sources, registered statically. |
+| `streams/` | Long-lived connections, registered statically. |
+| `lookup/` | Callsign providers, chained, and the offline FCC ULS index. |
+
+**Joining and reference data** — what turns a spot into something worth reading.
+
+| Module | Responsibility |
+|---|---|
 | `enrich.py` | Joins spots to entity, path, and the log index. |
 | `geo.py` | Maidenhead, great-circle bearing, distance. |
 | `bands.py` | Band plan and mode inference. |
 | `prefix.py` | cty.dat, with a compact built-in fallback. |
 | `adif.py` | Log parsing and the worked/needed index. |
-| `sources/` | Polled and file sources, registered statically. |
-| `streams/` | Long-lived connections, registered statically. |
-| `cli.py` | `hamhill serve` and `hamhill check`. |
+| `logbook.py` | Writing QSOs to ADIF files. |
+| `licensing.py` | Guessing a US licence class from callsign format. |
+| `beacons.py` | The NCDXF/IARU International Beacon Project schedule. |
+
+**Computed here, from numbers we already have** — the tier 0 half of the
+product. None of these fetch anything.
+
+| Module | Responsibility |
+|---|---|
+| `solar.py` | Where the sun is. |
+| `severity.py` | What a space weather number actually means. |
+| `propagation.py` | A crude HF propagation indicator. |
+| `satellites.py` | When the satellites are up, and where to point. |
+| `antenna.py` | Antenna, feedline and SWR arithmetic. |
+| `morse.py` | Morse code: the tables, the timing, and the shorthand. |
+| `cwpractice.py` | What to send when you are learning to copy it. |
+| `exam.py` | Licence exam practice, from the official question pools. |
+| `gps.py` | Position parsing, and the precision decision. |
+
+**Output**
+
+| Module | Responsibility |
+|---|---|
+| `metrics.py` | A Prometheus endpoint, so Grafana can do history. |
 
 ### Snapshot format
 

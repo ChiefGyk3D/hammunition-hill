@@ -331,3 +331,24 @@ def test_configuration_documents_every_source_kind():
 def test_configuration_documents_every_config_table(section):
     """The same gap, for the top level tables rather than the source kinds."""
     assert f"## `{section}`" in CONFIGURATION, f"CONFIGURATION.md does not document {section}"
+
+
+ARCHITECTURE = (ROOT / "docs" / "ARCHITECTURE.md").read_text(encoding="utf-8")
+
+
+def test_architecture_lists_every_module():
+    """The module map is what orients somebody opening the source for the first time.
+
+    It listed eleven modules while twenty-four existed. Everything added after
+    the page was written -- the whole tier 0 half of the product, satellites,
+    metrics, the exam pools -- was simply absent, so the map described a
+    smaller, older program than the one in the repository. A map that is
+    missing half the territory is worse than no map, because it is read as
+    complete.
+    """
+    package = ROOT / "src" / "hammunition_hill"
+    modules = {path.name for path in package.glob("*.py") if not path.name.startswith("__")}
+    assert len(modules) > 15, f"only found {len(modules)} modules; the glob is wrong"
+
+    missing = sorted(name for name in modules if f"`{name}`" not in ARCHITECTURE)
+    assert not missing, f"ARCHITECTURE.md does not list: {', '.join(missing)}"
