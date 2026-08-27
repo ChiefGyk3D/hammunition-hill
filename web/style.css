@@ -664,3 +664,47 @@ ul.wx-alerts { list-style: none; margin: 0; padding: 0; }
 .cw-key { font-weight: 600; color: var(--ink); }
 .cw-code { color: var(--accent); letter-spacing: .12em; white-space: nowrap; }
 .cw-note { color: var(--muted); }
+
+/* Trainer. The drill selector sits under the view tabs, so it is quieter than
+   they are -- two rows of equally loud chips reads as one confusing row. */
+.cw-subtabs { margin-bottom: 8px; opacity: .9; }
+/* The reference charts key on one character; a callsign is up to seven, and
+   the shared 4.5ch column ran the entity name straight into it. */
+.cw-callsign-list .cw-row { grid-template-columns: 8ch 1fr; }
+.cw-field {
+  width: 100%; background: var(--panel-2); border: 1px solid var(--rule);
+  border-radius: 2px; color: var(--ink); font-family: var(--mono);
+  font-size: 12px; padding: 4px 6px;
+}
+.cw-field:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* A QSO transcript reads as a conversation, so each side is labelled. Your own
+   transmissions are dimmed: they are context for what you are copying, not the
+   thing being copied. */
+.cw-qso { display: grid; gap: 4px; margin-top: 8px; }
+.cw-qso-line { display: grid; grid-template-columns: 28px 1fr; gap: 8px; align-items: baseline; }
+.cw-qso-who {
+  font-family: var(--mono); font-size: 9.5px; text-transform: uppercase;
+  letter-spacing: .08em; color: var(--muted);
+}
+.cw-qso-text {
+  font-family: var(--mono); font-size: 11.5px; color: var(--ink);
+  line-height: 1.5; word-break: break-word;
+}
+.cw-qso-me .cw-qso-text { color: var(--muted); }
+
+.cw-options {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 6px; margin-top: 8px;
+}
+.cw-option {
+  background: var(--panel-2); border: 1px solid var(--rule); border-radius: 2px;
+  color: var(--ink); font: inherit; font-size: 12px; padding: 8px 10px;
+  cursor: pointer; text-align: left;
+}
+.cw-option:hover:not(:disabled) { border-color: var(--accent); }
+.cw-option:disabled { cursor: default; opacity: .55; }
+/* Colour is not the only signal: once the others are disabled and dimmed, the
+   right answer is also the one still at full opacity. */
+.cw-option.cw-right { border-color: var(--good); color: var(--good); opacity: 1; }
+.cw-option.cw-wrong { border-color: var(--poor); color: var(--poor); opacity: 1; }

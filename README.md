@@ -8,6 +8,29 @@ turns a Debian-family install into an amateur radio, SDR, and RF workstation.
 Hammunition builds the shack computer; Hammunition Hill is what you put on the
 monitor above it — the high ground you watch the bands from.
 
+![The Home dashboard](docs/images/home.png)
+
+Six dashboards, twenty-two panels, one machine. Nothing above was fetched by
+your browser from anyone else's server — the screenshots are taken by CI, from a
+real Chromium, against a real collector, so they are what the code renders
+rather than what a designer drew.
+
+<table>
+<tr>
+<td width="33%"><a href="docs/images/map.png"><img src="docs/images/map.png" alt="Map"></a><br><b>Map</b> — rotatable globe, greyline, spots coloured by your log</td>
+<td width="33%"><a href="docs/images/space-weather.png"><img src="docs/images/space-weather.png" alt="Space Weather"></a><br><b>Space Weather</b> — eight scales, MUF and D-layer absorption</td>
+<td width="33%"><a href="docs/images/operating.png"><img src="docs/images/operating.png" alt="Operating"></a><br><b>Operating</b> — band plan, NCDXF beacons, logbook, CW trainer</td>
+</tr>
+<tr>
+<td><a href="docs/images/activity.png"><img src="docs/images/activity.png" alt="Activity"></a><br><b>Activity</b> — POTA and SOTA spots, contest calendar, news feed</td>
+<td><a href="docs/images/field-weather.png"><img src="docs/images/field-weather.png" alt="Field &amp; Weather"></a><br><b>Field &amp; Weather</b> — NWS alerts, GPS grid, radar and satellite imagery</td>
+<td><a href="docs/images/home.png"><img src="docs/images/home.png" alt="Home"></a><br><b>Home</b> — the summary you leave up on the wall</td>
+</tr>
+</table>
+
+Regenerate them with `make screenshots` after any change to how the dashboard
+looks; they are written by the same script the `frontend` CI job runs.
+
 ---
 
 ## ⚠️ Alpha — it works, and it is not finished
@@ -35,7 +58,8 @@ finished, so here is exactly where things stand:
 | Weather outside the US | 🟡 feeds and maps; no structured severity |
 | Callsign query endpoint | ❌ **not written** — the config flag parses and does nothing |
 | GPS — portable auto-grid and clock check | ✅ working |
-| CW / Morse tools | ✅ working |
+| CW / Morse tools — reference, translator, audio | ✅ working |
+| CW trainer — Koch, callsigns, QSO simulator, quiz | ✅ working |
 | Satellites, RBN | ❌ **not written** |
 | Metrics export to Grafana | ❌ **not written** |
 | CI — 9 jobs, 3 Python versions, x86 + ARM + macOS | ✅ working |

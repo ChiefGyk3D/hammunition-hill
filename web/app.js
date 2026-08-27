@@ -208,7 +208,9 @@ async function main() {
   let active = recall("dashboard", dashboards[0]?.id);
   if (!dashboards.some((d) => d.id === active)) active = dashboards[0]?.id;
 
-  const show = (id) => {
+  // `fetchNow` exists only for the first call, which is immediately followed by
+  // an awaited poll. Every other call is a tab click and must fetch.
+  const show = (id, { fetchNow = true } = {}) => {
     active = id;
     remember("dashboard", id);
     panels.length = 0;
@@ -228,9 +230,16 @@ async function main() {
 
     TABS.replaceChildren(buildTabs(dashboards, active, show));
     for (const entry of panels) renderPanel(entry, station);
+
+    // poll() only fetches what the *visible* dashboard's panels ask for, so
+    // switching to a tab for the first time finds an empty cache and every
+    // panel on it paints its "waiting…" placeholder. Without this line they
+    // stay that way until the next interval -- up to ten seconds of staring at
+    // data that is already on disk, one metre away.
+    if (fetchNow) poll(station);
   };
 
-  show(active);
+  show(active, { fetchNow: false });
 
   await poll(station);
   setInterval(() => poll(station), POLL_MS);

@@ -109,6 +109,17 @@ const BASE = `http://127.0.0.1:${PORT}/`;
     else problems.push(`HTTP ${res.status()} for ${res.url()}`);
   });
 
+  // Which snapshots the app has asked for since the last tab click. poll()
+  // only fetches what the *visible* dashboard wants, so a switch that does not
+  // fetch leaves every panel on the new tab painting its empty state until the
+  // next ten-second interval. That is invisible to a screenshot taken after it
+  // finally lands, so it is checked here rather than looked for by eye.
+  let requestedSinceClick = new Set();
+  page.on('request', (req) => {
+    const match = new URL(req.url()).pathname.match(/^\/data\/([\w-]+)\.json$/);
+    if (match) requestedSinceClick.add(match[1]);
+  });
+
   page.on('console', (msg) => {
     if (msg.type() !== 'error') return;
     if (RESOURCE_404.test(msg.text())) return;  // judged by the listener above
@@ -141,10 +152,32 @@ const BASE = `http://127.0.0.1:${PORT}/`;
   console.log(`dashboards: ${tabs.join(', ')}`);
 
   for (const tab of tabs) {
+    requestedSinceClick = new Set();
     await page.click(`#tabs button:text-is("${tab}")`);
     // Panels render synchronously from cached snapshots; give the tier 0
     // clocks a tick and any lazy image a moment to be requested.
     await page.waitForTimeout(1200);
+
+    // Everything this dashboard's panels declare must have been asked for by
+    // now -- not on the next interval, by which time a person has already read
+    // "waiting for the first cycle" and drawn a conclusion.
+    const wanted = await page.$$eval('#grid .panel', (els) =>
+      Promise.all(
+        els.map((e) =>
+          fetch(`./panels/${e.dataset.panel}/panel.json`)
+            .then((r) => r.json())
+            .then((m) => m.sources || [])
+            .catch(() => []),
+        ),
+      ).then((lists) => [...new Set(lists.flat())]),
+    );
+    const unfetched = wanted.filter((id) => !requestedSinceClick.has(id));
+    if (unfetched.length) {
+      problems.push(
+        `${tab}: switched to this dashboard without fetching ${unfetched.join(', ')} ` +
+          `-- its panels sit on their empty state until the next poll`,
+      );
+    }
 
     const panels = await page.$$eval('#grid .panel', (els) =>
       els.map((e) => ({

@@ -30,11 +30,21 @@ What "robust" means in practice, learned the hard way in this repo:
   `lookup/session_xml.py` passed on 3.11 — the dev venv — and failed on 3.12+.
   It was a real bug, not a warning to silence. The matrix earned its place on
   its first run.
-- **A check nobody trusts is worse than no check.** Two things are deliberately
-  not enforced for this reason: `ruff format --check` (would reflow 36
-  hand-formatted files for no defect caught) and whole-environment dependency
-  auditing (would report advisories against the runner's own pip). Both are
-  documented in `.github/workflows/ci.yml` with the reasoning.
+- **A check nobody trusts is worse than no check.** Whole-environment
+  dependency auditing is deliberately not enforced for this reason: it would
+  report advisories against the runner's own pip and setuptools, which we
+  neither ship nor control, and a recurring red that everyone learns to ignore
+  is worse than nothing. `pip-audit` is scoped to the declared dependencies
+  instead, and the reasoning is in `.github/workflows/ci.yml`.
+  (`ruff format --check` *is* enforced, as of #16 — the objection was that it
+  would reflow hand-laid-out data tables, and the answer was to fence those with
+  `# fmt: off` rather than to skip the check.)
+- **Test the CI itself.** `tests/test_workflows.py` checks the workflows the way
+  everything else checks the program: SHA pins, permissions, `persist-credentials`,
+  script injection, and above all that every job is in `all-green`'s `needs`.
+  That list is maintained by hand and branch protection watches only that one
+  job, so a job left out of it runs, fails, and merges anyway — a green tick on
+  a pull request that checked less than it claimed.
 - **Prove properties, not just behaviour.** `tests/conftest.py` blocks every
   socket to anywhere but loopback, so the suite cannot quietly depend on the
   real internet. `tests/test_status_doc.py` asserts the feature counts in the
@@ -67,6 +77,22 @@ Run before pushing: `make check`. Heavier: `make smoke`, `make render`,
 
 ---
 
+## Standing rule: the README shows the platform
+
+**Any change that alters what the dashboard looks like updates the screenshots
+too, in the same pull request.** Stated once by the maintainer and applying from
+here on: a new panel, a new view, a visual fix, or a layout change all count.
+Add images for what does not have them yet, refresh the ones that have gone
+stale, and keep the README showing the whole platform rather than a corner of it
+from six versions ago.
+
+The screenshots are not hand-taken. `.github/scripts/render_check.py` already
+drives Chromium over every dashboard for the `frontend` CI job; `make
+screenshots` runs the same script with `RENDER_SHOTS` pointed at `docs/images/`,
+so what ships in the README is what CI actually rendered. Regenerating is one
+command, which is the point — a manual step gets skipped and the docs drift.
+
+---
 ## Architecture invariants
 
 These are the load-bearing properties. A change that breaks one is wrong even
