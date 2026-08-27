@@ -1,3 +1,8 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/ChiefGyk3D/hammunition-hill/main/docs/images/logo.png"
+       alt="Hammunition Hill" width="360">
+</p>
+
 # Hammunition Hill
 
 A ham radio dashboard that runs on your own machine, on your own network, and

@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+  The header mark: the HH plate off the front of the bunker in the full logo.
+
+  Not a shrunk-down logo. The full illustration is a sticker — antenna, guy
+  wires, a radio with a button row and a waveform, a penguin — and at the 26
+  pixels this sits at in the header all of that is mud. A mark that works small
+  is a different drawing with the same identity.
+
+  Two shapes and two colours, and that is the whole budget. A first version had
+  a dark plate, a purple outline, an amber slot and six bars for the letters;
+  at size it read as a dark square with flecks in it. Solid ground and solid
+  letters, with the letters taking most of the height, is what survives a
+  browser tab.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img"
+     aria-label="Hammunition Hill">
+  <title>Hammunition Hill</title>
+  <!-- The plate, with the clipped corners the logo's badge uses. -->
+  <path d="M2 12 L12 2 H52 L62 12 V52 L52 62 H12 L2 52 Z" fill="#912795"/>
+  <!-- HH. Heavy, and nearly the full height of the plate: at 26 pixels the
+       letters have about eighteen to work with and anything lighter closes up.
+       The gap between the two letters is deliberate and load-bearing: a first
+       version had their crossbars meeting in the middle, which turned "HH"
+       into one continuous bar. -->
+  <g fill="#ed9a1c">
+    <rect x="10" y="17" width="7" height="30"/>
+    <rect x="21" y="17" width="7" height="30"/>
+    <rect x="10" y="28" width="18" height="8"/>
+    <rect x="36" y="17" width="7" height="30"/>
+    <rect x="47" y="17" width="7" height="30"/>
+    <rect x="36" y="28" width="18" height="8"/>
+  </g>
+</svg>
