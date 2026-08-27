@@ -83,9 +83,27 @@ The dashboard's surface and status ramps are in the same file so that anything
 made off this package matches the product. `web/style.css` is the source of
 truth for those, and `tests/test_brand.py` keeps the two in step.
 
-**The dashboard accent is still cyan (`#3bc6d0`), not the brand purple.** Every
-panel uses it. Repainting the dashboard in the logo's colours is a deliberate
-change with its own before and after, not a side effect of adding a logo.
+### The accent is the brand purple, lightened
+
+The dashboard accent is `#dc7be0`, not `#912795`. That is not a different
+colour chosen for variety: it is the same hue (298°), raised in lightness until
+it is legible.
+
+`--accent` is **text** — active tabs, links, callsigns, band labels — and it is
+also a fill with `--ground` written on top. The logo purple measures **2.62:1**
+against the dashboard ground, which fails the 3:1 floor for interface
+components and is nowhere near the 4.5:1 for text. Painting the dashboard in it
+would have been a readability regression made for brand reasons.
+
+At 298° the trade is real and worth stating: reaching the old cyan's 9.1:1
+turns the colour pink before it gets there. `#dc7be0` sits at **7.1:1**, which
+clears AA for text and AAA for large text while still reading as the logo's
+purple.
+
+`tests/test_contrast.py` measures every foreground token against every surface
+and fails below its floor. It also asserts that `--brand` is *not* used as a
+text colour, so the unreadable one cannot quietly become one on the grounds
+that it is "the brand colour".
 
 ## Using it
 
