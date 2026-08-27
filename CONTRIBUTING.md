@@ -127,6 +127,12 @@ job runs — with its output pointed at `docs/images/`, so what ships in the
 README is what a real Chromium actually rendered against a real collector. Check
 the PNGs in alongside the change that caused them.
 
+The page clock is frozen during the render, so a regeneration that changes
+nothing visual produces the same bytes. One exception: a dashboard carrying a
+live source also shows an age badge counting from the snapshot's real
+`fetched_at`, so `home.png` can differ by a few pixels for no reason you care
+about. Drop it from the commit if nothing on it actually changed.
+
 Link them by **absolute** `raw.githubusercontent.com` URL, not by relative path.
 `pyproject.toml` sets `readme = "README.md"`, so the README ships as the package
 long description, and PyPI has no repository to resolve `docs/images/` against —

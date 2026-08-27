@@ -202,6 +202,28 @@ def _publish_morse(config: Config) -> None:
     )
 
 
+def _publish_antenna(config: Config) -> None:
+    """Publish the antenna, feedline and SWR tables.
+
+    Written once at startup like the Morse tables and for the same reason: the
+    numbers live in Python where they are checked against datasheets and rules
+    of thumb, and the browser receives them as data. A panel cannot then
+    disagree with a test about how long a 40 m dipole is.
+    """
+    from .antenna import reference
+
+    write_snapshot(
+        config.data_dir,
+        Snapshot(
+            source_id="antenna",
+            kind="antenna",
+            fetched_at=datetime.now(UTC),
+            stale_after_seconds=0,
+            data=reference(),
+        ),
+    )
+
+
 def _serve(config: Config, guard: EgressGuard, enricher: Enricher) -> int:
     if (problem := _web_dir_problem(config)) is not None:
         print(f"cannot serve: {problem}", file=sys.stderr)
@@ -212,6 +234,7 @@ def _serve(config: Config, guard: EgressGuard, enricher: Enricher) -> int:
     _publish_prefixes(config, enricher)
     _publish_imagery(config)
     _publish_morse(config)
+    _publish_antenna(config)
 
     bind = f"{config.server.host}:{config.server.port}"
     try:

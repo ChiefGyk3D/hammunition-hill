@@ -87,6 +87,23 @@ const BASE = `http://127.0.0.1:${PORT}/`;
 
   const page = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
 
+  // Freeze the wall clock. Half the panels print the time, so without this two
+  // runs over identical code produce different PNGs -- and since these
+  // screenshots are checked into docs/images, every `make screenshots` would
+  // dirty every file and the diff would stop meaning "something changed".
+  //
+  // setFixedTime, not clock.install: the latter also freezes timers, and the
+  // app's poll interval and the tier 0 panels' one-second tick both need to
+  // keep running for the checks below to mean anything.
+  //
+  // This does not make every file byte-identical between runs. A panel's age
+  // badge is the gap between the frozen page clock and the snapshot's real
+  // fetched_at, so any dashboard carrying a live source still moves by the
+  // seconds the collector took to start. Pinning that too would mean the
+  // collector stamping a fake time for the benefit of a screenshot, which is
+  // not a trade worth making. Five of the six settle; home.png may not.
+  await page.clock.setFixedTime(new Date('2026-03-20T18:30:00Z'));
+
   // 404 handling, split by who actually knows what failed.
   //
   // The console message for a failed resource does not name the URL, so it
