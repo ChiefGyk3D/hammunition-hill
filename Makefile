@@ -12,7 +12,7 @@
 PY ?= .venv/bin/python
 RUFF ?= .venv/bin/ruff
 
-.PHONY: help venv lint format test check smoke render audit build clean
+.PHONY: help venv lint format test check smoke render screenshots audit build clean
 
 help:
 	@echo "make venv    - create .venv and install with dev extras"
@@ -22,6 +22,7 @@ help:
 	@echo "make check   - lint + test + config validation. Run before pushing."
 	@echo "make smoke   - start a real collector against a stub upstream"
 	@echo "make render  - load every dashboard in a browser (needs node)"
+	@echo "make screenshots - refresh the README images (needs node)"
 	@echo "make audit   - pip-audit the declared dependencies"
 	@echo "make build   - wheel and sdist, then verify the wheel installs"
 
@@ -56,6 +57,14 @@ smoke:
 render:
 	@test -d node_modules || npm install --no-save --no-audit --no-fund playwright@1.49.0
 	$(PY) .github/scripts/render_check.py
+
+# The README's screenshots, taken by the same script CI runs -- so what ships in
+# the docs is what the browser actually rendered, not a picture someone cropped
+# once and never updated. Run this after any change to how the dashboard looks.
+screenshots:
+	@test -d node_modules || npm install --no-save --no-audit --no-fund playwright@1.49.0
+	RENDER_SHOTS=docs/images $(PY) .github/scripts/render_check.py
+	@echo "docs/images updated -- check them in with the change that caused them"
 
 audit:
 	@$(PY) -c "import pathlib,tomllib; \

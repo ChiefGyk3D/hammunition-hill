@@ -203,6 +203,17 @@ _BUILTIN: tuple[tuple[str, str, str, float, float], ...] = (
 _BUILTIN_SORTED = tuple(sorted(_BUILTIN, key=lambda row: -len(row[0])))
 
 
+def builtin_prefixes() -> list[dict[str, str]]:
+    """The built-in prefixes as (prefix, entity) pairs.
+
+    Exposed for the CW trainer, which generates practice callsigns from real
+    DXCC prefixes so that revealing the answer can also name the country. The
+    built-in table rather than a loaded cty.dat, because the trainer must work
+    with no data files present -- that is the whole claim of a tier 0 panel.
+    """
+    return [{"prefix": row[0], "entity": row[1]} for row in _BUILTIN]
+
+
 def base_call(callsign: str) -> str:
     """Strip portable designators down to the part that identifies the entity.
 

@@ -110,6 +110,28 @@ expanding them costs about 500 lines to make a reviewer scroll for what
 currently fits in a glance. If you add a data table of that kind, fence it and
 say why.
 
+## Screenshots
+
+**A change that alters what the dashboard looks like updates `docs/images/` in
+the same pull request.** A new panel, a new view, a visual fix, a layout change:
+all of them. A stale screenshot is worse than none — it is a confident claim
+about the software, made by a version that no longer exists, and nothing about
+it looks wrong.
+
+```
+make screenshots
+```
+
+That runs `.github/scripts/render_check.py` — the same script the `frontend` CI
+job runs — with its output pointed at `docs/images/`, so what ships in the
+README is what a real Chromium actually rendered against a real collector. Check
+the PNGs in alongside the change that caused them.
+
+`tests/test_docs_images.py` keeps the set honest: every dashboard has an image,
+every image is referenced, nothing is left behind by a rename, and nothing is a
+truncated stub. What it cannot check is whether an image is *current* — only you
+looking at it can say that, which is why the rule above is a rule.
+
 ## Documentation
 
 `docs/STATUS.md` is the feature inventory and the page kept current. If you add

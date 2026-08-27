@@ -97,14 +97,72 @@ The audio context is created per playback and closed afterwards. Leaving one
 open holds the audio device awake, which on a laptop in a field is battery
 spent on nothing.
 
-## Practice
+## The trainer
 
-Koch method: start with two characters at full speed, add one at a time, each
-chosen to be maximally confusable with those already learned. K and M first is
-not arbitrary — they are opposites, which is the point.
+Four drills, all tier 0, all generated on your own machine. Load an item, send
+it, copy what you hear, then reveal. Whatever is loaded stays hidden until you
+reveal it, because that is the exercise.
 
-Generate groups, send them, copy what you hear, then reveal. The groups are
-hidden until you reveal them because that is the exercise.
+### groups — the Koch method
+
+Start with two characters at full speed, add one at a time, each chosen to be
+maximally confusable with those already learned. K and M first is not arbitrary
+— they are opposites, which is the point. You are always discriminating, never
+merely recognising, which is why learning alphabetically does not work: A, B, C
+sound nothing alike and give you no practice at the thing that is hard.
+
+The lesson slider is the whole plan. Lesson 1 is `K M`; lesson 39 is the full
+forty characters. How fast you move is between you and the key.
+
+### callsigns — the thing you actually have to copy
+
+A callsign goes past once. Everything else in a QSO you can ask for again.
+
+The generator builds them from real DXCC prefixes — the same table the callsign
+panel resolves against — so the shapes are real (`W1AW`, `DL1ABC`, `KH6XY`,
+`9A2AA`, not five random letters) and revealing the answer also names the
+entity. A prefix that already ends in a digit takes the suffix directly;
+anything else takes a call area digit first. Suffix lengths are weighted so
+two-letter calls dominate, because on the air they do.
+
+### QSO — copying in context
+
+A whole simulated contact, both sides. Only the other station is sent; your own
+transmissions are shown, dimmed, so you can see where you are.
+
+Two styles. A **contest** exchange is short and fast — `CQ TEST`, a report, a
+serial, `TU`. A **ragchew** is the long form: name, QTH, RST, rig, antenna,
+weather, `73 ES GL SK`. Set your own callsign and name and they appear where
+they would on the air.
+
+Context is most of what makes a real exchange readable above your cold-copy
+speed. Knowing that a callsign comes next, or that `NAME` is followed by a name,
+does more for your copy at 20 WPM than another week of random groups.
+
+### quiz — the things you have to know rather than hear
+
+Multiple choice over the phonetic alphabet, the Q-signals, and the
+abbreviations. No audio: these are recall, not copy. It keeps a running score
+for the session.
+
+### Everything it can send, it can send
+
+Every drill is checked against the encode table in the test suite — the whole
+Koch order, two thousand generated callsigns, and both QSO scripts with every
+field filled. A drill that emitted a character with no Morse code would send
+silence where a character should be and the student would copy a gap, so the
+suite walks the actual generated output rather than trusting the tables.
+
+### The generators run twice
+
+The curriculum lives in `src/hammunition_hill/cwpractice.py`; the generation
+happens in `web/lib/cwpractice.js`, in the browser, because a trainer that asked
+a server for the next callsign would stop working when the network did.
+
+That is two implementations, and two implementations drift. Both use the same
+seeded PRNG (mulberry32, written out in both languages), so a test can run the
+JavaScript under node and demand the *identical* callsign, group, QSO and quiz
+question for the same seed — not merely output of the right shape.
 
 ## What it does not do
 
@@ -112,5 +170,8 @@ hidden until you reveal them because that is the exercise.
   and much harder problem than translating a string, and there are dedicated
   tools for it.
 - **No keyer.** This does not key a transmitter and has no business doing so.
-- **No speed learning schedule.** It gives you the Koch order and the groups;
+- **No speed learning schedule.** It gives you the Koch order and the lessons;
   how fast you add characters is between you and the key.
+- **No progress tracking between sessions.** The lesson number and your settings
+  are remembered; how you did is not. Storing a learning history would mean
+  storing data about you, which this project does not do.

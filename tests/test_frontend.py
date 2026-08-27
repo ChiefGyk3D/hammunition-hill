@@ -180,3 +180,50 @@ def test_css_has_no_external_imports():
     assert "@import" not in css
     remote = re.findall(r"url\(\s*['\"]?https?://", css)
     assert not remote, "style.css references remote resources"
+
+
+def test_every_css_variable_is_defined():
+    """An undefined var() is not an error -- the property is just dropped.
+
+    That is the failure mode this catches: text that renders in the browser's
+    default colour on a dark panel, or a border that silently is not there, on
+    a page that otherwise looks fine. Nothing else in the suite would notice,
+    and it is easy to write `--line` in a repo whose variable is `--rule`.
+    """
+    css = (WEB / "style.css").read_text(encoding="utf-8")
+    defined = set(re.findall(r"^\s*(--[a-z0-9-]+)\s*:", css, re.MULTILINE))
+    used = set(re.findall(r"var\(\s*(--[a-z0-9-]+)", css))
+    # A fallback makes the reference safe whether or not the variable exists.
+    with_fallback = set(re.findall(r"var\(\s*(--[a-z0-9-]+)\s*,", css))
+    missing = sorted(used - defined - with_fallback)
+    assert not missing, f"style.css uses undefined variables: {missing}"
+
+
+def test_panel_scripts_use_only_variables_the_stylesheet_defines():
+    """Same check, for classes styled inline from a panel module."""
+    css = (WEB / "style.css").read_text(encoding="utf-8")
+    defined = set(re.findall(r"^\s*(--[a-z0-9-]+)\s*:", css, re.MULTILINE))
+    for path in JS_FILES:
+        used = set(re.findall(r"var\(\s*(--[a-z0-9-]+)", path.read_text(encoding="utf-8")))
+        missing = sorted(used - defined)
+        assert not missing, f"{path.relative_to(ROOT)} uses undefined CSS variables: {missing}"
+
+
+def test_panel_views_are_not_referenced_by_names_they_no_longer_have():
+    """A renamed view leaves a dead comparison behind, and it fails silently.
+
+    The CW panel's speed controls were gated on `s.view === "practice"` after
+    the view was renamed to "trainer", so the trainer sent at whatever speed
+    happened to be in local storage and offered no way to change it. Nothing
+    threw. This checks every string compared against `s.view` is a view the
+    panel actually has.
+    """
+    for path in sorted((WEB / "panels").glob("*/panel.js")):
+        source = path.read_text(encoding="utf-8")
+        declared = re.search(r"^const VIEWS = \[([^\]]*)\]", source, re.MULTILINE)
+        if not declared:
+            continue
+        views = set(re.findall(r'"([^"]+)"', declared.group(1)))
+        compared = set(re.findall(r's\.view === "([^"]+)"', source))
+        unknown = sorted(compared - views)
+        assert not unknown, f"{path.relative_to(ROOT)} compares s.view to unknown views: {unknown}"

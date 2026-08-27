@@ -162,21 +162,3 @@ export function play(morse, { wpm = 20, effectiveWpm, pitch = 600, onDone } = {}
 
   return cleanup;
 }
-
-/** Random practice groups, Koch-style: only the characters chosen so far. */
-export function practiceGroups(alphabet, { groups = 5, size = 5 } = {}) {
-  const out = [];
-  for (let g = 0; g < groups; g += 1) {
-    let group = "";
-    for (let i = 0; i < size; i += 1) {
-      group += alphabet[Math.floor(Math.random() * alphabet.length)];
-    }
-    out.push(group);
-  }
-  return out.join(" ");
-}
-
-// The Koch order: the sequence the method introduces characters in, chosen so
-// that each new one is maximally confusable with those already learned. K and M
-// first is not arbitrary -- they are opposites, which is the point.
-export const KOCH_ORDER = "KMRSUAPTLOWI.NJEF0Y,VG5/Q9ZH38B?42C7DX16";

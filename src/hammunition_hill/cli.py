@@ -181,7 +181,14 @@ def _publish_morse(config: Config) -> None:
     receives them as data. A panel cannot then disagree with a test about what
     `..-.` means.
     """
+    from . import cwpractice
     from .morse import reference
+
+    # One snapshot rather than two. The tables and the curriculum are both
+    # startup-time reference data read by the same panel, and splitting them
+    # would buy a second source id and nothing else.
+    data = reference()
+    data["practice"] = cwpractice.reference()
 
     write_snapshot(
         config.data_dir,
@@ -190,7 +197,7 @@ def _publish_morse(config: Config) -> None:
             kind="morse",
             fetched_at=datetime.now(UTC),
             stale_after_seconds=0,
-            data=reference(),
+            data=data,
         ),
     )
 

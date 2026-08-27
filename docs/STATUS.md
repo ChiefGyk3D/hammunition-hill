@@ -123,7 +123,8 @@ One is tier 2 (`imagery`).
 | Freshness shown, never hidden | ✅ | Stale and blank are different problems and look different |
 | Drag-to-reorder layout | ❌ | Dashboards are configurable in JSON; dragging is not built |
 | "AT YOUR QTH" vs "OPEN ELSEWHERE" band pills | ❌ | Spotted in hamdash; outstanding |
-| CW / Morse tools | ✅ | Reference charts, translator, timing, audio playback and Koch practice — see [CW.md](CW.md) |
+| CW / Morse tools | ✅ | Reference charts, translator, timing, audio playback — see [CW.md](CW.md) |
+| CW trainer | ✅ | Four drills: Koch lessons, callsign copy from real DXCC prefixes, a two-sided QSO simulator (contest and ragchew), and a phonetics/Q-signal/abbreviation quiz. Generated in the browser from a seeded PRNG the Python side mirrors, so a test proves the two never diverge. |
 | Ionospheric map | ❌ | |
 | Built-in SDR receiver | ⛔ | WebUSB needs a secure context, which would force TLS onto a LAN appliance for one panel. Point a tier 2 panel at your own OpenWebRX+ or KiwiSDR instead. |
 
@@ -234,8 +235,10 @@ shape, a tier 0 computation, or the log we already read.
 
 | Idea | Fit | Notes |
 |---|---|---|
-| **More CW: koch lesson plan, callsign practice, QSO simulator** | strong | The koch order and audio exist. A lesson plan is state; callsign practice is the prefix table we already publish; a QSO simulator is a script and a random callsign. |
-| **Phonetic alphabet and Q-signal quiz** | strong | Reference data plus the practice loop CW already has. |
+| **Head-copy drills: words and numbers** | strong | The trainer sends characters and callsigns. Copying *whole words* without writing is the skill that gets you past 20 WPM, and it needs a word list and nothing else. |
+| **Send practice via a straight-key input** | medium | Copy the space bar or a serial/GPIO key, decode the timing, and score it against what was asked for. Everything to decode it exists; capturing key-down timing accurately in a browser is the hard part. |
+| **Contest exchange drills at speed** | strong | The QSO simulator has the scripts; a pile-up mode that sends several stations at once, at settable speed, is the thing contest operators actually practise. |
+| **Farnsworth ramp / speed ladder** | strong | Hold character speed, close the gaps as you improve. The timing model already separates the two, so this is a UI and a stored setting. |
 | **Antenna calculators** | strong | Dipole, vertical, loop lengths from frequency; velocity factor; coax loss per 100 ft per band. Arithmetic and a table. |
 | **Great-circle / grid tools** | strong | Distance and bearing between two arbitrary grids, not just from your station. The maths is already in `geo.py`. |
 | **Licence exam practice** | medium | The question pools are public and large. A pool per class is a big data file and a real maintenance commitment — worth doing only if somebody will keep it current. |
