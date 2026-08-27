@@ -32,6 +32,7 @@ from __future__ import annotations
 import json
 import os
 import socket
+import socketserver
 import subprocess
 import sys
 import time
@@ -69,6 +70,44 @@ TLES = """ISS (ZARYA)
 1 25544U 98067A   19343.69339541  .00001764  00000-0  38792-4 0  9991
 2 25544  51.6439 211.2001 0007417  17.6667  85.6398 15.50103472202482
 """
+
+
+# An RBN feed, spoken well enough for the real client: a login prompt, then
+# spots. Nothing in this repository exercised a stream client end to end before
+# -- the read loop, the login, the tally and the snapshot write were only ever
+# tested in pieces, and the panel that renders the result was never rendered
+# with a result in it.
+RBN_SPOTS = [
+    "DX de W3LPL-#:   14025.0  N0CALL         CW    23 dB  28 WPM  CQ      1234Z",
+    "DX de VE7CC-#:    7030.5  N0CALL         CW    12 dB  25 WPM  CQ      1235Z",
+    "DX de KM3T-#:    21023.4  N0CALL         CW     6 dB  22 WPM  CQ      1236Z",
+    "DX de DL8LAS-#:  14074.0  JA1XYZ         FT8   -8 dB  15 WPM  CQ      1237Z",
+    "DX de EA5WU-#:    3573.0  VK2DEF         FT8  -21 dB  15 WPM  CQ      1238Z",
+    "DX de SM7IUN-#:  14025.5  G0ABC          CW    17 dB  30 WPM  DX      1239Z",
+    "DX de OH6BG-#:   21074.0  ZS6XYZ         FT8   -3 dB  15 WPM  CQ      1240Z",
+    "DX de W1NT-#:     7025.0  VE3ABC         CW    31 dB  24 WPM  CQ      1241Z",
+]
+
+
+class RbnStub(socketserver.StreamRequestHandler):
+    def handle(self) -> None:
+        try:
+            self.wfile.write(b"Please enter your call: ")
+            self.wfile.flush()
+            self.rfile.readline()  # whatever callsign the client sends
+            for line in RBN_SPOTS:
+                self.wfile.write((line + "\r\n").encode())
+            self.wfile.flush()
+            # Hold the connection so the client does not reconnect in a loop
+            # for the length of the run.
+            time.sleep(120)
+        except (BrokenPipeError, ConnectionResetError, OSError):
+            pass
+
+
+class ThreadedTCP(socketserver.ThreadingTCPServer):
+    daemon_threads = True
+    allow_reuse_address = True
 
 
 class Upstream(BaseHTTPRequestHandler):
@@ -279,6 +318,10 @@ def main() -> int:
     upstream_port = upstream.server_address[1]
     Thread(target=upstream.serve_forever, daemon=True).start()
 
+    rbn = ThreadedTCP(("127.0.0.1", 0), RbnStub)
+    rbn_port = rbn.server_address[1]
+    Thread(target=rbn.serve_forever, daemon=True).start()
+
     port = free_port()
     with TemporaryDirectory() as workdir:
         work = Path(workdir)
@@ -310,6 +353,13 @@ kind = "tle"
 url = "http://127.0.0.1:{upstream_port}/amateur.txt"
 local = true
 interval = 86400
+
+[[sources]]
+id = "rbn"
+kind = "rbn"
+url = "telnet://127.0.0.1:{rbn_port}"
+local = true
+options = {{ callsign = "N0CALL", flush_seconds = 1 }}
 """,
             encoding="utf-8",
         )
@@ -352,7 +402,13 @@ interval = 86400
             # directions: too short and the screenshots catch panels mid-start,
             # too long and every PR pays for the margin. Waiting on the files
             # also fails loudly if one never arrives, which a sleep cannot.
-            expected = ["kindex.json", "tle.json", "satellites.json", "propagation.json"]
+            expected = [
+                "kindex.json",
+                "tle.json",
+                "satellites.json",
+                "propagation.json",
+                "rbn.json",
+            ]
             deadline = time.monotonic() + 60
             while time.monotonic() < deadline:
                 missing = [n for n in expected if not (work / "data" / n).exists()]

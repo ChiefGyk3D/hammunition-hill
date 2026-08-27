@@ -732,6 +732,32 @@ ul.wx-alerts { list-style: none; margin: 0; padding: 0; }
 .tool-row-label { color: var(--muted); }
 .tool-row-value { color: var(--accent); font-weight: 600; white-space: nowrap; }
 .tool-row-note { color: var(--muted); font-size: 10.5px; }
+/* Reverse Beacon. Two shapes in one grid: a report of you, and a band summary.
+   The SNR carries the colour in both, because it is the measurement. */
+.rbn-list { display: grid; gap: 2px; }
+.rbn-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 60px 48px 46px 62px minmax(0, 0.8fr);
+  gap: 8px; align-items: baseline; font-family: var(--mono); font-size: 11px;
+  padding: 3px 6px;
+}
+.rbn-activity { grid-template-columns: 48px 46px 52px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.2fr); }
+.rbn-row:nth-child(odd) { background: var(--panel-2); }
+.rbn-spotter { color: var(--ink); font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+.rbn-snr { font-weight: 600; text-align: right; }
+/* The thresholds a CW operator would recognise: under 6 dB is a struggle,
+   over 20 is armchair copy. */
+.rbn-strong { color: var(--good); }
+.rbn-fair { color: var(--fair); }
+.rbn-weak { color: var(--muted); }
+.rbn-band { color: var(--accent); }
+.rbn-mode, .rbn-wpm, .rbn-age, .rbn-count, .rbn-calls { color: var(--muted); }
+.rbn-count { text-align: right; color: var(--ink); }
+.rbn-note {
+  font-family: var(--mono); font-size: 10.5px; color: var(--muted);
+  margin: 6px 0 0; line-height: 1.5;
+}
+
 /* Satellite passes. A dense list: the useful reading is "what is next and how
    high", so elevation and countdown carry the emphasis and everything else is
    context. */

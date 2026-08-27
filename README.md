@@ -10,7 +10,7 @@ monitor above it — the high ground you watch the bands from.
 
 ![The Home dashboard](https://raw.githubusercontent.com/ChiefGyk3D/hammunition-hill/main/docs/images/home.png)
 
-Six dashboards, twenty-four panels, one machine. Nothing above was fetched by
+Six dashboards, twenty-five panels, one machine. Nothing above was fetched by
 your browser from anyone else's server — the screenshots are taken by CI, from a
 real Chromium, against a real collector, so they are what the code renders
 rather than what a designer drew.
@@ -46,8 +46,8 @@ finished, so here is exactly where things stand:
 |---|---|
 | Collector, snapshot architecture, static server | ✅ working |
 | Egress allowlist, CSP, path handling | ✅ working |
-| Panels | ✅ 24 across 6 dashboards |
-| Source kinds | ✅ 11 polled, 5 stream, 1 file |
+| Panels | ✅ 25 across 6 dashboards |
+| Source kinds | ✅ 11 polled, 6 stream, 1 file |
 | Space weather dials | ✅ 8 scales |
 | Map — rotatable globe, greyline, spots, aurora | ✅ working |
 | Your log driving spot colouring | ✅ working |
@@ -65,7 +65,7 @@ finished, so here is exactly where things stand:
 | CW trainer — Koch, callsigns, QSO simulator, quiz | ✅ working |
 | Shack tools — antenna cut chart, feedline loss, SWR, grid path | ✅ working |
 | Satellites — cached TLEs, SGP4 passes, Doppler | ✅ working, optional extra |
-| RBN | ❌ **not written** |
+| RBN — who is hearing you, and band activity | ✅ working, off by default |
 | Metrics export to Grafana | ❌ **not written** |
 | CI — 9 jobs, 3 Python versions, x86 + ARM + macOS | ✅ working |
 | Docker image, distro packages, `pip install` without a clone | ❌ **not written** |
@@ -98,6 +98,7 @@ hardware finds it faster than we can.
 | **[CW & Morse](docs/CW.md)** | Reference, translator, timing, audio, and a four-drill trainer. |
 | **[Shack tools](docs/TOOLS.md)** | Antenna cut chart, feedline loss, what an SWR reading costs, grid-to-grid paths. |
 | **[Satellites](docs/SATELLITES.md)** | Pass prediction computed here from cached elements, and why the propagator is the one borrowed thing. |
+| **[Reverse Beacon](docs/RBN.md)** | Who is hearing you with an SNR, band activity, and how a few thousand spots a minute stay bounded. |
 | **[GPS](docs/GPS.md)** | Automatic grid square when portable, and why it publishes a locator rather than a fix. |
 | **[Propagation](docs/PROPAGATION.md)** | The MUF/LUF indicator, what it is worth, and what it is not. |
 | **[Imagery & weather](docs/IMAGERY.md)** | Weather alerts, radar and satellite tiles, and what a tier 2 tile costs you. |
