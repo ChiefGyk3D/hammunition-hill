@@ -37,20 +37,47 @@ def slug(name: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", name.lower())
 
 
+# Absolute links to this repository's own files, which is how the README has to
+# spell them -- see test_the_readme_links_images_absolutely below.
+RAW = "https://raw.githubusercontent.com/ChiefGyk3D/hammunition-hill/main/"
+
+
 def referenced_images(text: str) -> set[str]:
-    """Both spellings: markdown `![](path)` and the `<img src>` in the gallery."""
+    """Every image a document points at, as a repository-relative path.
+
+    Three spellings appear: markdown `![](path)`, the `<img src>` and `<a href>`
+    of the gallery. A raw.githubusercontent link to this repository is folded
+    back to the path it names, so a README written in absolute URLs is checked
+    against the files on disk exactly as a relative one would be. Without that,
+    switching the README to absolute links would have made every check in this
+    file pass on an empty set.
+    """
     markdown = re.findall(r"!\[[^\]]*\]\(([^)\s]+)", text)
     html = re.findall(r'<img[^>]+src="([^"]+)"', text)
-    anchors = re.findall(r'<a[^>]+href="(docs/images/[^"]+)"', text)
-    return {ref for ref in [*markdown, *html, *anchors] if not ref.startswith("http")}
+    anchors = re.findall(r'<a[^>]+href="([^"]*docs/images/[^"]+)"', text)
+
+    found = set()
+    for ref in [*markdown, *html, *anchors]:
+        if ref.startswith(RAW):
+            found.add(ref[len(RAW) :])
+        elif not ref.startswith(("http://", "https://")):
+            found.add(ref)
+        # Anything else points at somebody else's server, which is not ours to
+        # check and not something this README should be doing.
+    return found
 
 
 @pytest.mark.parametrize("path", MARKDOWN, ids=lambda p: p.name)
 def test_every_referenced_image_exists(path):
     """A broken image on GitHub renders as alt text and a grey box."""
-    for ref in referenced_images(path.read_text(encoding="utf-8")):
-        target = (path.parent / ref).resolve()
-        assert target.exists(), f"{path.name} references {ref}, which does not exist"
+    refs = referenced_images(path.read_text(encoding="utf-8"))
+    for ref in refs:
+        # A folded absolute URL is repo-relative; a plain relative path is
+        # relative to the document. Try the document first, then the root.
+        candidates = [(path.parent / ref).resolve(), (ROOT / ref).resolve()]
+        assert any(c.exists() for c in candidates), (
+            f"{path.name} references {ref}, which does not exist"
+        )
 
 
 @pytest.mark.parametrize("dash", DASHBOARDS, ids=lambda d: d["id"])
@@ -105,3 +132,36 @@ def test_the_slug_here_matches_the_one_the_render_script_writes():
     assert "tab.toLowerCase().replace(/[^a-z0-9]+/g, '-')" in script, (
         "render_check.py changed how it names screenshots -- update slug() here"
     )
+
+
+def test_the_readme_links_images_absolutely():
+    """A relative image path renders on GitHub and nowhere else.
+
+    `pyproject.toml` sets `readme = "README.md"`, so this file ships as the
+    package long description. PyPI has no repository to resolve `docs/images/`
+    against and renders a blank box; `twine check --strict` does not look at
+    images, so the `build` job passes and nobody finds out until the project
+    page is up.
+    """
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    markdown = re.findall(r"!\[[^\]]*\]\(([^)\s]+)", readme)
+    html = re.findall(r'<img[^>]+src="([^"]+)"', readme)
+    relative = sorted(ref for ref in [*markdown, *html] if not ref.startswith("https://"))
+    assert not relative, (
+        f"README.md links images relatively: {relative}. They render on github.com "
+        f"and break on PyPI, which also serves this file. Use {RAW}<path>."
+    )
+
+
+def test_the_readme_only_shows_images_from_this_repository():
+    """The other half: absolute is not a licence to hotlink somebody's server.
+
+    A README that pulled an image from an arbitrary host would leak a request
+    to it on every view of the project page, which is precisely the posture
+    this project exists to avoid.
+    """
+    readme = (ROOT / "README.md").read_text(encoding="utf-8")
+    sources = re.findall(r'<img[^>]+src="([^"]+)"', readme)
+    sources += re.findall(r"!\[[^\]]*\]\((https?://[^)\s]+)", readme)
+    foreign = sorted(ref for ref in sources if not ref.startswith(RAW))
+    assert not foreign, f"README.md loads images from elsewhere: {foreign}"
