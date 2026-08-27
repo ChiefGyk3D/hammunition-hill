@@ -8,10 +8,48 @@ turns a Debian-family install into an amateur radio, SDR, and RF workstation.
 Hammunition builds the shack computer; Hammunition Hill is what you put on the
 monitor above it — the high ground you watch the bands from.
 
-> **Status: alpha.** Twelve panels work end to end — DX cluster, POTA/SOTA,
-> contests, rig control, WSJT-X, band plan, callsign lookup, and log-driven
-> needed-slot colouring. Greyline, weather alerts, aurora, and VOACAP are still
-> ahead of parity. Expect rough edges and breaking config changes.
+---
+
+## ⚠️ Alpha — it works, and it is not finished
+
+**Status: alpha. It runs, it is useful today, and config will break between
+versions.** Being honest about where the edges are matters more than looking
+finished, so here is exactly where things stand:
+
+| | Status |
+|---|---|
+| Collector, snapshot architecture, static server | ✅ working |
+| Egress allowlist, CSP, path handling | ✅ working |
+| Panels | ✅ 19 across 6 dashboards |
+| Source kinds | ✅ 10 polled, 3 stream, 1 file |
+| Space weather dials | ✅ 8 scales |
+| Map — rotatable globe, greyline, spots, aurora | ✅ working |
+| Your log driving spot colouring | ✅ working |
+| DX cluster, WSJT-X, `rigctld` | ✅ working |
+| Logbook | ✅ working, off by default |
+| Callsign lookup — 4 providers, chained, offline-capable | ✅ working |
+| Weather alerts and tier 2 imagery | ✅ working |
+| Band plans | 🟡 US only — international is a data contribution, not code |
+| Propagation | 🟡 band conditions only; **no MUF, no VOACAP** |
+| Weather outside the US | 🟡 feeds and maps; no structured severity |
+| Callsign query endpoint | ❌ **not written** — the config flag parses and does nothing |
+| GPS / portable auto-grid | ❌ **not written** |
+| Satellites, RBN, CW tools | ❌ **not written** |
+| Metrics export to Grafana | ❌ **not written** |
+| Docker image, distro packages, CI | ❌ **not written** |
+
+**Full inventory, every subsystem: [docs/STATUS.md](docs/STATUS.md).** That page
+is the one kept current; anything here is a summary of it.
+
+You can run this today on a Pi or a laptop and get a genuinely useful shack
+display. What you should not do is expose it to the internet — see below, it has
+no authentication by design — or expect the config file you write this week to
+load unchanged next month.
+
+**Two things you can help with that need no Python:** an international band plan
+(one JSON file, the loader is already generic), and telling us when an upstream
+source breaks. Upstream endpoints rot constantly, and `hamhill check` on real
+hardware finds it faster than we can.
 
 ### Documentation
 
@@ -24,6 +62,7 @@ monitor above it — the high ground you watch the bands from.
 | **[Writing panels](docs/PANELS.md)** | The panel contract. |
 | **[Callsign lookup](docs/CALLSIGN-LOOKUP.md)** | Provider options, trade-offs, and the architectural line. |
 | **[Imagery & weather](docs/IMAGERY.md)** | Weather alerts, radar and satellite tiles, and what a tier 2 tile costs you. |
+| **[Status](docs/STATUS.md)** | **Complete feature inventory — what works, what is partial, what is not written.** |
 | **[Parity](docs/PARITY.md)** | Feature-by-feature against hamdash.com, including where we deliberately differ. |
 | **[Reuse audit](docs/REUSE.md)** | What is worth borrowing from the sibling projects. |
 
@@ -414,10 +453,11 @@ no request causes a fetch and the architecture holds. That answers "who is this
 station I am seeing", which is what a dashboard is actually asked.
 
 Looking up *arbitrary* callsigns needs an endpoint that accepts input — the one
-thing this design avoids — so it is separately opt-in
-(`query_endpoint = true`), off by default, and deliberately the narrowest
-endpoint that can do the job: GET only, local index only, strictly validated,
-rate limited, and unable to cause an outbound request.
+thing this design avoids. That endpoint is **designed but not built**: the
+`query_endpoint` flag parses and does nothing today. The intended shape is the
+narrowest thing that can do the job — GET only, local index only, strictly
+validated, rate limited, and unable to cause an outbound request — and it will
+stay opt-in when it lands. See [docs/STATUS.md](docs/STATUS.md).
 
 With a network provider, **the callsigns you are watching go to that provider.**
 That is inherent. `fcc_uls` is the option where nothing leaves the machine — and

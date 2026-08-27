@@ -255,9 +255,9 @@ interval = 120
 # tells you how many callsigns are indexed and when.
 #
 # Resolution is scheduled, not on demand: the collector works through callsigns
-# that already appear in your spots and decodes. To look up arbitrary callsigns
-# you also need the query endpoint, which is the one place the server accepts
-# input — off by default, and documented in docs/CALLSIGN-LOOKUP.md.
+# that already appear in your spots and decodes. Looking up arbitrary callsigns
+# would need a query endpoint — designed, NOT built. The flag below parses and
+# does nothing today; see docs/STATUS.md.
 # query_endpoint = false
 
 # --- Tier 2: foreign content the browser loads directly ---------------------
