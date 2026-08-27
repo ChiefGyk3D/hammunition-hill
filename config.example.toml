@@ -157,6 +157,21 @@ interval = 86400
 [satellites]
 min_elevation = 5.0
 
+# A Prometheus endpoint at /metrics on the dashboard's own port, so Grafana can
+# do the thing snapshots deliberately cannot: history. Each snapshot write
+# replaces the last, because the design is "what is true now" -- which is right
+# for a wall display and useless for "SFI over six months".
+#
+# This is a *read* path. Prometheus pulls; nothing here originates a connection
+# and the egress allowlist is untouched. It is reachable by exactly the audience
+# that can already read the dashboard, and it exposes the same numbers the
+# dashboard already shows -- but that is a decision, so it is off by default.
+#
+# Nothing is labelled by callsign. A label whose values are unbounded is how a
+# time-series database is ruined, and there is a hard series cap besides.
+[metrics]
+enabled = false
+
 # --- Streams: long-lived connections ----------------------------------------
 # These hold a socket open rather than polling. They emit only; nothing they
 # receive can change what the collector fetches or from where.

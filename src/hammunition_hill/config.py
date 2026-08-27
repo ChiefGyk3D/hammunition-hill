@@ -154,6 +154,18 @@ class LoggingConfig:
 
 
 @dataclass(frozen=True)
+class MetricsConfig:
+    """A Prometheus endpoint on the dashboard's own port.
+
+    Off by default. Prometheus pulls, so nothing here originates a connection
+    and the egress allowlist is untouched -- but "the same exposure as the
+    dashboard" is a claim worth making deliberately rather than inheriting.
+    """
+
+    enabled: bool = False
+
+
+@dataclass(frozen=True)
 class SatellitesConfig:
     """How high above the horizon counts as a pass.
 
@@ -179,6 +191,7 @@ class Config:
     logbooks: tuple[Any, ...] = ()
     imagery: tuple[ImageryTile, ...] = ()
     satellites: SatellitesConfig = field(default_factory=SatellitesConfig)
+    metrics: MetricsConfig = field(default_factory=MetricsConfig)
 
     def primary_logbook(self) -> Any | None:
         """The book that drives needed-slot colouring."""
@@ -341,6 +354,11 @@ def parse_config(raw: dict[str, Any], *, base_dir: Path) -> Config:
     if sum(1 for b in books if b.primary) > 1:
         raise ConfigError("[[logbooks]]: only one logbook may be marked primary")
 
+    metrics_tbl = raw.get("metrics", {})
+    if not isinstance(metrics_tbl, dict):
+        raise ConfigError("[metrics] must be a table")
+    metrics_cfg = MetricsConfig(enabled=bool(metrics_tbl.get("enabled", False)))
+
     sat_tbl = raw.get("satellites", {})
     if not isinstance(sat_tbl, dict):
         raise ConfigError("[satellites] must be a table")
@@ -477,6 +495,7 @@ def parse_config(raw: dict[str, Any], *, base_dir: Path) -> Config:
         lookup=lookup,
         logging=log_cfg,
         satellites=sat_cfg,
+        metrics=metrics_cfg,
         logbooks=tuple(books),
         imagery=tuple(tiles),
     )

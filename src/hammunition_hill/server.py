@@ -35,6 +35,23 @@ log = logging.getLogger(__name__)
 
 DATA_PREFIX = "/data/"
 QSO_PATH = "/api/qso"
+METRICS_PATH = "/metrics"
+
+# Snapshots the collector writes that are not [[sources]] entries: the startup
+# reference tables and the two derived models. Listed here rather than globbed
+# off disk so a stray file in the data directory cannot become a metric.
+DERIVED_SOURCES = frozenset(
+    {
+        "station",
+        "prefixes",
+        "imagery",
+        "morse",
+        "antenna",
+        "propagation",
+        "satellites",
+        "tle",
+    }
+)
 
 # A QSO record is a few hundred bytes. Anything larger is not one.
 MAX_BODY_BYTES = 8192
@@ -139,6 +156,56 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         except (ValueError, OSError):
             return str(root / "\0")  # A path that cannot exist -> 404.
         return str(resolved)
+
+    def do_GET(self) -> None:  # noqa: N802
+        """One route of our own, then the file server.
+
+        Checked before translate_path so /metrics can never be confused with a
+        file called "metrics", and gated on config so a repository that ships
+        the code does not ship the endpoint.
+        """
+        if self.path.split("?")[0] == METRICS_PATH:
+            self._serve_metrics()
+            return
+        super().do_GET()
+
+    def do_HEAD(self) -> None:  # noqa: N802
+        """Same route, no body.
+
+        Without this the parent's file lookup answers, so a HEAD would 404 on a
+        path where GET returns 200 -- which is the sort of inconsistency a proxy
+        or a health check trips over long after anyone remembers why.
+        """
+        if self.path.split("?")[0] == METRICS_PATH:
+            self._serve_metrics(body=False)
+            return
+        super().do_HEAD()
+
+    def _serve_metrics(self, *, body: bool = True) -> None:
+        if not self._config.metrics.enabled:
+            # 404 rather than 403: an endpoint that is switched off should not
+            # announce that it exists.
+            self.send_error(HTTPStatus.NOT_FOUND, "Not Found")
+            return
+
+        from .metrics import CONTENT_TYPE, render
+
+        sources = tuple(sorted({s.id for s in self._config.sources} | DERIVED_SOURCES))
+        try:
+            payload = render(self._config.data_dir, sources).encode("utf-8")
+        except OSError:
+            # A scrape must not be able to take the dashboard down, and a
+            # half-written body is worse for Prometheus than a clean failure.
+            self.send_error(HTTPStatus.SERVICE_UNAVAILABLE, "metrics unavailable")
+            return
+
+        self.send_response(HTTPStatus.OK)
+        self.send_header("Content-Type", CONTENT_TYPE)
+        self.send_header("Content-Length", str(len(payload)))
+        self.send_header("Cache-Control", "no-store")
+        self.end_headers()
+        if body:
+            self.wfile.write(payload)
 
     # --- policy ------------------------------------------------------------
     def end_headers(self) -> None:
