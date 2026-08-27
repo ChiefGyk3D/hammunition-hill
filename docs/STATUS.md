@@ -61,7 +61,7 @@ The parts everything else sits on.
 | `hamhill serve` / `check` / `fcc-import` | ✅ | |
 | Config validation with actionable errors | ✅ | |
 | Tests | ✅ | 1587, ruff clean. |
-| CI | ✅ | Ten jobs: lint, pytest across 3.11–3.13 on x86, ARM and macOS, example-config validation, an end-to-end smoke test, a real-browser render of every dashboard, dependency audit, wheel build, and a weekly upstream-liveness check. |
+| CI | ✅ | Nine jobs, plus CodeQL in its own workflow: lint, pytest across 3.11–3.13 on x86, ARM and macOS, example-config validation, an end-to-end smoke test, a real-browser render of every dashboard, dependency audit, wheel build, and a weekly upstream-liveness check. |
 | CodeQL | ✅ | Python and JavaScript, weekly and per-PR. |
 | Dependabot | ✅ | Actions and pip, weekly. |
 | Tests cannot reach the network | ✅ | Enforced by a conftest guard, not convention. |

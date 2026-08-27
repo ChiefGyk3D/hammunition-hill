@@ -74,7 +74,7 @@ finished, so here is exactly where things stand:
 | Metrics — Prometheus endpoint | ✅ working, off by default |
 | Metrics — InfluxDB push | ❌ **not written** |
 | Licence exam practice — all three US pools included | ✅ working |
-| CI — 10 jobs, 3 Python versions, x86 + ARM + macOS | ✅ working |
+| CI — 9 jobs plus CodeQL, 3 Python versions, x86 + ARM + macOS | ✅ working |
 | Docker image, distro packages, `pip install` without a clone | ❌ **not written** |
 
 **Full inventory, every subsystem: [docs/STATUS.md](docs/STATUS.md).** That page

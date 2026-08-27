@@ -352,3 +352,24 @@ def test_architecture_lists_every_module():
 
     missing = sorted(name for name in modules if f"`{name}`" not in ARCHITECTURE)
     assert not missing, f"ARCHITECTURE.md does not list: {', '.join(missing)}"
+
+
+INSTALL = (ROOT / "docs" / "INSTALL.md").read_text(encoding="utf-8")
+
+
+def test_install_documents_every_optional_extra():
+    """An extra nobody is told about is an extra nobody installs.
+
+    INSTALL.md showed `pip install -e .` and stopped. Satellite pass prediction
+    needs `[satellites]` and the page never said so, so the only way to find out
+    was to read pyproject.toml or to notice the panel explaining itself. The
+    install page is where somebody looks once, at the start.
+    """
+    import tomllib
+
+    pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+    extras = set(pyproject["project"]["optional-dependencies"])
+    assert extras, "no optional extras declared"
+
+    missing = sorted(name for name in extras if f'".[{name}]"' not in INSTALL)
+    assert not missing, f"docs/INSTALL.md does not mention the extras: {', '.join(missing)}"
