@@ -256,6 +256,36 @@ def _publish_exams(config: Config) -> None:
         )
 
 
+def _publish_part97(config: Config) -> None:
+    """Publish 47 CFR Part 97, so a rules answer can show the rule.
+
+    Its own snapshot rather than a field on each pool: it is 154 kB and all
+    three elements cite the same regulation, so attaching it to each would ship
+    it three times and make every pool fetch carry it whether or not the reader
+    ever opens an explanation.
+
+    Written unconditionally, unlike the pools. There is no `part97-import` that
+    an operator's copy could be overwritten by -- the importer exists, but what
+    it produces is checked in, and the CFR is not something anybody is expected
+    to hold a personal edition of.
+    """
+    from .part97 import shipped
+
+    payload = shipped()
+    if not payload:
+        return
+    write_snapshot(
+        config.data_dir,
+        Snapshot(
+            source_id="part97",
+            kind="part97",
+            fetched_at=datetime.now(UTC),
+            stale_after_seconds=0,
+            data=payload,
+        ),
+    )
+
+
 def _serve(config: Config, guard: EgressGuard, enricher: Enricher) -> int:
     if (problem := _web_dir_problem(config)) is not None:
         print(f"cannot serve: {problem}", file=sys.stderr)
@@ -268,6 +298,7 @@ def _serve(config: Config, guard: EgressGuard, enricher: Enricher) -> int:
     _publish_morse(config)
     _publish_antenna(config)
     _publish_exams(config)
+    _publish_part97(config)
 
     bind = f"{config.server.host}:{config.server.port}"
     try:
@@ -516,6 +547,57 @@ def _exam_import(config: Config, sources: list[Path] | None) -> int:
     return 0
 
 
+def _part97_import(config: Config, sources: list[Path] | None) -> int:
+    """Turn the published CFR into the JSON the exam panel quotes from.
+
+    Run once an edition, against the annual CFR volume, the same shape of
+    command as `exam-import` and for the same reason: the regulation is
+    published as a PDF behind a page rather than at a stable URL, and the
+    result is checked in so nobody has to run this to get it.
+
+    Writes to the package data directory, not the snapshot directory. What this
+    produces is source material for the repository rather than state for one
+    installation.
+    """
+    import json
+
+    from .part97 import Part97Error, parse, read_source
+
+    if not sources:
+        print("usage: hamhill part97-import --file <CFR-part-97.pdf>", file=sys.stderr)
+        print(file=sys.stderr)
+        print("The annual volume is published at:", file=sys.stderr)
+        print("  https://www.govinfo.gov/app/collection/cfr", file=sys.stderr)
+        print("Title 47, volume 5, which is where Part 97 lives.", file=sys.stderr)
+        return 2
+
+    chunks = []
+    for path in sources:
+        try:
+            chunks.append(read_source(path))
+        except OSError as exc:
+            print(f"cannot read {path}: {exc}", file=sys.stderr)
+            return 1
+        except Part97Error as exc:
+            print(f"{path}: {exc}", file=sys.stderr)
+            return 1
+
+    try:
+        part = parse("\n".join(chunks), source=str(sources[0].name))
+    except Part97Error as exc:
+        print(f"{sources[0]}: {exc}", file=sys.stderr)
+        return 1
+
+    target = Path(__file__).resolve().parent / "data" / "part97.json"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(
+        json.dumps(part.to_dict(), indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
+    print(f"{len(part.sections)} sections")
+    print(f"wrote {target}")
+    return 0
+
+
 def _fcc_import(config: Config, guard: EgressGuard, source: Path | None) -> int:
     """Build the offline FCC ULS index.
 
@@ -648,14 +730,14 @@ def main(argv: list[str] | None = None) -> int:
         help=(
             "fcc-import: use an already-downloaded l_amat.zip instead of fetching it. "
             "exam-import: the pool file to read; repeat for a pool split across "
-            "several documents."
+            "several documents. part97-import: the CFR volume containing Part 97."
         ),
     )
     parser.add_argument(
         "command",
         nargs="?",
         default="serve",
-        choices=("serve", "check", "fcc-import", "exam-import"),
+        choices=("serve", "check", "fcc-import", "exam-import", "part97-import"),
         help="default: serve",
     )
     args = parser.parse_args(argv)
@@ -685,4 +767,7 @@ def main(argv: list[str] | None = None) -> int:
         return _fcc_import(config, guard, args.file[0] if args.file else None)
     if args.command == "exam-import":
         return _exam_import(config, args.file)
+
+    if args.command == "part97-import":
+        return _part97_import(config, args.file)
     return _serve(config, guard, enricher)

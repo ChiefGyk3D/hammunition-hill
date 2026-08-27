@@ -78,6 +78,75 @@ async function loadPool(elementId, redraw) {
   return pools.get(elementId);
 }
 
+// 47 CFR Part 97, loaded the same way and for the same reason: 154 kB that
+// only matters once a reader asks why an answer is what it is. Fetched on the
+// first rules question and cached, so a session that never opens one never
+// pays for it.
+let rules = null;
+
+async function loadRules(redraw) {
+  if (rules !== null) return rules;
+  rules = "loading";
+  try {
+    const response = await fetch("./data/part97.json", { cache: "no-store" });
+    rules = response.ok ? (await response.json()).data || "missing" : "missing";
+  } catch {
+    rules = "missing";
+  }
+  redraw();
+  return rules;
+}
+
+// `97.113(a)(4)` and `97.5a` both open at the section. Paragraph citations are
+// shown as written, but the whole section is what gets displayed: quoting one
+// paragraph out of its section is how a rule gets misread, because the
+// exceptions usually live two paragraphs further down.
+function sectionFor(reference) {
+  const found = /97\.\d+/.exec(reference || "");
+  return found ? found[0] : "";
+}
+
+// The rule itself, under the citation. Nothing here is written by us: every
+// word is the FCC's, which is the entire reason this is worth showing. A
+// question whose reference is outside Part 97 -- two cite Part 1 -- gets the
+// citation alone, and says so rather than showing nothing.
+function ruleFor(el, reference, redraw) {
+  const parts = [el("p", "exam-note", `Rule reference: \u00a7${reference}`)];
+  const number = sectionFor(reference);
+  if (!number) {
+    parts.push(el("p", "exam-hint", "Outside Part 97, so the text is not bundled."));
+    return parts;
+  }
+  const loaded = loadRules(redraw);
+  if (rules === "loading" || rules === null) {
+    parts.push(el("p", "exam-hint", "loading the rule\u2026"));
+    return parts;
+  }
+  if (rules === "missing") {
+    parts.push(el("p", "exam-hint", "Part 97 is not on disk \u2014 run hamhill serve again."));
+    return parts;
+  }
+  void loaded;
+  const section = (rules.sections || []).find((entry) => entry.number === number);
+  if (!section) {
+    parts.push(el("p", "exam-hint", `\u00a7${number} is not in the bundled edition.`));
+    return parts;
+  }
+  const box = el("div", "exam-rule");
+  box.appendChild(el("p", "exam-rule-head", `\u00a7${section.number} ${section.title}`));
+  box.appendChild(el("pre", "exam-rule-text", section.text));
+  box.appendChild(
+    el(
+      "p",
+      "exam-rule-note",
+      `47 CFR \u00a7${section.number}, ${rules.edition || "as published"} edition. ` +
+        `The section in full, as the FCC published it.`,
+    ),
+  );
+  parts.push(box);
+  return parts;
+}
+
 // A pool past its dates is the failure this feature has to guard against: the
 // questions look completely normal and are the wrong ones.
 function validity(el, pool) {
@@ -259,7 +328,7 @@ export function render(root, { el }) {
         parts.push(el("div", "exam-question", question.text));
         parts.push(answerList(el, question, question.correct, () => {}));
         if (question.reference) {
-          parts.push(el("p", "exam-note", `Rule reference: §${question.reference}`));
+          for (const node of ruleFor(el, question.reference, draw)) parts.push(node);
         }
       }
     }
@@ -342,7 +411,7 @@ export function render(root, { el }) {
           }),
         );
         if (s.answered !== null && s.question.reference) {
-          parts.push(el("p", "exam-note", `Rule reference: §${s.question.reference}`));
+          for (const node of ruleFor(el, s.question.reference, draw)) parts.push(node);
         }
       }
 

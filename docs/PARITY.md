@@ -90,7 +90,7 @@ Legend: **done** · **partial** · **planned** · **not planned** (with the reas
 | Repeater finder | **planned** | RepeaterBook has a public API |
 | MUF predictor | **done** | Ported from solarstorm_scout with the solar-zenith fix, so it peaks at *your* local noon rather than 12:00 UTC |
 | Propagation prediction | **partial** | Band conditions from HamQSL plus a local MUF/LUF/absorption indicator; VOACAP still deferred and still hard |
-| Education | **done** | Reversed. Licence exam practice from the official NCVEC pools for all three US elements, which ship with the project: five study modes, and exams built the way a real one is — one question from each group. The argument against was that study sites do it better; what they do not do is work with the WAN down, which is the whole premise here. See [EXAM.md](EXAM.md) |
+| Education | **done** | Reversed. Licence exam practice from the official NCVEC pools for all three US elements, which ship with the project: five study modes, and exams built the way a real one is — one question from each group. 47 CFR Part 97 ships with it, so a rules question shows the regulation it comes from rather than a paraphrase. The argument against was that study sites do it better; what they do not do is work with the WAN down, which is the whole premise here. See [EXAM.md](EXAM.md) |
 
 ### Space weather
 

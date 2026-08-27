@@ -220,6 +220,7 @@ product. None of these fetch anything.
 | `morse.py` | Morse code: the tables, the timing, and the shorthand. |
 | `cwpractice.py` | What to send when you are learning to copy it. |
 | `exam.py` | Licence exam practice, from the official question pools. |
+| `part97.py` | 47 CFR Part 97, so a rules answer can cite the rule. |
 | `gps.py` | Position parsing, and the precision decision. |
 
 **Output**

@@ -849,3 +849,37 @@ ul.wx-alerts { list-style: none; margin: 0; padding: 0; }
   font-family: var(--mono); font-size: 10.5px; color: var(--muted);
   margin: 6px 0; line-height: 1.5;
 }
+
+/* The rule behind a rules answer. A pre, because the CFR's paragraph
+   lettering carries meaning and reflowing it would lose the structure that
+   makes (a)(4) findable. Scrolls rather than growing: some sections are long,
+   and the panel below it should not move. */
+.exam-rule {
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  background: var(--panel-2);
+  border-left: 2px solid var(--accent);
+  border-radius: 3px;
+}
+.exam-rule-head {
+  margin: 0 0 6px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--accent);
+}
+.exam-rule-note {
+  margin: 8px 0 0;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--muted);
+}
+.exam-rule-text {
+  margin: 0;
+  max-height: 320px;
+  overflow: auto;
+  white-space: pre-wrap;
+  font-family: var(--sans);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink);
+}

@@ -128,6 +128,7 @@ Sixteen are tier 1. One is tier 2 (`imagery`).
 | CW trainer | ✅ | Four drills: Koch lessons, callsign copy from real DXCC prefixes, a two-sided QSO simulator (contest and ragchew), and a phonetics/Q-signal/abbreviation quiz. Generated in the browser from a seeded PRNG the Python side mirrors, so a test proves the two never diverge. |
 | Shack tools | ✅ | Antenna cut chart (dipole, vertical, EFHW, 5/8, loop), feedline loss for ten cable types, what an SWR reading costs through a given line, and distance/bearing between any two grid squares — see [TOOLS.md](TOOLS.md) |
 | Licence exam practice | ✅ | Study mode and full practice exams from the official pools for all three US elements, which ship with the project. Built the way a real exam is — one question from each group. Expiry is checked, and a test fails when a shipped pool runs out — see [EXAM.md](EXAM.md) |
+| Part 97 beside the answer | ✅ | 47 CFR Part 97 ships too, so a rules question shows the section it comes from, in full, as the FCC published it. 192 questions cite one. Nothing is paraphrased |
 | Satellite passes | ✅ | Amateur TLEs fetched daily; passes, look angles and Doppler computed here from cached elements, so the panel survives a WAN outage for days. Needs the optional `sgp4` extra — see [SATELLITES.md](SATELLITES.md) |
 | Reverse Beacon Network | ✅ | Who is hearing your callsign, with SNR and speed, plus a rolling per-band tally of everything else. Several thousand spots a minute collapse into a table bounded by the band plan — see [RBN.md](RBN.md) |
 | Ionospheric map | ❌ | |
@@ -210,11 +211,13 @@ Sixteen are tier 1. One is tier 2 (`imagery`).
 
 What is actually being worked on, in order:
 
-1. **Part 97 alongside the exam questions**, so a wrong answer explains itself
-   from the regulation rather than from a paraphrase somebody wrote.
-2. **The callsign query endpoint**, which is the one place a config flag still
+1. **The callsign query endpoint**, which is the one place a config flag still
    parses and does nothing.
-3. **Packaging**, meaning a container and a `pip install` that carries `web/`.
+2. **Packaging**, meaning a container and a `pip install` that carries `web/`.
+3. **Opaque image mode**, so a tier 2 tile stops being tier 2.
+
+Part 97 alongside the exam questions was the previous first item and has
+shipped: 192 of the 1431 questions cite a rule, and the rule is now quoted.
 
 RBN, satellites and the Prometheus exporter were the previous three and have
 shipped; the table above is the record of what they actually do.
@@ -253,7 +256,7 @@ shape, a tier 0 computation, or the log we already read.
 | **Smith chart** | medium | The one antenna tool the shack-tools panel does not have, and the only one that is real interactive drawing rather than arithmetic. |
 | **NanoVNA / analyser sweep input** | medium | A sweep read off a VNA would make the SWR tab far more useful than a typed number. Needs a serial or USB path into the collector, which is a posture change like `rigctld` was. |
 | **Coax length by measurement** | strong | Velocity factor and a known resonant frequency give cable length from a VNA null; the arithmetic is already here. |
-| **Part 97 alongside the exam questions** | strong | Every pool question carries its rule reference and the panel shows it. Shipping the regulation and linking the two would turn "the answer is C" into "here is why". The CFR is published as a PDF and the extraction path already exists. |
+
 | **Exam pools for other countries** | medium | The parser is written for the NCVEC layout. Another syllabus is a data contribution and probably a second parser. |
 | **Repeater directory** | medium | RepeaterBook has a public API. Tier 1, one source, but the useful version is filtered by *your* location, which GPS now gives us. |
 | **Band plan by region** | strong | The loader is generic; this is data. IARU Region 1 and 3 files would cover most of the world. |
