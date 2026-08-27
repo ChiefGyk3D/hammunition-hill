@@ -118,9 +118,35 @@ def _publish_prefixes(config: Config, enricher: Enricher) -> None:
     )
 
 
+def _publish_imagery(config: Config) -> None:
+    """Publish the tile list so the imagery panel needs no config of its own.
+
+    Written once at startup like the prefix table: it is config, and a restart
+    is the moment config changes. Nothing here is fetched -- the collector is
+    publishing a list of URLs it will never request, for the browser to request
+    instead. That asymmetry is the whole point of the tier 2 label the panel
+    puts on every tile.
+    """
+    write_snapshot(
+        config.data_dir,
+        Snapshot(
+            source_id="imagery",
+            kind="imagery",
+            fetched_at=datetime.now(UTC),
+            stale_after_seconds=0,
+            data={
+                "tiles": [dataclasses.asdict(tile) for tile in config.imagery],
+                "groups": sorted({tile.group for tile in config.imagery}),
+                "hosts": list(config.csp_hosts()),
+            },
+        ),
+    )
+
+
 def _serve(config: Config, guard: EgressGuard, enricher: Enricher) -> int:
     _publish_station(config, enricher)
     _publish_prefixes(config, enricher)
+    _publish_imagery(config)
 
     bind = f"{config.server.host}:{config.server.port}"
     try:
@@ -178,7 +204,7 @@ def _check(config: Config, guard: EgressGuard, enricher: Enricher) -> int:
         print(f"lookup       : {config.lookup.provider}{endpoint}")
     else:
         print("lookup       : none (prefix table only)")
-    print(f"csp          : {build_csp(config.embed_hosts)}")
+    print(f"csp          : {build_csp(config.embed_hosts, config.csp_hosts())}")
     print()
 
     failures = 0
@@ -200,6 +226,15 @@ def _check(config: Config, guard: EgressGuard, enricher: Enricher) -> int:
         else:
             marker = "local" if source.local else ("stream" if is_stream(source.kind) else "ok")
             print(f"  {marker:<7} {source.id:<20} {source.kind:<10} {source.host}")
+
+    if config.imagery:
+        # Listed separately from sources, and deliberately not checked against
+        # the egress guard: the guard governs what *this process* may contact,
+        # and it never contacts these. Printing them under the same heading
+        # would imply a check that is not happening.
+        print("\n  tier 2 imagery — fetched by each viewer's browser, not by this collector:")
+        for tile in config.imagery:
+            print(f"  browser {tile.id:<20} {tile.group:<10} {tile.host}  every {tile.refresh}s")
 
     if failures:
         print(f"\n{failures} source(s) need attention.", file=sys.stderr)

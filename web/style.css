@@ -495,3 +495,85 @@ ul.alerts li:last-child { border-bottom: 0; }
 .log-context { font-family: var(--mono); font-size: 10.5px; color: var(--muted); align-self: center; }
 .log-submit { padding: 6px 12px; }
 .log-submit:disabled { opacity: .6; cursor: default; }
+
+/* --- weather alerts ---------------------------------------------------- */
+.wx-summary {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px;
+  border-left: 3px solid var(--rule);
+  background: var(--panel-2);
+  padding: 8px 10px;
+  margin-bottom: 10px;
+}
+.wx-summary.level-good { border-left-color: var(--good); }
+.wx-summary.level-warn { border-left-color: var(--fair); }
+.wx-summary.level-critical { border-left-color: var(--poor); }
+.wx-count { font-weight: 600; font-size: 14px; }
+.wx-summary.level-warn .wx-count { color: var(--fair); }
+.wx-summary.level-critical .wx-count { color: var(--poor); }
+.wx-events { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+
+ul.wx-alerts { list-style: none; margin: 0; padding: 0; }
+.wx-alert {
+  border-left: 3px solid var(--rule);
+  padding: 7px 0 7px 9px;
+  margin-bottom: 7px;
+  background: var(--panel-2);
+}
+.wx-alert.level-good { border-left-color: var(--good); }
+.wx-alert.level-warn { border-left-color: var(--fair); }
+.wx-alert.level-critical { border-left-color: var(--poor); }
+.wx-alert-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.wx-event { font-weight: 600; font-size: 13px; }
+.wx-alert.level-critical .wx-event { color: var(--poor); }
+.wx-alert.level-warn .wx-event { color: var(--fair); }
+.wx-sev {
+  font-family: var(--mono); font-size: 9.5px; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--muted);
+}
+.wx-until { margin-left: auto; font-family: var(--mono); font-size: 10.5px; color: var(--muted); }
+.wx-area {
+  font-size: 11.5px; color: var(--muted); margin-top: 2px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.wx-body { font-size: 12px; color: var(--ink); margin-top: 4px; line-height: 1.45; }
+
+/* --- imagery (tier 2) --------------------------------------------------- */
+.tile-groups { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
+.tile-wall {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 10px;
+}
+.tile {
+  margin: 0;
+  background: var(--panel-2);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  overflow: hidden;
+  cursor: pointer;
+}
+.tile:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.tile:hover { border-color: var(--muted); }
+/* A radar mosaic and a satellite loop have wildly different aspect ratios.
+   Bounding the height rather than the width keeps one tall image from pushing
+   everything else off a wall display. */
+.tile-img {
+  display: block; width: 100%; max-height: 320px;
+  object-fit: contain; background: var(--ground);
+}
+.tile-failed .tile-img { display: none; }
+.tile-failed { border-color: color-mix(in oklab, var(--poor) 40%, var(--rule)); }
+.tile-cap {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 3px 8px;
+  padding: 6px 8px; border-top: 1px solid var(--rule);
+}
+.tile-name { font-size: 12px; font-weight: 600; }
+.tile-credit { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+.tile-state {
+  margin-left: auto; font-family: var(--mono); font-size: 10px; color: var(--muted);
+}
+.tile-state.failed { color: var(--poor); margin-left: 0; }
+.tier-note {
+  font-family: var(--mono); font-size: 10.5px; color: var(--muted);
+  margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--rule);
+}
