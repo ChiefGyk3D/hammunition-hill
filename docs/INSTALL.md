@@ -29,6 +29,23 @@ python3 -m venv .venv
 cp config.example.toml config.toml
 ```
 
+The core install has **two dependencies**, deliberately. Three features are
+behind optional extras rather than in that number, because most operators do
+not need them and the ones who do would rather install a thing than have it
+installed for them:
+
+```bash
+.venv/bin/pip install -e ".[satellites]"   # SGP4, for pass prediction
+.venv/bin/pip install -e ".[exam]"         # pypdf, only to re-import a question pool
+.venv/bin/pip install -e ".[dev]"          # pytest, ruff, and the rest of `make check`
+```
+
+`[satellites]` is the one you are most likely to want. Without it the satellite
+panel says so rather than failing quietly. `[exam]` is *not* needed to practise
+— all three US question pools ship with the project — only to re-import a pool
+from the official PDF when a new one is released, which happens once every four
+years per element.
+
 Now open `config.toml` and change two things:
 
 ```toml

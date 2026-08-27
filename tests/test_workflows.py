@@ -355,3 +355,27 @@ def test_make_lint_runs_ruff_over_the_same_paths_as_ci():
     assert from_make == from_ci, (
         f"make lints {sorted(map(sorted, from_make))}, CI lints {sorted(map(sorted, from_ci))}"
     )
+
+
+def test_the_documented_job_count_matches_the_workflow():
+    """This number was wrong in both directions inside one day.
+
+    STATUS.md said "Nine jobs", which was right. It was then "corrected" to Ten
+    on a grep that counted the `push:` and `schedule:` keys under `on:` as
+    jobs, and that correction shipped. A hand-counted number in prose is worth
+    exactly as much as the counting method behind it, so count it here instead.
+
+    CodeQL lives in its own workflow and is named separately rather than folded
+    into the total, because "how many jobs does CI run" and "how many jobs does
+    ci.yml define" are different questions and conflating them is what caused
+    the error.
+    """
+    words = {8: "Eight", 9: "Nine", 10: "Ten", 11: "Eleven", 12: "Twelve"}
+    total = len(jobs(load(CI)))
+    status = (REPO / "docs" / "STATUS.md").read_text(encoding="utf-8")
+    readme = (REPO / "README.md").read_text(encoding="utf-8")
+
+    assert f"{words[total]} jobs" in status, (
+        f"ci.yml defines {total} jobs; STATUS.md does not say {words[total]}"
+    )
+    assert f"{total} jobs" in readme, f"ci.yml defines {total} jobs; README.md disagrees"
