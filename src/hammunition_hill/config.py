@@ -24,6 +24,11 @@ from urllib.parse import urlsplit
 DEFAULT_INTERVAL = 300
 MIN_INTERVAL = 30  # Be a good neighbour to free upstream APIs.
 
+# Imagery is re-requested by every open dashboard, not once by the collector, so
+# the floor is higher than for a polled source. A radar mosaic updates every two
+# to ten minutes upstream; asking more often than that just costs them bandwidth.
+MIN_IMAGE_REFRESH = 60
+
 
 class ConfigError(Exception):
     """Raised for a config the operator needs to fix. Message says how."""
@@ -52,6 +57,40 @@ class SourceConfig:
     @property
     def is_file_source(self) -> bool:
         return self.path is not None
+
+
+@dataclass(frozen=True)
+class ImageryTile:
+    """One external image the *browser* loads directly.
+
+    This is the only tier 2 thing in the config, and it is deliberately a
+    different shape from a source. The collector never fetches these -- it
+    cannot usefully cache a radar mosaic that updates every two minutes, and
+    proxying them would turn a static file server into an image relay with an
+    outbound fetch per viewer.
+
+    So the browser fetches them, which means the upstream sees the viewer's IP
+    and the CSP has to name the host. Both of those are real costs, which is
+    why every tile is opted into one line at a time and the panel labels them.
+
+    ``https`` is required. An ``http`` tile would be blocked as mixed content on
+    any origin that is not plain loopback, and would leak in cleartext on the
+    LAN besides; refusing it in config beats a blank square with a console
+    warning nobody reads.
+    """
+
+    id: str
+    name: str
+    url: str
+    group: str = "general"
+    refresh: int = 600
+    credit: str = ""
+    link: str = ""
+    cache_bust: bool = True
+
+    @property
+    def host(self) -> str:
+        return (urlsplit(self.url).hostname or "").lower()
 
 
 @dataclass(frozen=True)
@@ -113,6 +152,7 @@ class Config:
     lookup: LookupConfig = field(default_factory=LookupConfig)
     logging: LoggingConfig = field(default_factory=LoggingConfig)
     logbooks: tuple[Any, ...] = ()
+    imagery: tuple[ImageryTile, ...] = ()
 
     def primary_logbook(self) -> Any | None:
         """The book that drives needed-slot colouring."""
@@ -128,7 +168,13 @@ class Config:
         return None
 
     def allowlist(self) -> tuple[set[str], set[str]]:
-        """(all hosts the collector may contact, hosts explicitly marked local)."""
+        """(all hosts the collector may contact, hosts explicitly marked local).
+
+        Imagery hosts are deliberately absent. They are browser-side only, so
+        granting the collector reach to them would widen what this process can
+        originate for no gain. Two lists that are *almost* the same is not an
+        oversight -- it is the smaller one being smaller on purpose.
+        """
         from .lookup import provider_hosts
 
         allowed = {s.host for s in self.sources if s.host}
@@ -137,6 +183,18 @@ class Config:
         allowed |= set(provider_hosts(self.lookup.provider))
         local = {s.host for s in self.sources if s.local and s.host}
         return allowed, local
+
+    def csp_hosts(self) -> tuple[str, ...]:
+        """Every external origin the *browser* is permitted to load from.
+
+        Derived, never hand-maintained. Adding a radar used to mean editing two
+        places -- the tile list and [embeds] allow_hosts -- and forgetting the
+        second gave you a blank square and a console message. Now the tile is
+        the single declaration and the policy follows from it.
+        """
+        hosts = {h.lower() for h in self.embed_hosts if h}
+        hosts |= {tile.host for tile in self.imagery if tile.host}
+        return tuple(sorted(hosts))
 
 
 def _require(table: dict[str, Any], key: str, where: str) -> Any:
@@ -263,6 +321,57 @@ def parse_config(raw: dict[str, Any], *, base_dir: Path) -> Config:
     if log_cfg.enabled and not books:
         raise ConfigError("[logging] enabled but no [[logbooks]] are configured")
 
+    raw_imagery = raw.get("imagery", [])
+    if not isinstance(raw_imagery, list):
+        raise ConfigError("[[imagery]] must be an array of tables")
+
+    tiles: list[ImageryTile] = []
+    seen_tiles: set[str] = set()
+    for idx, entry in enumerate(raw_imagery):
+        where = f"[[imagery]] #{idx + 1}"
+        if not isinstance(entry, dict):
+            raise ConfigError(f"{where}: must be a table")
+        tile_id = str(_require(entry, "id", where))
+        if not tile_id.replace("_", "").replace("-", "").isalnum():
+            raise ConfigError(f"{where}: id {tile_id!r} must be alphanumeric with - or _")
+        if tile_id in seen_tiles:
+            raise ConfigError(f"{where}: duplicate id {tile_id!r}")
+        seen_tiles.add(tile_id)
+
+        url = str(_require(entry, "url", where))
+        parts = urlsplit(url)
+        if parts.scheme.lower() != "https":
+            raise ConfigError(
+                f"{where}: url must be https (got {parts.scheme or 'no scheme'!r}). "
+                f"An http image is blocked as mixed content and leaks in cleartext."
+            )
+        if not parts.hostname:
+            raise ConfigError(f"{where}: url has no hostname")
+
+        refresh = int(entry.get("refresh", MIN_IMAGE_REFRESH * 10))
+        if refresh < MIN_IMAGE_REFRESH:
+            raise ConfigError(
+                f"{where}: refresh {refresh}s is below the {MIN_IMAGE_REFRESH}s floor. "
+                f"Every open dashboard re-requests this image; do not hammer them."
+            )
+
+        link = str(entry.get("link") or "")
+        if link and urlsplit(link).scheme.lower() not in ("http", "https"):
+            raise ConfigError(f"{where}: link must be http or https")
+
+        tiles.append(
+            ImageryTile(
+                id=tile_id,
+                name=str(entry.get("name") or tile_id),
+                url=url,
+                group=str(entry.get("group") or "general"),
+                refresh=refresh,
+                credit=str(entry.get("credit") or ""),
+                link=link,
+                cache_bust=bool(entry.get("cache_bust", True)),
+            )
+        )
+
     lookup_tbl = raw.get("lookup", {})
     if not isinstance(lookup_tbl, dict):
         raise ConfigError("[lookup] must be a table")
@@ -290,6 +399,7 @@ def parse_config(raw: dict[str, Any], *, base_dir: Path) -> Config:
         lookup=lookup,
         logging=log_cfg,
         logbooks=tuple(books),
+        imagery=tuple(tiles),
     )
 
 

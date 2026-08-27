@@ -31,7 +31,7 @@ more than one.
 | `name` | Shown in the panel header. |
 | `tier` | 0, 1, or 2. Rendered as a badge — see below. |
 | `sources` | Snapshot ids this panel reads. Drives the freshness indicator. |
-| `embed_hosts` | Tier 2 hosts. These reach the CSP; nothing else does. |
+| `embed_hosts` | Tier 2 hosts the panel needs. **Documentation, not policy** — see below. |
 | `span` | Optional. Grid columns to occupy, capped at 3. Wide tables want 2. |
 
 **The `sources` list names snapshot ids, which are source ids from
@@ -43,6 +43,16 @@ panel that reads it goes blank. Panels shipped with the project use the ids in
 glance which parts of their wall reach outside the house. A panel that loads a
 remote image is tier 2 even if everything else about it is local.
 
+**`embed_hosts` in a manifest grants nothing.** Nothing reads it — it documents
+what the panel expects so somebody reading the directory can see it. The CSP is
+built entirely from the operator's `config.toml`: `[embeds] allow_hosts` and the
+hosts of `[[imagery]]` tiles. A panel cannot widen the policy by asking, which
+is the right way round — a panel is code you may have copied from someone else.
+
+If you are writing a panel that shows external images, prefer reading the
+`imagery` snapshot over hardcoding URLs. The operator then controls the list,
+the CSP follows from it automatically, and your panel needs no host of its own.
+
 The test is **where the data came from**, not whether a file was involved.
 
 - **Tier 0** — nothing in the panel originated off this machine. Computed in the
@@ -51,8 +61,8 @@ The test is **where the data came from**, not whether a file was involved.
   internet unplugged.
 - **Tier 1** — reads a snapshot the collector fetched from somewhere else.
   Same-origin by the time the browser sees it, but the data came from upstream.
-- **Tier 2** — the browser loads content from another host. Needs `embed_hosts`,
-  and the operator has to allowlist those hosts in their config too.
+- **Tier 2** — the browser loads content from another host. The operator has to
+  allowlist those hosts in their own config; the manifest field does not do it.
 
 So a panel reading `station.json` or `log.json` is still tier 0: those files are
 written from this machine's own config and disk. A panel reading `hamqsl.json`
@@ -86,6 +96,12 @@ A snapshot looks like:
   data: { }           // whatever the source produced
 }
 ```
+
+`stale_after_seconds: 0` means **this does not age**, not "already stale". Some
+snapshots are published config rather than fetched data — the tile list, the
+prefix table, the station — and their timestamp is when the collector started,
+which is not a freshness claim about anything. The host shows no age at all for
+those, because there is nothing there to be stale.
 
 The host computes the freshness badge from `fetched_at` and `error` across all
 your declared sources. You do not need to render staleness yourself — but do

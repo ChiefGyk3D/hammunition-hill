@@ -51,6 +51,15 @@
         "contests",
         "feed"
       ]
+    },
+    {
+      "id": "field",
+      "name": "Field & Weather",
+      "panels": [
+        "wxalerts",
+        "clock",
+        "imagery"
+      ]
     }
   ]
 }

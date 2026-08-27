@@ -1,0 +1,9 @@
+{
+  "id": "imagery",
+  "name": "Imagery",
+  "tier": 2,
+  "sources": ["imagery"],
+  "embed_hosts": [],
+  "span": 3,
+  "description": "Radar, satellite and forecast images loaded by your browser directly from the upstream. Tier 2: those servers see your IP."
+}

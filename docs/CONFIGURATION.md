@@ -79,11 +79,55 @@ allow_hosts = ["radar.weather.gov"]
 ```
 
 Every host here is added to the page's Content-Security-Policy, in `img-src` and
-`frame-src` only — never `script-src` or `connect-src`. These are the only
-external origins your browser ever contacts. Prefer images over iframes: an
-image cannot run script.
+`frame-src` only — never `script-src` or `connect-src`. Prefer images over
+iframes: an image cannot run script.
+
+**For a plain image, use `[[imagery]]` below instead.** It opens `img-src` only,
+keeps the host out of `frame-src`, and gives you a labelled tile with a refresh
+interval. `[embeds]` is for the case where you actually want to frame something.
 
 Run `hamhill check` to see the exact policy your config produces.
+
+---
+
+## `[[imagery]]`
+
+Tier 2 image tiles — radar, satellite, lightning, solar. **Empty by default.**
+Full trade-off, including why these are not proxied through the collector, in
+[IMAGERY.md](IMAGERY.md).
+
+| Key | Default | Meaning |
+|---|---|---|
+| `id` | required | Unique, filename-safe. |
+| `url` | required | **https only.** |
+| `name` | the id | Tile label. |
+| `group` | `general` | Filter chip. One group draws no filter row. |
+| `refresh` | `600` | Seconds between reloads. 60s floor. |
+| `credit` | `""` | Shown on the tile. |
+| `link` | `""` | Optional http(s) source link. |
+| `cache_bust` | `true` | Appends `?_hh=<epoch>`. Set false for a strict host. |
+
+```toml
+[[imagery]]
+id = "radar-local"
+name = "Local radar"
+url = "https://radar.weather.gov/ridge/standard/KFTG_loop.gif"
+group = "radar"
+refresh = 300
+credit = "NOAA/NWS"
+```
+
+Three things to know:
+
+- **Your browser fetches these, not the collector.** The upstream sees each
+  viewer's IP, User-Agent, and any cookie it has already set in that browser.
+- **The CSP follows the tiles.** Do not also list the host under `[embeds]`.
+  Imagery hosts reach `img-src` and nothing else, and are deliberately kept out
+  of the collector's egress allowlist.
+- **Restart after editing.** The CSP is built at startup.
+
+`refresh` has a higher floor than a source `interval` because a tile is
+re-requested by *every open dashboard*, not once by one collector.
 
 ---
 
@@ -196,6 +240,29 @@ options = { label = "Contests", horizon_days = 21 }
 
 Kept generic rather than hardcoding one publisher — contest calendars move, and
 you may follow a regional or club one.
+
+### `nws_alerts` — US weather warnings
+
+No options. **The filter lives in the URL**, and that is the only place it
+lives: `?area=CO`, `?point=39.74,-104.98`, or `?zone=COZ040`.
+
+```toml
+[[sources]]
+id = "wxalerts"
+kind = "nws_alerts"
+url = "https://api.weather.gov/alerts/active?area=CO"
+interval = 300
+```
+
+`?point=` is usually what you want. A state-wide query in a big state returns
+alerts for counties hours away, and during an outbreak they crowd out the one
+that is over your tower.
+
+It would be friendlier to write `options = { area = "CO" }` and assemble the
+query in the source. It would also mean a source constructs a URL, and once one
+does, "nothing the collector reads can change what it fetches next" stops being
+a property of the architecture and becomes something you check per-source. See
+[IMAGERY.md](IMAGERY.md) for the rest, including what happens outside the US.
 
 ---
 

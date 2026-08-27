@@ -170,10 +170,49 @@ Set on every response:
 | `Cache-Control` | `no-store` on snapshots |
 
 The CSP is generated from your config rather than hand-maintained, so it cannot
-drift from what the panels actually declare. Tier 2 embed hosts are the only
-external origins that ever appear in it, and only in `img-src` and `frame-src` —
-never in `script-src` or `connect-src`. Run `hamhill check` to see the exact
-policy your config produces.
+drift from what you have actually enabled. Tier 2 hosts are the only external
+origins that ever appear in it, and never in `script-src` or `connect-src`. Run
+`hamhill check` to see the exact policy your config produces.
+
+Two kinds of tier 2 host, reaching different directives:
+
+| Source | Reaches | Also reaches the collector's egress allowlist? |
+|---|---|---|
+| `[[imagery]]` tiles | `img-src` only | **No** |
+| `[embeds] allow_hosts` | `img-src` and `frame-src` | Yes |
+
+An `<img>` cannot run script; a frame from the same host can. Granting a radar
+server the right to be framed because you wanted a picture from it would hand
+out a capability nobody asked for, so imagery hosts get exactly one directive.
+And because the browser is what fetches a tile, imagery hosts are deliberately
+absent from the collector's egress allowlist — the two lists look almost
+identical, and the smaller one is smaller on purpose.
+
+### What a tier 2 tile actually exposes
+
+Worth stating plainly, because "the browser loads an image" undersells it. For
+every tile, on every dashboard load, by every viewer:
+
+- **The viewer's IP**, not the collector's. On a shared shack display that is
+  each person who opens it, not one machine.
+- **The viewer's User-Agent** and the rest of an ordinary browser request.
+- **Any cookie that host has already set in that browser.** An `<img>` is not a
+  CORS request, so it carries credentials for its origin. If the viewer has
+  visited that site, the tile is not an anonymous fetch.
+
+What we can still control, we do: `Referrer-Policy: no-referrer` plus
+`referrerpolicy` on the element, `https` required in config, no frames, and no
+path from a tile back into anything the collector fetches. What we cannot
+control is the list above, which is why imagery is empty by default, opted into
+one line at a time, and labelled on the face of every tile.
+
+The fix is **opaque mode** — the collector fetches tiles on a timer and serves
+them from this origin, which is what every other source already does and which
+removes the exposure entirely. It is planned, not built. `docs/IMAGERY.md` sets
+out what it needs first, chiefly content-type discipline: an upstream serving
+SVG where we expected PNG would put a scriptable document on our own origin,
+where the CSP trusts `'self'`. That would be a worse problem than the one it
+solves, which is why it is being done carefully rather than quickly.
 
 ### Path handling
 

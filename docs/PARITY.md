@@ -59,10 +59,12 @@ Legend: **done** · **partial** · **planned** · **not planned** (with the reas
 
 | Feature | Status | Notes |
 |---|---|---|
-| Weather warnings | **planned** | MeteoAlarm, Met Office, api.weather.gov. Parity gap. |
-| Field weather | **planned** | Same milestone |
-| Lightning | **planned** | Tier 2 image panel |
-| Regional radars (NOAA, Met Office, Japan, MENA, Asia-Pacific) | **planned** | All tier 2 images, all one config line each once the tier 2 image path lands |
+| Weather warnings (US) | **done** | `nws_alerts` from api.weather.gov. Tier 1, so it survives the WAN going down. Sorted on NWS severity, not our colour ramp — see [IMAGERY.md](IMAGERY.md) for why that distinction cost a bug. |
+| Weather warnings (EU) | **partial** | MeteoAlarm's Atom feeds read today through the generic `rss` source, and their awareness map works as an imagery tile. Structured CAP severity needs a `meteoalarm` source. |
+| Weather warnings (Met Office) | **partial** | Their warning map is an imagery tile; no structured feed parsed. |
+| Field weather | **partial** | Alerts are in; current conditions are not. A gridpoint forecast needs a two-step `/points` → forecast lookup, which means fetching a URL an upstream named — doable behind the egress guard, deliberately not rushed. |
+| Lightning | **done** | Any lightning map is one `[[imagery]]` entry. |
+| Regional radars (NOAA, Met Office, Japan, MENA, Asia-Pacific) | **done** | All tier 2 images, one config line each. |
 
 ### Listen
 
@@ -97,7 +99,7 @@ Legend: **done** · **partial** · **planned** · **not planned** (with the reas
 | Aurora oval | **done** | SWPC OVATION, reduced to an oval boundary and drawn as a globe layer |
 | D-layer absorption | **planned** | solarstorm_scout has a model; needs the solar-zenith fix |
 | Ionospheric map | **planned** | |
-| Solar imagery | **planned** | Tier 2 images (SDO) |
+| Solar imagery | **done** | SDO is an `[[imagery]]` tile like any other |
 | SWPC alerts | **done** | Watches, warnings and summaries as SWPC issues them |
 | Space weather guide | **partial** | Our dial labels explain severity inline, which arguably does this job better than a separate explainer |
 
@@ -128,7 +130,18 @@ Worth keeping in view, because these are the reasons for the trade-off:
 In order of value per unit of work:
 
 1. ~~Aurora, NOAA scales, SWPC alerts.~~ Done.
-2. Weather alerts and the regional radars — one tier 2 image path unlocks most of it.
+2. ~~Weather alerts and the regional radars.~~ Done. The tier 2 image path did
+   turn out to unlock the radars, lightning and solar imagery at a config line
+   each, as expected.
 3. The MUF / D-layer model from solarstorm_scout, with the solar-zenith fix.
 4. RBN, which is the cluster client pointed somewhere else.
 5. Satellites, which needs real orbital mechanics.
+
+Smaller, now unblocked by the work above:
+
+- A `meteoalarm` source, for structured EU severity rather than headlines.
+- Field weather conditions, once the `/points` → gridpoint chain is done
+  properly rather than by letting a source build URLs from a response.
+- "AT YOUR QTH" vs "OPEN ELSEWHERE" band pills, spotted in the hamdash
+  screenshots and still outstanding.
+- CW/Morse reference tools — tier 0, self-contained, promised and not yet built.

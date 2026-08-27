@@ -21,6 +21,7 @@ from .rss import RssSource
 from .sota import SotaSource
 from .swpc import SwpcSource
 from .swpc_text import NoaaScalesSource, SwpcAlertsSource
+from .weather import NwsAlertsSource
 
 REGISTRY: dict[str, Source] = {
     src.kind: src()  # type: ignore[operator]
@@ -34,6 +35,7 @@ REGISTRY: dict[str, Source] = {
         AuroraSource,
         NoaaScalesSource,
         SwpcAlertsSource,
+        NwsAlertsSource,
     )
 }
 

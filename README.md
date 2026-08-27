@@ -23,6 +23,7 @@ monitor above it — the high ground you watch the bands from.
 | **[Architecture](docs/ARCHITECTURE.md)** | How it works and why it is shaped this way. |
 | **[Writing panels](docs/PANELS.md)** | The panel contract. |
 | **[Callsign lookup](docs/CALLSIGN-LOOKUP.md)** | Provider options, trade-offs, and the architectural line. |
+| **[Imagery & weather](docs/IMAGERY.md)** | Weather alerts, radar and satellite tiles, and what a tier 2 tile costs you. |
 | **[Parity](docs/PARITY.md)** | Feature-by-feature against hamdash.com, including where we deliberately differ. |
 | **[Reuse audit](docs/REUSE.md)** | What is worth borrowing from the sibling projects. |
 
@@ -107,15 +108,16 @@ More in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Dashboards
 
-Thirteen panels in one grid is unusable, so they are grouped into tabs:
+Nineteen panels in one grid is unusable, so they are grouped into tabs:
 
 | | |
 |---|---|
 | **Home** | clocks, rig, solar, band conditions, spots, WSJT-X |
 | **Map** | the globe, with the spot list beside it |
 | **Space Weather** | solar and geomagnetic dials, NOAA scales, alerts, band conditions |
-| **Operating** | callsign lookup, log stats, band plan |
+| **Operating** | beacons, logbook, callsign lookup, log stats, band plan |
 | **Activity** | POTA/SOTA, contests, news |
+| **Field & Weather** | active NWS alerts, radar and satellite tiles |
 
 Edit `web/panels/index.json` to regroup them — a dashboard is an id, a name, and
 a list of panel ids. Your last tab is remembered per browser. A flat `enabled`
@@ -220,9 +222,18 @@ able to see at a glance which parts of your wall reach outside the house.
 
 Two rules do most of the work inside tier 2. **Prefer `<img>` over `<iframe>`**:
 a radar loop is a GIF, and an image element cannot run script, reach storage, or
-navigate. And **opaque mode** (planned) has the collector fetch and cache remote
-images itself, so the browser never contacts a third party at all and the CSP
-tightens to `img-src 'self'`.
+navigate. That preference is enforced rather than advised — `[[imagery]]` tiles
+reach `img-src` and nothing else, so a host you added for a picture never gains
+the right to be framed. `[embeds] allow_hosts` is the separate, bigger decision
+for when you actually want a frame.
+
+**Opaque mode** (planned) has the collector fetch and cache remote images
+itself, so the browser never contacts a third party and the CSP tightens to
+`img-src 'self'`. That is not a departure from the architecture — it is a source
+that writes a file, like every other one. It needs content-type discipline
+before it ships: an upstream serving SVG where we expected PNG would put a
+scriptable document on our own origin. See
+**[docs/IMAGERY.md](docs/IMAGERY.md)**.
 
 ## Quick start
 
@@ -461,7 +472,7 @@ Shipping now:
 | **v0.1** | Skeleton ✅ | Collector, static server, tier 0 panels, solar and space weather, RSS. Proves the snapshot architecture end to end. |
 | **v0.2** | Spots ✅ | DX cluster telnet client, client-side filtering, spot detail with bearing and distance. POTA, SOTA, contest calendar. |
 | **v0.3** | The differentiator ✅ | ADIF log ingest and needed-slot spot colouring. `rigctld` and WSJT-X UDP. |
-| **v0.4** | Parity | Weather alerts, aurora forecast, satellite passes from cached TLEs. Greyline and the map are done. |
+| **v0.4** | Parity | Satellite passes from cached TLEs. Weather alerts, aurora, greyline and the map are done. |
 | **v0.5** | Other people's shacks | LAN mode hardening, opaque image proxy, tier 2 allowlisting, systemd + Docker + Pi install docs. |
 | **v1.0** | Community | VA3HDL `config.js` importer, panel SDK, example dashboards. |
 | later | Deferred on purpose | WebSocket spot push, VOACAP, [a Grafana version](#deferred-a-grafana-version). And only after all of that, any conversation about a hosted mode — which needs a real authn/authz model, TLS, rate limiting, and a threat model this version deliberately does not have. |
@@ -469,12 +480,12 @@ Shipping now:
 ### What still stands between here and parity
 
 Local and LAN is priority one, and parity with hamdash.com is the gate on
-everything below it. Two things are outstanding:
+everything below it. What is left:
 
 | | Where it goes | Notes |
 |---|---|---|
 | ~~Greyline / day-night map~~ | ✅ done | Solar subpoint maths plus a bundled world outline. Computes offline. |
-| **Weather alerts** | v0.4, tier 1 | MeteoAlarm and Met Office, plus `api.weather.gov` for US operators. |
+| ~~Weather alerts~~ | ✅ done | `api.weather.gov` as a tier 1 source, so alerts survive the WAN dropping. Radar, lightning and satellite as tier 2 tiles. MeteoAlarm and Met Office read as feeds and maps; structured EU severity is still open. |
 | ~~Aurora forecast~~ | ✅ done | SWPC OVATION, as a globe layer. |
 | **VOACAP point-to-point** | later | The genuinely hard one. Either bundle the public-domain ITSHFBC binaries and shell out, or ship a simpler MUF/LUF indicator derived from SFI/K first and do the real thing when it earns the effort. |
 

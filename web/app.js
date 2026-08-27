@@ -100,9 +100,25 @@ function updateAge(entry) {
     Date.parse(a.fetched_at) < Date.parse(b.fetched_at) ? a : b,
   );
   const failed = relevant.find((s) => s.error);
+
+  // A stale window of 0 means "this does not age", not "this is already stale".
+  //
+  // Some snapshots are published config rather than fetched data -- the tile
+  // list, the prefix table, the station. Their timestamp is when the collector
+  // started, which is not a freshness claim about anything, and running the
+  // usual comparison against 0 painted the imagery panel permanently amber for
+  // a file that was exactly as correct as the day it was written. Showing no
+  // age at all is the honest answer: there is nothing here to be stale.
+  const ageless = relevant.every((s) => s.stale_after_seconds === 0);
+  if (ageless && !failed) {
+    entry.age.textContent = "";
+    entry.age.className = "panel-age";
+    return;
+  }
+
   const isStale =
     (Date.now() - Date.parse(oldest.fetched_at)) / 1000 >
-    (oldest.stale_after_seconds ?? Infinity);
+    (oldest.stale_after_seconds || Infinity);
 
   entry.age.textContent = failed
     ? `${relativeAge(oldest.fetched_at)} · fetch failed`

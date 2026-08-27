@@ -62,16 +62,25 @@ def _host_is_expected(host_header: str, bound_host: str) -> bool:
     return True
 
 
-def build_csp(embed_hosts: tuple[str, ...]) -> str:
+def build_csp(embed_hosts: tuple[str, ...], image_hosts: tuple[str, ...] = ()) -> str:
     """Content-Security-Policy, derived from config rather than hand-maintained.
 
     Everything defaults to 'none' and is opened one directive at a time. Tier 2
-    embed hosts are the only external origins that ever appear, and only in the
-    two directives that can use them.
+    hosts are the only external origins that ever appear, and only in the two
+    directives that can use them.
+
+    The two lists are separate because an imagery tile needs ``img-src`` and
+    nothing else. An ``<img>`` cannot run script; a frame from the same host
+    can. Granting a radar server the right to be framed because we wanted to
+    show a picture from it would be handing out a capability nobody asked for,
+    so ``[[imagery]]`` hosts reach exactly one directive and ``[embeds]``
+    allow_hosts -- which is what an operator sets when they do want a frame --
+    reaches both.
     """
-    external = " ".join(f"https://{h}" for h in sorted(set(embed_hosts)))
-    img = f"'self' data: {external}".strip()
-    frame = external or "'none'"
+    framable = sorted(set(embed_hosts))
+    loadable = sorted(set(embed_hosts) | set(image_hosts))
+    img = " ".join(["'self'", "data:", *(f"https://{h}" for h in loadable)])
+    frame = " ".join(f"https://{h}" for h in framable) or "'none'"
     return "; ".join(
         (
             "default-src 'none'",
@@ -258,7 +267,8 @@ class DashboardHandler(SimpleHTTPRequestHandler):
 
 def build_server(config: Config) -> ThreadingHTTPServer:
     config.data_dir.mkdir(parents=True, exist_ok=True)
-    handler = partial(DashboardHandler, config=config, csp=build_csp(config.embed_hosts))
+    csp = build_csp(config.embed_hosts, config.csp_hosts())
+    handler = partial(DashboardHandler, config=config, csp=csp)
     server = ThreadingHTTPServer((config.server.host, config.server.port), handler)
     server.daemon_threads = True
     return server

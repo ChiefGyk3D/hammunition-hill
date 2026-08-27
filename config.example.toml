@@ -89,6 +89,25 @@ kind = "swpc_alerts"
 url = "https://services.swpc.noaa.gov/products/alerts.json"
 interval = 900
 
+# --- Weather at the antenna, not the ionosphere ------------------------------
+# Active NWS watches, warnings and advisories. No key and no account.
+#
+# The filter lives in this URL, and it is the only place it lives -- the source
+# builds no URL of its own. Pick exactly one form:
+#
+#   ?area=CO                  a state or marine area (two letters)
+#   ?point=39.74,-104.98      your QTH; the most precise option
+#   ?zone=COZ040              a specific NWS forecast zone
+#
+# Commented out because there is no sensible default: an operator in Colorado
+# does not want Florida's alerts, and a wrong guess is worse than nothing.
+#
+# [[sources]]
+# id = "wxalerts"
+# kind = "nws_alerts"
+# url = "https://api.weather.gov/alerts/active?area=CO"
+# interval = 300
+
 [[sources]]
 id = "amsat"
 kind = "rss"
@@ -223,3 +242,63 @@ interval = 120
 [embeds]
 allow_hosts = []
 # allow_hosts = ["radar.weather.gov", "www.hamqsl.com"]
+
+# --- Tier 2: imagery the browser loads directly ------------------------------
+# Radar, satellite and lightning pictures. Empty by default, and read the cost
+# before you fill it in.
+#
+# Unlike everything under [[sources]], the collector never fetches these. Your
+# browser does, on every dashboard that shows them. That means the upstream sees
+# your IP, your User-Agent, and any cookie it has already set in your browser --
+# an <img> is not a CORS request, so it carries them. On a shared shack display
+# that is every viewer, not one machine.
+#
+# The trade is deliberate: a radar mosaic that redraws every two minutes is not
+# something a collector can usefully cache, and proxying it would turn a static
+# file server into an image relay with an outbound fetch per viewer. But it is a
+# trade, so it is opt-in one line at a time and the panel labels every tile.
+#
+# Hosts here are added to img-src automatically -- you do not also list them
+# under [embeds]. They are NOT added to frame-src (an image cannot run script; a
+# frame from the same host can) and NOT added to the collector's egress
+# allowlist, because the collector has no business reaching them.
+#
+# A restart is required after editing: the CSP is built at startup.
+#
+#   id            filename-safe, unique
+#   url           https only
+#   name          what the tile is labelled
+#   group         filter chip it appears under
+#   refresh       seconds between reloads; 60s floor, and please be generous
+#   credit        who to thank, shown on the tile
+#   cache_bust    adds ?_hh=<epoch> so you get the new image, not the cached
+#                 one. Turn it off for a host that rejects unknown parameters.
+#
+# THESE URLS WERE CORRECT WHEN WRITTEN AND WILL ROT. Upstream image endpoints
+# get renamed without notice. If a tile says "unavailable", open its URL in a
+# browser -- that tells you in one step whether it is the URL or your network.
+# Find your local radar's four-letter site ID at https://radar.weather.gov.
+#
+# [[imagery]]
+# id = "radar-conus"
+# name = "US radar (CONUS)"
+# url = "https://radar.weather.gov/ridge/standard/CONUS_loop.gif"
+# group = "radar"
+# refresh = 300
+# credit = "NOAA/NWS"
+#
+# [[imagery]]
+# id = "radar-local"
+# name = "Local radar"
+# url = "https://radar.weather.gov/ridge/standard/KFTG_loop.gif"
+# group = "radar"
+# refresh = 300
+# credit = "NOAA/NWS"
+#
+# [[imagery]]
+# id = "goes-east"
+# name = "GOES-East geocolor"
+# url = "https://cdn.star.nesdis.noaa.gov/GOES19/ABI/CONUS/GEOCOLOR/1250x750.jpg"
+# group = "satellite"
+# refresh = 900
+# credit = "NOAA/NESDIS"

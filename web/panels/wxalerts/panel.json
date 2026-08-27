@@ -1,0 +1,11 @@
+{
+  "id": "wxalerts",
+  "name": "Weather Alerts",
+  "tier": 1,
+  "sources": [
+    "wxalerts"
+  ],
+  "embed_hosts": [],
+  "span": 3,
+  "description": "Active NWS watches, warnings and advisories for your area. The panel about the antenna rather than the ionosphere."
+}
