@@ -237,6 +237,46 @@ async def _lookup_loop(
         await asyncio.sleep(resolver.cycle_seconds)
 
 
+# --- logbooks -------------------------------------------------------------
+LOGBOOK_REFRESH_SECONDS = 30
+
+
+async def _logbook_loop(config: Config) -> None:
+    """Publish the configured logbooks and their most recent QSOs.
+
+    Read from the same ADIF files the needed-slot index reads, so a QSO logged
+    here shows up in both places without any synchronisation step.
+    """
+    from .logbook import recent
+
+    cfg = SourceConfig(id="logbooks", kind="logbook", url="")
+    while True:
+        books = []
+        for book in config.logbooks:
+            try:
+                entries = await asyncio.to_thread(recent, book, 15)
+            except Exception as exc:  # noqa: BLE001 - a bad log must not stop the run
+                log.warning("could not read logbook %s: %s", book.id, exc)
+                entries = []
+            books.append(
+                {
+                    "id": book.id,
+                    "name": book.name,
+                    "primary": book.primary,
+                    "station_callsign": book.station_callsign,
+                    "recent": entries,
+                    "count": len(entries),
+                }
+            )
+        _write(
+            config,
+            cfg,
+            {"writable": config.logging.enabled, "logbooks": books},
+            LOGBOOK_REFRESH_SECONDS * STALE_MULTIPLIER,
+        )
+        await asyncio.sleep(LOGBOOK_REFRESH_SECONDS)
+
+
 # --- entry point ----------------------------------------------------------
 async def run_collector(config: Config, guard: EgressGuard, enricher: Enricher) -> None:
     """Run every source until cancelled."""
@@ -263,6 +303,9 @@ async def run_collector(config: Config, guard: EgressGuard, enricher: Enricher) 
                 else:
                     coro = _polled_loop(client, guard, cfg, config)
                 group.create_task(coro, name=f"source:{cfg.id}")
+
+            if config.logbooks:
+                group.create_task(_logbook_loop(config), name="logbooks")
 
             if config.lookup.enabled:
                 group.create_task(

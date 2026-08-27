@@ -157,3 +157,41 @@ def test_station_snapshot_without_a_grid_says_so(config):
 
     assert data["located"] is False
     assert data["lat"] is None
+
+
+# --- startup ------------------------------------------------------------
+def test_a_taken_port_reports_cleanly_rather_than_traceback(tmp_path, capsys):
+    """The common startup failure is another copy of this already running.
+
+    A traceback is a poor way to say that, and the message should name the fix.
+    """
+    import socket
+
+    from hammunition_hill.cli import _serve
+    from hammunition_hill.config import Config, ServerConfig
+    from hammunition_hill.egress import EgressGuard
+
+    holder = socket.socket()
+    holder.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    holder.bind(("127.0.0.1", 0))
+    holder.listen(1)
+    port = holder.getsockname()[1]
+
+    web = tmp_path / "web"
+    web.mkdir()
+    config = Config(
+        server=ServerConfig(host="127.0.0.1", port=port),
+        sources=(),
+        data_dir=tmp_path / "data",
+        web_dir=web,
+    )
+    enricher = Enricher(PrefixTable(None), Station.from_config({}))
+
+    try:
+        assert _serve(config, EgressGuard.build(set(), set()), enricher) == 1
+    finally:
+        holder.close()
+
+    errors = capsys.readouterr().err
+    assert "cannot listen" in errors
+    assert "--listen" in errors

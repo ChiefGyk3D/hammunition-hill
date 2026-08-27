@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import dataclasses
+import errno
 import logging
 import sys
 import threading
@@ -120,8 +121,22 @@ def _publish_prefixes(config: Config, enricher: Enricher) -> None:
 def _serve(config: Config, guard: EgressGuard, enricher: Enricher) -> int:
     _publish_station(config, enricher)
     _publish_prefixes(config, enricher)
-    server = build_server(config)
+
     bind = f"{config.server.host}:{config.server.port}"
+    try:
+        server = build_server(config)
+    except OSError as exc:
+        # "Address already in use" is the common one, and a traceback is a poor
+        # way to say "something else is on that port" -- especially since the
+        # something else is usually another copy of this.
+        print(f"cannot listen on {bind}: {exc.strerror or exc}", file=sys.stderr)
+        if exc.errno == errno.EADDRINUSE:
+            print(
+                "  another process is using that port — stop it, or pick another "
+                "with --listen",
+                file=sys.stderr,
+            )
+        return 1
 
     if not config.server.is_loopback_only:
         print(LAN_WARNING.format(bind=bind), file=sys.stderr)

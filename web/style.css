@@ -473,3 +473,25 @@ ul.alerts li { padding: 7px 0; border-bottom: 1px solid var(--rule); }
 ul.alerts li:last-child { border-bottom: 0; }
 .alert-head { display: block; font-size: 13px; color: var(--ink); }
 .alert-when { display: block; font-family: var(--mono); font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+/* --- logbook ---------------------------------------------------------- */
+.log-form { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px 10px; margin-bottom: 10px; }
+.log-field { display: flex; flex-direction: column; gap: 3px; }
+.log-label {
+  font-family: var(--mono); font-size: 9.5px; letter-spacing: .1em;
+  text-transform: uppercase; color: var(--muted);
+}
+.log-input {
+  background: var(--panel-2);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 13px;
+  padding: 5px 7px;
+  text-transform: uppercase;
+}
+.log-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.log-context { font-family: var(--mono); font-size: 10.5px; color: var(--muted); align-self: center; }
+.log-submit { padding: 6px 12px; }
+.log-submit:disabled { opacity: .6; cursor: default; }

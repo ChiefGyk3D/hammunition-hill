@@ -313,6 +313,29 @@ Novice and Advanced are included — both are closed to new issue, but existing
 holders keep their privileges, so both appear with a dashed chip marking them as
 grandfathered.
 
+## The logbook
+
+Log a contact from the dashboard, into plain ADIF files on your disk. Several
+logbooks if you want them — a home station, a portable rig, a club callsign —
+each its own file.
+
+It belongs here for one reason: **the dashboard already knows almost the whole
+QSO.** `rigctld` gives the frequency, band and mode as they are right now; a
+selected spot gives the callsign and entity; the lookup gives the name. Logging
+is a confirmation, not a form-filling exercise.
+
+And it closes a loop. The needed-slot colouring reads these same files, so
+working a new entity here makes the spot list stop calling it new on the next
+cycle — no synchronisation step, because both halves are reading the same bytes.
+
+It is **not** Log4OM, and should not try to be. No contest mode, no award
+tracking, no QSL management.
+
+**Off by default**, because it is the one place the server accepts input. It is
+append-only — no edit, no delete, here or over HTTP — and defended against
+cross-site posting and DNS rebinding. Full reasoning, including the position I
+revised to get here, in **[docs/LOGBOOK.md](docs/LOGBOOK.md)**.
+
 ## Callsign lookup
 
 Type a callsign and get its DXCC entity, continent, CQ zone, short and long path
@@ -421,6 +444,7 @@ Shipping now:
 | **Band Conditions** | 1 | HamQSL HF conditions, day and night |
 | **World Map** | 1 | Rotatable globe: greyline, DX spots, great-circle paths from your QTH |
 | **NCDXF Beacons** | 0 | Which international beacon is on each band right now, from the clock alone |
+| **Logbook** | 0 | Log a QSO pre-filled from your rig and the selected station, straight to ADIF |
 | **Band Plan** | 0 | Which frequencies your licence class may use, by band and mode |
 | **Callsign Lookup** | 0 | Entity, beam heading, distance, and whether you have worked it |
 | **DX Cluster** | 1 | Live spots, filtered by band/mode/continent, coloured by what you need |
@@ -462,40 +486,39 @@ choice rather than a gap: chasing WebUSB would force TLS onto a LAN appliance
 for a single panel, when you are already on the same network as a real
 OpenWebRX+ or KiwiSDR you can point a tier 2 panel at.
 
-### Deferred: a Grafana version, as a separate project
+### Planned: an optional metrics exporter
 
-Wanted eventually, explicitly **after** parity — and as its own repository
-building on this one's logic, not a mode inside it. The two have different
-shapes: this is a static-file appliance with no database and no authentication,
-and that is a poor foundation to bolt a time-series stack onto. Recorded here so
-the reasoning is not re-derived later.
+Wanted eventually, explicitly **after** parity. Revised from an earlier plan to
+build a whole separate project, which was over-scoped: the useful thing is not a
+second dashboard, it is **an export path out of this one**.
 
-The good news is that a slice of it works today with no code at all: snapshots
-are already JSON served over HTTP, so Grafana's Infinity datasource can read
-`http://your-host:8073/data/solar.json` and friends directly. That covers
-current-state panels, and it needs nothing from this repository but the URL.
+The collector already holds every number worth trending — solar flux, K-index,
+spot counts by band, decode rates, rig time-on-band. Emitting those to InfluxDB
+or exposing a Prometheus endpoint is a small, additive feature, not a new
+architecture. Grafana then does what Grafana is good at, and we do not have to
+become a time-series stack to get there.
 
-What it does *not* cover is the thing Grafana is actually good at. **Snapshots
-have no history** — each write replaces the last, deliberately, because the
-design is "what is true now" and history would mean a database. SFI over six
-months, spots per band over a contest weekend, decodes per hour: none of that is
-answerable from what is on disk. A Grafana version therefore needs an emission
-path, not a rendering change — the collector growing an optional exporter
-(Prometheus endpoint or InfluxDB line protocol) alongside the snapshot writer.
-That is additive and does not disturb the snapshot architecture.
+Two things to keep straight when it lands. It is **the first outbound write this
+collector would ever make**, carrying data derived from your location and log, so
+it wants the same allowlist treatment as everything else and a local-only
+default. And a Prometheus endpoint is an *endpoint* — read-only and metrics-only,
+but it belongs in the same opt-in category as the logbook's write path rather
+than being switched on quietly.
 
-Two things to go in with eyes open:
+A slice already works with no code at all: snapshots are JSON served over HTTP,
+so Grafana's Infinity datasource can read `http://your-host:8073/data/solar.json`
+directly. That covers current-state panels today.
 
-- **It does not inherit this project's security properties.** Grafana is a full
-  application with authentication, users, plugins, and a database. Whatever the
-  network stance is for that deployment, it is a separate decision from this
-  one, and "the dashboard is safe to expose because it is static files" stops
-  being true the moment the answer is Grafana.
-- **An exporter is an outbound write path.** The collector currently only ever
-  reads. Pushing to a remote InfluxDB would be the first thing it sends
-  anywhere, and it would be sending data derived from the operator's log and
-  location. That wants the same allowlist treatment as everything else, and a
-  default of local-only.
+What it does not cover is the thing Grafana is actually good at. **Snapshots have
+no history** — each write replaces the last, deliberately, because the design is
+"what is true now". SFI over six months, spots per band across a contest weekend,
+decodes per hour: none of that is answerable from what is on disk, which is
+exactly why the exporter is the right shape rather than a bigger dashboard.
+
+Also worth keeping straight: Grafana itself is a full application with
+authentication, users, plugins, and a database. "Safe to expose because it is
+static files" stops being true of *that* deployment, and its network stance is a
+separate decision from this one.
 
 ### What only a local dashboard can do
 

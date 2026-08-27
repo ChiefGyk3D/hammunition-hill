@@ -37,6 +37,7 @@
       "name": "Operating",
       "panels": [
         "beacons",
+        "logbook",
         "callsign",
         "logstats",
         "bandplan"

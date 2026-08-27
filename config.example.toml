@@ -165,6 +165,31 @@ interval = 120
 # interval = 300
 # local = true
 
+# --- Logbooks ---------------------------------------------------------------
+# Plain ADIF files this appends to. No database, no lock-in: the same file opens
+# in any logger, and the needed-slot spot colouring reads it back, so working a
+# new entity here stops the spot list calling it new on the next cycle.
+#
+# The primary logbook is the one that drives that colouring.
+#
+# [[logbooks]]
+# id = "main"
+# name = "Home station"
+# path = "~/logs/main.adi"
+# primary = true
+#
+# [[logbooks]]
+# id = "kx2"
+# name = "KX2 portable"
+# path = "~/logs/portable.adi"
+# station_callsign = "N0CALL/P"
+
+# Logging from the dashboard is the one place the server accepts input, so it is
+# off by default. It is append-only -- no edit, no delete -- and defended against
+# cross-site posting and DNS rebinding. See docs/LOGBOOK.md.
+# [logging]
+# enabled = true
+
 # --- Callsign lookup --------------------------------------------------------
 # Off by default. Entity, beam heading, distance, and worked status all work
 # without this -- a provider adds name, grid, and licence detail.
