@@ -173,6 +173,28 @@ WEB_DIR_HELP = """
 """
 
 
+def _publish_morse(config: Config) -> None:
+    """Publish the Morse reference tables.
+
+    Written once at startup, like the prefix table, and for the same reason:
+    the canonical tables live in Python where they are tested, and the browser
+    receives them as data. A panel cannot then disagree with a test about what
+    `..-.` means.
+    """
+    from .morse import reference
+
+    write_snapshot(
+        config.data_dir,
+        Snapshot(
+            source_id="morse",
+            kind="morse",
+            fetched_at=datetime.now(UTC),
+            stale_after_seconds=0,
+            data=reference(),
+        ),
+    )
+
+
 def _serve(config: Config, guard: EgressGuard, enricher: Enricher) -> int:
     if (problem := _web_dir_problem(config)) is not None:
         print(f"cannot serve: {problem}", file=sys.stderr)
@@ -182,6 +204,7 @@ def _serve(config: Config, guard: EgressGuard, enricher: Enricher) -> int:
     _publish_station(config, enricher)
     _publish_prefixes(config, enricher)
     _publish_imagery(config)
+    _publish_morse(config)
 
     bind = f"{config.server.host}:{config.server.port}"
     try:
