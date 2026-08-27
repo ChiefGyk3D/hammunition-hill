@@ -114,12 +114,18 @@ class ServerConfig:
 class LookupConfig:
     """Callsign lookup. Off by default -- see docs/CALLSIGN-LOOKUP.md.
 
-    Every provider except ``none`` costs something: an account, money, or a
-    request per callsign to a third party. Which cost is acceptable is the
-    operator's call, so it is a choice rather than a default.
+    Every provider except ``none`` costs something: an account, money, a request
+    per callsign to a third party, or a large download. Which cost is acceptable
+    is the operator's call, so it is a choice rather than a default.
+
+    ``providers`` is an ordered chain, tried left to right. That is what makes a
+    portable station work: an offline provider answers instantly with no network
+    at all, and a network provider covers what it cannot. When the WAN is gone
+    -- which at a POTA site is the normal condition, not the exception -- the
+    network links are skipped and the offline ones carry on.
     """
 
-    provider: str = "none"
+    providers: tuple[str, ...] = ()
     username: str | None = None
     password: str | None = None
     max_per_cycle: int = 20
@@ -127,10 +133,17 @@ class LookupConfig:
     cache_hours: int = 720
     max_entries: int = 5000
     query_endpoint: bool = False
+    serve_stale: bool = True
+    uls_db: Path | None = None
 
     @property
     def enabled(self) -> bool:
-        return self.provider not in ("", "none")
+        return bool(self.providers)
+
+    @property
+    def provider(self) -> str:
+        """The first provider, for messages that name one. Chains have a head."""
+        return self.providers[0] if self.providers else "none"
 
 
 @dataclass(frozen=True)
@@ -180,7 +193,8 @@ class Config:
         allowed = {s.host for s in self.sources if s.host}
         allowed |= {h.lower() for h in self.embed_hosts}
         # A lookup provider declares its own hosts; nothing else grants it reach.
-        allowed |= set(provider_hosts(self.lookup.provider))
+        for name in self.lookup.providers:
+            allowed |= set(provider_hosts(name))
         local = {s.host for s in self.sources if s.local and s.host}
         return allowed, local
 
@@ -375,8 +389,41 @@ def parse_config(raw: dict[str, Any], *, base_dir: Path) -> Config:
     lookup_tbl = raw.get("lookup", {})
     if not isinstance(lookup_tbl, dict):
         raise ConfigError("[lookup] must be a table")
+    # `provider` (one) and `providers` (a chain) both work. The singular came
+    # first and every existing config uses it, so it stays -- it is just a chain
+    # of length one. Setting both is refused rather than guessed at.
+    single = lookup_tbl.get("provider")
+    chain = lookup_tbl.get("providers")
+    if single is not None and chain is not None:
+        raise ConfigError(
+            "[lookup]: set either provider or providers, not both. "
+            "providers is an ordered chain; provider is the same thing with one entry."
+        )
+    if chain is not None:
+        if not isinstance(chain, list):
+            raise ConfigError("[lookup] providers must be an array, e.g. [\"fcc_uls\", \"qrz\"]")
+        names = [str(name).strip().lower() for name in chain]
+    else:
+        names = [str(single or "none").strip().lower()]
+
+    # "none" is the absence of a provider, so it empties the chain rather than
+    # becoming a link in it. A chain of ["none", "qrz"] is a config mistake.
+    if "none" in names and len(names) > 1:
+        raise ConfigError(
+            "[lookup] providers: 'none' means no lookup at all and cannot be "
+            "combined with other providers. Remove it, or remove the others."
+        )
+    names = [name for name in names if name and name != "none"]
+
+    seen_providers: set[str] = set()
+    for name in names:
+        if name in seen_providers:
+            raise ConfigError(f"[lookup] providers: {name!r} listed twice")
+        seen_providers.add(name)
+
+    uls_raw = lookup_tbl.get("uls_db")
     lookup = LookupConfig(
-        provider=str(lookup_tbl.get("provider", "none")).strip().lower(),
+        providers=tuple(names),
         username=str(lookup_tbl["username"]) if lookup_tbl.get("username") else None,
         password=str(lookup_tbl["password"]) if lookup_tbl.get("password") else None,
         max_per_cycle=int(lookup_tbl.get("max_per_cycle", 20)),
@@ -384,6 +431,8 @@ def parse_config(raw: dict[str, Any], *, base_dir: Path) -> Config:
         cache_hours=int(lookup_tbl.get("cache_hours", 720)),
         max_entries=int(lookup_tbl.get("max_entries", 5000)),
         query_endpoint=bool(lookup_tbl.get("query_endpoint", False)),
+        serve_stale=bool(lookup_tbl.get("serve_stale", True)),
+        uls_db=Path(str(uls_raw)).expanduser() if uls_raw else None,
     )
     if lookup.max_per_cycle < 1:
         raise ConfigError("[lookup] max_per_cycle must be at least 1")

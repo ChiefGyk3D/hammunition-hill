@@ -27,6 +27,12 @@ function field(el, label, value, extra) {
   return row;
 }
 
+function ageText(hours) {
+  if (!Number.isFinite(hours)) return "cached";
+  if (hours < 48) return `${hours}h`;
+  return `${Math.round(hours / 24)}d`;
+}
+
 function result(el, call, table, station, worked, lookups) {
   const entity = table.lookup(call);
   const detail = lookups?.results?.[call.toUpperCase()] ?? null;
@@ -98,7 +104,17 @@ function result(el, call, table, station, worked, lookups) {
   if (!detail && table.approximate) {
     rows.append(field(el, "Note", "built-in prefix table — approximate"));
   }
-  if (detail) rows.append(field(el, "Source", detail.source));
+  if (detail) {
+    // Age is shown only when the entry is past its refresh window. A stale
+    // record beats a blank one in a field with no signal -- but it has to say
+    // so, or the panel is quietly asserting something it does not know.
+    const age = detail.stale
+      ? `${detail.source} · ${ageText(detail.age_hours)} old`
+      : detail.source;
+    const row = field(el, "Source", age);
+    if (detail.stale) row.classList.add("stale-detail");
+    rows.append(row);
+  }
   parts.push(rows);
   return parts;
 }
@@ -146,8 +162,17 @@ export function render(root, { data, el }) {
     parts.push(el("p", "empty", "type a callsign — resolved locally, nothing is sent anywhere"));
   }
 
+  // Name the whole chain, not just its head: "resolved via fcc_uls" when qrz is
+  // also configured tells you less than nothing about why a call did not
+  // resolve. And say plainly when the network half is unreachable, because at a
+  // park that is the normal state and it explains what you are seeing.
+  const chain = lookups?.providers?.length
+    ? lookups.providers.map((p) => p.name).join(" → ")
+    : lookups?.provider;
+  const offline = lookups?.network_down ? " · network down, offline sources only" : "";
+  const stale = lookups?.stale_served ? ` · ${lookups.stale_served} stale` : "";
   const detail = lookups
-    ? ` · ${lookups.resolved} resolved via ${lookups.provider}`
+    ? ` · ${lookups.resolved} resolved via ${chain}${stale}${offline}`
     : " · no lookup provider";
   const foot = el("p", "count", `${state.table.size} prefixes${detail}`);
   parts.push(foot);

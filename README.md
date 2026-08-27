@@ -365,16 +365,48 @@ cost is acceptable is your call:
 
 | Provider | Cost | Coverage |
 |---|---|---|
-| `none` *(default)* | nothing leaves the machine | entity, heading, distance, worked status |
-| `fcc_uls` | ~160 MB weekly download | US — **no per-lookup network at all** |
+| *(default: none)* | nothing leaves the machine | entity, heading, distance, worked status |
+| `fcc_uls` | ~160 MB download, ~100 MB on disk | US — **no per-lookup network at all** |
 | `callook` | one request per callsign | US, free, no account |
 | `hamqth` | account + a request per callsign | worldwide, free |
 | `qrz` | paid subscription + a request per callsign | worldwide, best data |
 
+Providers are an **ordered chain**, not one choice:
+
 ```toml
 [lookup]
-provider = "callook"
+providers = ["fcc_uls", "qrz"]
 ```
+
+Each callsign walks the list: one that answers wins, one that says *not on file*
+falls through. Local-first is usually the right order, and not because the local
+one is a fallback — it is the fast path. It answers US calls instantly from
+disk, declines everything else for free so QRZ only sees the calls it is
+actually needed for, and it is the only free source that is authoritative for
+operator class. Put QRZ first instead if you want its data preferred for US
+calls too; both orders work.
+
+`provider = "callook"` still works and means a chain of one.
+
+### Away from the internet
+
+For a portable station, no signal is the normal condition rather than an
+exception, so it is handled without a mode to switch on:
+
+- **Network providers stop being waited on.** After two consecutive failures the
+  collector concludes the WAN is gone and skips them for five minutes. Without
+  that, twenty new callsigns means twenty connect timeouts in sequence and a
+  dashboard that should have answered from a local index does nothing for
+  minutes. Offline providers carry on untouched.
+- **The cache keeps answering, honestly.** Expired entries are still published,
+  flagged `stale` with their age. A licence record from five weeks ago is almost
+  certainly still right and is unarguably better than a blank panel — so a night
+  of resolution at home still answers in a field a month later. Turn it off with
+  `serve_stale = false`.
+
+`fcc_uls` needs a one-off `hamhill fcc-import` before it can answer. The import
+streams rather than buffering, so it needs about 4 MB of RAM regardless of
+database size and runs fine on a Pi.
 
 **Resolution is scheduled, not on demand.** The collector works through
 callsigns that already appear in your spots and decodes, capped and cached, so
@@ -388,7 +420,9 @@ endpoint that can do the job: GET only, local index only, strictly validated,
 rate limited, and unable to cause an outbound request.
 
 With a network provider, **the callsigns you are watching go to that provider.**
-That is inherent. `fcc_uls` is the option where nothing leaves the machine.
+That is inherent. `fcc_uls` is the option where nothing leaves the machine — and
+putting it first in a chain means the network provider only ever sees what the
+local index could not answer.
 
 Full analysis, including why there is no fourth way:
 **[docs/CALLSIGN-LOOKUP.md](docs/CALLSIGN-LOOKUP.md)**.

@@ -11,6 +11,21 @@ resolution is not thrown away.
 Entries expire because licences move, are renewed, and lapse. Negative results
 are cached too, with a shorter life -- a callsign that is not on file is a fact
 worth remembering for a while, but not forever.
+
+## Expired is not the same as useless
+
+An expired entry stops being trusted for "do we need to ask again", but it is
+still the best answer available when nothing better can be reached. A licence
+record from five weeks ago is overwhelmingly likely to still be correct, and it
+is unarguably better than a blank panel.
+
+So expiry drives *refetching*, and publication is separate: stale hits are
+published too, flagged, and the panel shows them as known-but-old. This is what
+a station away from the internet actually wants -- a night of resolution at home
+still answers for the callsigns you worked there, a month later, in a field.
+
+Turn it off with ``serve_stale = false`` if you would rather see nothing than
+something possibly out of date.
 """
 
 from __future__ import annotations
@@ -54,11 +69,13 @@ class LookupCache:
         *,
         ttl_hours: int = DEFAULT_TTL_HOURS,
         max_entries: int = DEFAULT_MAX_ENTRIES,
+        serve_stale: bool = True,
     ) -> None:
         self._path = data_dir / CACHE_FILE
         self._ttl = timedelta(hours=ttl_hours)
         self._negative_ttl = timedelta(hours=min(NEGATIVE_TTL_HOURS, ttl_hours))
         self._max = max_entries
+        self._serve_stale = serve_stale
         self._entries: dict[str, dict[str, Any]] = {}
         self._dirty = False
 
@@ -119,10 +136,18 @@ class LookupCache:
         self._evict()
 
     def _evict(self) -> None:
-        """Drop expired entries, then the oldest, until we are back under the cap."""
+        """Trim to the cap, dropping expired misses first, then the oldest.
+
+        Expired *hits* are deliberately not dropped just for being expired: with
+        ``serve_stale`` they are still published, so discarding them at the
+        first opportunity would throw away the offline answer this cache exists
+        to keep. They go only when the cap says something has to.
+        """
         if len(self._entries) <= self._max:
             return
-        self._entries = {k: v for k, v in self._entries.items() if self._fresh(v)}
+        self._entries = {
+            k: v for k, v in self._entries.items() if self._fresh(v) or not v.get("miss")
+        }
         if len(self._entries) <= self._max:
             return
         ordered = sorted(self._entries.items(), key=lambda kv: kv[1].get("cached_at", ""))
@@ -131,19 +156,45 @@ class LookupCache:
 
     # --- publication -----------------------------------------------------
     def hits(self) -> dict[str, Any]:
-        """Fresh positive results only, for the snapshot the browser reads."""
-        return {
-            call: entry["result"]
-            for call, entry in self._entries.items()
-            if not entry.get("miss") and self._fresh(entry) and "result" in entry
-        }
+        """Positive results for the snapshot the browser reads.
+
+        Includes expired entries when ``serve_stale`` is on, each carrying
+        ``stale: true`` and the age in hours so the panel can show it as
+        known-but-old rather than pretending it is current. Silently publishing
+        stale data as fresh would be the wrong trade; refusing to publish it at
+        all is the trade this project got wrong first.
+        """
+        out: dict[str, Any] = {}
+        for call, entry in self._entries.items():
+            if entry.get("miss") or "result" not in entry:
+                continue
+            fresh = self._fresh(entry)
+            if not fresh and not self._serve_stale:
+                continue
+            result = dict(entry["result"])
+            if not fresh:
+                result["stale"] = True
+                result["age_hours"] = self._age_hours(entry)
+            out[call] = result
+        return out
+
+    def _age_hours(self, entry: dict[str, Any]) -> int | None:
+        stamp = _parse(entry.get("cached_at"))
+        return None if stamp is None else int((_now() - stamp).total_seconds() // 3600)
 
     def stats(self) -> dict[str, Any]:
         fresh = [e for e in self._entries.values() if self._fresh(e)]
+        stale_hits = [
+            e
+            for e in self._entries.values()
+            if not self._fresh(e) and not e.get("miss") and "result" in e
+        ]
         return {
             "entries": len(self._entries),
             "fresh": len(fresh),
             "resolved": sum(1 for e in fresh if not e.get("miss")),
             "not_found": sum(1 for e in fresh if e.get("miss")),
+            "stale_served": len(stale_hits) if self._serve_stale else 0,
+            "serve_stale": self._serve_stale,
             "max_entries": self._max,
         }

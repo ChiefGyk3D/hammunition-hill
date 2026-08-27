@@ -48,6 +48,7 @@ class _SessionXmlProvider:
     hosts: tuple[str, ...] = ()
     needs_credentials = True
     worldwide = True
+    offline = False
 
     def __init__(self, username: str | None, password: str | None) -> None:
         if not username or not password:

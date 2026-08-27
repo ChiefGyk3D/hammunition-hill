@@ -27,7 +27,7 @@ import httpx
 from .config import Config, SourceConfig
 from .egress import EgressDenied, EgressGuard
 from .enrich import Enricher
-from .lookup import build_provider
+from .lookup import build_chain
 from .lookup.base import LookupError
 from .lookup.cache import LookupCache
 from .lookup.resolver import Resolver
@@ -195,23 +195,28 @@ async def _lookup_loop(
     it works through what the spots and decodes have already surfaced.
     """
     try:
-        provider = build_provider(
-            config.lookup.provider, config.lookup.username, config.lookup.password
+        chain = build_chain(
+            config.lookup.providers,
+            config.lookup.username,
+            config.lookup.password,
+            data_dir=config.data_dir,
+            uls_db=config.lookup.uls_db,
         )
     except (ValueError, LookupError) as exc:
         log.error("callsign lookup disabled: %s", exc)
         return
-    if provider is None:
+    if not chain:
         return
 
     cache = LookupCache(
         config.data_dir,
         ttl_hours=config.lookup.cache_hours,
         max_entries=config.lookup.max_entries,
+        serve_stale=config.lookup.serve_stale,
     )
     cache.load()
     resolver = Resolver(
-        provider,
+        chain,
         cache,
         guard,
         max_per_cycle=config.lookup.max_per_cycle,
@@ -222,10 +227,19 @@ async def _lookup_loop(
 
     log.info(
         "callsign lookup: %s, up to %d per %ds",
-        provider.name,
+        " -> ".join(p.name for p in resolver.providers),
         resolver.max_per_cycle,
         resolver.cycle_seconds,
     )
+    for provider in resolver.providers:
+        # An FCC provider with no index resolves nothing and says so once, at
+        # startup, rather than raising on every callsign for the rest of the run.
+        available = getattr(provider, "available", True)
+        if not available:
+            log.warning(
+                "lookup provider %s has no index yet; run 'hamhill fcc-import'",
+                provider.name,
+            )
 
     cfg = SourceConfig(id="lookups", kind="lookup", url="")
     while True:

@@ -76,6 +76,14 @@ class LookupProvider(Protocol):
     needs_credentials: bool
     worldwide: bool
 
+    offline: bool
+    """True if this provider answers without touching the network.
+
+    The resolver uses it for one decision: when the WAN is gone, network
+    providers are skipped rather than waited on. At a park with no signal that
+    is the difference between a lookup that answers from disk and a cycle that
+    spends three minutes timing out."""
+
     async def resolve(self, client: httpx.AsyncClient, callsign: str) -> LookupResult | None:
         """Return what is known, or None if the callsign is simply not on file."""
         ...

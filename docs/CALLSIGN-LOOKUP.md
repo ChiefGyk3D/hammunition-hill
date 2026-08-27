@@ -51,9 +51,11 @@ rebuilt early Sunday morning:
 https://data.fcc.gov/download/pub/uls/complete/l_amat.zip
 ```
 
-Roughly 160 MB zipped, pipe-delimited files inside. `EN.dat` carries name and
-address, `AM.dat` the operator class, `HD.dat` the licence status, joined on a
-system identifier.
+Roughly 160 MB zipped, pipe-delimited files inside. `HD.dat` carries the
+licence status, `EN.dat` the name and address, `AM.dat` the operator class. All
+three carry the callsign, so the importer keys on that directly rather than
+joining on the system identifier — one less thing to get wrong, and a malformed
+`AM` line costs one licence its operator class instead of breaking a join.
 
 This is the one option with **no per-lookup network at all**. It is a scheduled
 fetch of one known URL — exactly what the collector already does — and every
@@ -61,8 +63,10 @@ lookup afterwards reads a local index. No account, no rate limit, no third party
 watching what you look up, authoritative, and it includes the operator class, so
 the licence-class guess in the Band Plan panel becomes a fact for US calls.
 
-The costs are honest ones: a 160 MB weekly download and a few hundred MB on
-disk, which is real on a Raspberry Pi with an SD card, and it is **US only**.
+The costs are honest ones: a 160 MB download and about 100 MB of database on
+disk, which is real on a Raspberry Pi with an SD card, and it is **US only** —
+which is why it belongs in a chain rather than on its own. See *Setting up the
+offline index* below.
 
 ### Callook.info — free, no account, US only
 
@@ -138,15 +142,111 @@ attack surface — which is why it is a choice you make rather than a default.
 Combined with `fcc_uls` it is a good one: local data, local index, no third
 party, and the endpoint cannot reach the network.
 
+## Chains, and operating away from the internet
+
+No single provider is right for every callsign, so `providers` is an **ordered
+chain** rather than one choice:
+
+```toml
+[lookup]
+providers = ["fcc_uls", "qrz"]
+```
+
+Each callsign walks the list. A provider that answers wins. A provider that says
+*not on file* falls through to the next. A provider that *errors* also falls
+through, and — importantly — a callsign that every provider errored on is **not**
+cached as a miss, because "we could not ask" and "nobody has heard of them" are
+different facts and only one is worth remembering.
+
+The singular `provider = "callook"` still works and means a chain of one. Setting
+both forms is refused rather than guessed at.
+
+### Why local-first is usually the right order
+
+Putting the offline FCC index first looks backwards if you think of it as a
+fallback. It is not a fallback; it is the fast path:
+
+- It answers US callsigns **instantly, from disk, with no network at all**.
+- It **declines every non-US callsign for free**, so the paid provider behind it
+  only ever sees the calls it is actually needed for — fewer requests against
+  your QRZ subscription, and fewer callsigns handed to a third party.
+- It is **authoritative for operator class**, which no other free source is.
+
+QRZ behind it covers the rest of the world and the richer fields. That ordering
+gets you the best of both without thinking about it.
+
+If you would rather have QRZ's data preferred for US calls too, put it first —
+`providers = ["qrz", "fcc_uls"]` — and the index becomes the reserve it sounds
+like. Both orders are supported; the first is what the example config ships.
+
+### When the network goes
+
+At a park, on a summit, in a field — for a portable station, no internet is the
+normal condition rather than an exception. Two things happen automatically:
+
+**Network providers stop being waited on.** After two consecutive network
+failures the collector concludes the WAN is gone and skips them for five
+minutes, then tries again. Without this, a cycle with twenty new callsigns
+spends the connect timeout on each one in sequence, and a dashboard that should
+have answered instantly from a local index does nothing for minutes. Offline
+providers are untouched.
+
+**The cache keeps answering, honestly.** Cached results expire after 30 days for
+the purpose of *refetching*, but an expired entry is still published — flagged
+`stale` with its age, so the panel can show it as known-but-old. A licence record
+from five weeks ago is almost certainly still correct and is unarguably better
+than a blank panel. A night of resolution at home still answers for those
+callsigns in a field a month later.
+
+Set `serve_stale = false` if you would rather see nothing than something
+possibly out of date.
+
+## Setting up the offline index
+
+`fcc_uls` needs a one-off import before it can answer anything:
+
+```
+hamhill fcc-import                      # downloads ~160 MB from the FCC
+hamhill fcc-import --file l_amat.zip    # if you already have the file
+```
+
+It is a deliberate command, not a scheduled source: a 160 MB fetch should not
+happen unattended on a metered hotspot, which is exactly the connection a
+portable station tends to have. The FCC rebuilds the file weekly; re-running
+monthly is plenty.
+
+The importer prints what it read — records per file, callsigns indexed, lines
+skipped — because it parses a positional format and a parser like that should
+show its working. If the indexed count is zero it exits non-zero and says so
+rather than leaving an empty database that silently resolves nothing.
+
+`hamhill check` then reports the index:
+
+```
+lookup       : fcc_uls -> qrz
+  fcc_uls    : 812441 callsigns, imported 2026-08-27T01:20:09Z  (offline, no network)
+```
+
+**Costs, honestly:** roughly 100 MB of database on disk, a minute of import, and
+about 4 MB of RAM while it runs — the import streams rather than buffering, so
+peak memory does not grow with the size of the database and a Pi can do this.
+It is US only, which is why it belongs in a chain.
+
+**What is deliberately not stored:** the ULS file carries a street address for
+every licensee in the country. The index keeps city and state and discards the
+rest. A wall display does not need somebody's house number, and anything that
+reaches a snapshot is readable by everyone on your LAN.
+
 ## Choosing
 
 | You want | Set |
 |---|---|
-| Nothing extra, maximum privacy | `provider = "none"` (default) |
-| Full US data, nothing leaves the machine | `provider = "fcc_uls"` |
-| US data, no account, no big download | `provider = "callook"` |
-| Worldwide, free, willing to have an account | `provider = "hamqth"` |
-| Worldwide, best data, willing to pay | `provider = "qrz"` |
+| Nothing extra, maximum privacy | `providers = []` (default) |
+| Full US data, nothing leaves the machine | `providers = ["fcc_uls"]` |
+| US offline, worldwide when online | `providers = ["fcc_uls", "qrz"]` |
+| US data, no account, no big download | `providers = ["callook"]` |
+| Worldwide, free, willing to have an account | `providers = ["hamqth"]` |
+| Worldwide, best data, willing to pay | `providers = ["qrz"]` |
 
 Add `query_endpoint = true` to any of them to look up arbitrary callsigns rather
 than only ones you have seen.
