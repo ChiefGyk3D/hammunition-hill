@@ -20,8 +20,8 @@ finished, so here is exactly where things stand:
 |---|---|
 | Collector, snapshot architecture, static server | ✅ working |
 | Egress allowlist, CSP, path handling | ✅ working |
-| Panels | ✅ 20 across 6 dashboards |
-| Source kinds | ✅ 10 polled, 3 stream, 1 file |
+| Panels | ✅ 21 across 6 dashboards |
+| Source kinds | ✅ 10 polled, 5 stream, 1 file |
 | Space weather dials | ✅ 8 scales |
 | Map — rotatable globe, greyline, spots, aurora | ✅ working |
 | Your log driving spot colouring | ✅ working |
@@ -34,7 +34,7 @@ finished, so here is exactly where things stand:
 | VOACAP point-to-point | ❌ **not written** |
 | Weather outside the US | 🟡 feeds and maps; no structured severity |
 | Callsign query endpoint | ❌ **not written** — the config flag parses and does nothing |
-| GPS / portable auto-grid | ❌ **not written** |
+| GPS — portable auto-grid and clock check | ✅ working |
 | Satellites, RBN, CW tools | ❌ **not written** |
 | Metrics export to Grafana | ❌ **not written** |
 | CI — 9 jobs, 3 Python versions, x86 + ARM + macOS | ✅ working |
@@ -63,6 +63,7 @@ hardware finds it faster than we can.
 | **[Architecture](docs/ARCHITECTURE.md)** | How it works and why it is shaped this way. |
 | **[Writing panels](docs/PANELS.md)** | The panel contract. |
 | **[Callsign lookup](docs/CALLSIGN-LOOKUP.md)** | Provider options, trade-offs, and the architectural line. |
+| **[GPS](docs/GPS.md)** | Automatic grid square when portable, and why it publishes a locator rather than a fix. |
 | **[Propagation](docs/PROPAGATION.md)** | The MUF/LUF indicator, what it is worth, and what it is not. |
 | **[Imagery & weather](docs/IMAGERY.md)** | Weather alerts, radar and satellite tiles, and what a tier 2 tile costs you. |
 | **[Contributing](CONTRIBUTING.md)** | `make check` before you push, and what CI enforces. |
@@ -152,7 +153,7 @@ More in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Dashboards
 
-Twenty panels in one grid is unusable, so they are grouped into tabs:
+Twenty-one panels in one grid is unusable, so they are grouped into tabs:
 
 | | |
 |---|---|

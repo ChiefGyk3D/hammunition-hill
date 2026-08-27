@@ -45,7 +45,7 @@ def test_mode_only_reply():
 
 # --- registry -----------------------------------------------------------
 def test_stream_kinds_registered():
-    assert set(STREAM_KINDS) == {"dxcluster", "wsjtx", "rigctl"}
+    assert set(STREAM_KINDS) == {"dxcluster", "wsjtx", "rigctl", "gpsd", "nmea"}
 
 
 def test_is_stream():

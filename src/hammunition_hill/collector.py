@@ -150,16 +150,29 @@ async def _stream_loop(
     guard: EgressGuard, cfg: SourceConfig, config: Config, enricher: Enricher
 ) -> None:
     """Hold a connection open, writing a snapshot each time the stream flushes."""
-    try:
-        guard.check_stream(cfg.url)
-    except EgressDenied as exc:
-        log.error("stream %s refused: %s", cfg.id, exc)
-        _write_failure(config, cfg, f"EgressDenied: {exc}", STREAM_STALE_SECONDS)
-        return
+    # A stream reading a local character device -- a GPS on a serial port -- has
+    # no URL and makes no network connection at all, so there is nothing for the
+    # egress guard to decide. Running the check anyway would refuse an empty URL
+    # and disable the source. The guard governs reach; a device file has none.
+    if not cfg.is_file_source:
+        try:
+            guard.check_stream(cfg.url)
+        except EgressDenied as exc:
+            log.error("stream %s refused: %s", cfg.id, exc)
+            _write_failure(config, cfg, f"EgressDenied: {exc}", STREAM_STALE_SECONDS)
+            return
 
     stream = build_stream(cfg.kind)
 
     async def emit(payload: Any) -> None:
+        # A GPS fix moves the station, which is the entire point of having one:
+        # at a park the grid changes and nobody wants to edit config to get
+        # correct bearings. Everything downstream -- headings, distances, the
+        # greyline, the propagation model's solar zenith -- reads the station,
+        # so updating it here updates all of them at once.
+        if cfg.kind in GPS_KINDS:
+            _follow_gps(config, cfg, payload, enricher)
+
         # Cluster spots arrive raw and are enriched here, at flush time, so a
         # log reload is picked up by the next flush without the stream knowing
         # anything about the log.
@@ -183,6 +196,50 @@ async def _stream_loop(
         reason = f"{type(exc).__name__}: {exc}"
         log.error("stream %s stopped: %s", cfg.id, reason)
         _write_failure(config, cfg, reason, STREAM_STALE_SECONDS)
+
+
+# --- GPS ------------------------------------------------------------------
+GPS_KINDS = ("gpsd", "nmea")
+
+
+def _follow_gps(config: Config, cfg: SourceConfig, payload: Any, enricher: Enricher) -> None:
+    """Move the station to the GPS fix, and republish it.
+
+    Opt out with ``options = { follow = false }`` to show the fix without moving
+    the station -- useful at a fixed site where the configured grid is the
+    correct one and a receiver is present for its clock rather than its position.
+
+    The station is moved to the **truncated** grid, not the raw fix. Publishing
+    a 6-character locator while quietly computing bearings from a metre-accurate
+    position would make the privacy setting cosmetic.
+    """
+    import dataclasses
+
+    from .geo import GridError, grid_to_latlon
+
+    if not isinstance(payload, dict) or not payload.get("has_fix"):
+        return
+    if not (cfg.options or {}).get("follow", True):
+        return
+
+    grid = payload.get("grid")
+    if not grid:
+        return
+    try:
+        lat, lon = grid_to_latlon(str(grid))
+    except GridError:
+        return
+
+    station = enricher.station
+    if station.grid == grid and station.lat == lat:
+        return  # Unchanged; no need to rewrite the snapshot every flush.
+
+    enricher.station = dataclasses.replace(station, grid=grid, lat=lat, lon=lon)
+    log.info("station moved to %s from %s", grid, cfg.kind)
+
+    from .cli import _publish_station
+
+    _publish_station(config, enricher)
 
 
 # --- callsign lookup ------------------------------------------------------

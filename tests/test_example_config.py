@@ -133,10 +133,33 @@ def test_example_imagery_is_https():
         assert urlsplit(tile["url"]).scheme == "https", f"tile {tile['id']!r} is not https"
 
 
-def test_example_source_ids_are_unique():
-    ids = [t.get("id") for t in all_source_tables()]
+def test_live_example_source_ids_are_unique():
+    ids = [t.get("id") for t in tomllib.loads(RAW).get("sources", [])]
     duplicates = {i for i in ids if ids.count(i) > 1}
-    assert not duplicates, f"duplicate example source ids: {duplicates}"
+    assert not duplicates, f"duplicate source ids in the live config: {duplicates}"
+
+
+def test_repeated_commented_ids_are_alternatives_not_accidents():
+    """A commented id may legitimately appear twice, for one reason only.
+
+    GPS is shown two ways -- gpsd and a serial receiver -- and both use the id
+    `gps`, because the panel reads that snapshot and an operator picks one. That
+    is documentation of alternatives, not a mistake.
+
+    What would be a mistake is the same id on the same kind, which is a
+    copy-paste slip. Checking that distinction keeps the test useful instead of
+    loosening it into one that no longer catches anything.
+    """
+    by_id: dict[str, set[str]] = {}
+    for table in commented_config().get("sources", []):
+        by_id.setdefault(table.get("id"), set()).add(table.get("kind"))
+
+    for source_id, kinds in by_id.items():
+        count = sum(1 for t in commented_config().get("sources", []) if t.get("id") == source_id)
+        assert count == len(kinds), (
+            f"commented source id {source_id!r} repeats without being an alternative: "
+            f"{count} entries but only {len(kinds)} distinct kind(s)"
+        )
 
 
 # --- the coupling that actually breaks panels -----------------------------
