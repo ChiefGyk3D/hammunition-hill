@@ -21,7 +21,7 @@ have. Where the two disagree, this page is the one kept current.
 |---|---|
 | Collector, snapshot architecture, static server | ✅ working |
 | Egress allowlist, CSP, path handling | ✅ working |
-| Panels | ✅ 25 across 6 dashboards |
+| Panels | ✅ 26 across 6 dashboards |
 | Source kinds | ✅ 11 polled, 6 stream, 1 file |
 | Space weather dials | ✅ 8 scales |
 | Your log driving spot colouring | ✅ working |
@@ -102,9 +102,9 @@ The parts everything else sits on.
 **Activity**, **Field & Weather**. Regroup them by editing
 `web/panels/index.json`.
 
-Eight are **tier 0** — they work with the internet unplugged: `bandplan`,
-`beacons`, `callsign`, `clock`, `cw`, `gps`, `logbook`, `tools`. Fourteen are
-tier 1. One is tier 2 (`imagery`).
+Nine are **tier 0** — they work with the internet unplugged: `bandplan`,
+`beacons`, `callsign`, `clock`, `cw`, `exam`, `gps`, `logbook`, `tools`.
+Sixteen are tier 1. One is tier 2 (`imagery`).
 
 | Feature | Status | Notes |
 |---|---|---|
@@ -126,6 +126,7 @@ tier 1. One is tier 2 (`imagery`).
 | CW / Morse tools | ✅ | Reference charts, translator, timing, audio playback — see [CW.md](CW.md) |
 | CW trainer | ✅ | Four drills: Koch lessons, callsign copy from real DXCC prefixes, a two-sided QSO simulator (contest and ragchew), and a phonetics/Q-signal/abbreviation quiz. Generated in the browser from a seeded PRNG the Python side mirrors, so a test proves the two never diverge. |
 | Shack tools | ✅ | Antenna cut chart (dipole, vertical, EFHW, 5/8, loop), feedline loss for ten cable types, what an SWR reading costs through a given line, and distance/bearing between any two grid squares — see [TOOLS.md](TOOLS.md) |
+| Licence exam practice | ✅ | Study mode and full practice exams from the official pools for all three US elements, which ship with the project. Built the way a real exam is — one question from each group. Expiry is checked, and a test fails when a shipped pool runs out — see [EXAM.md](EXAM.md) |
 | Satellite passes | ✅ | Amateur TLEs fetched daily; passes, look angles and Doppler computed here from cached elements, so the panel survives a WAN outage for days. Needs the optional `sgp4` extra — see [SATELLITES.md](SATELLITES.md) |
 | Reverse Beacon Network | ✅ | Who is hearing your callsign, with SNR and speed, plus a rolling per-band tally of everything else. Several thousand spots a minute collapse into a table bounded by the band plan — see [RBN.md](RBN.md) |
 | Ionospheric map | ❌ | |
@@ -246,7 +247,8 @@ shape, a tier 0 computation, or the log we already read.
 | **Smith chart** | medium | The one antenna tool the shack-tools panel does not have, and the only one that is real interactive drawing rather than arithmetic. |
 | **NanoVNA / analyser sweep input** | medium | A sweep read off a VNA would make the SWR tab far more useful than a typed number. Needs a serial or USB path into the collector, which is a posture change like `rigctld` was. |
 | **Coax length by measurement** | strong | Velocity factor and a known resonant frequency give cable length from a VNA null; the arithmetic is already here. |
-| **Licence exam practice** | medium | The question pools are public and large. A pool per class is a big data file and a real maintenance commitment — worth doing only if somebody will keep it current. |
+| **Part 97 alongside the exam questions** | strong | Every pool question carries its rule reference and the panel shows it. Shipping the regulation and linking the two would turn "the answer is C" into "here is why". The CFR is published as a PDF and the extraction path already exists. |
+| **Exam pools for other countries** | medium | The parser is written for the NCVEC layout. Another syllabus is a data contribution and probably a second parser. |
 | **Repeater directory** | medium | RepeaterBook has a public API. Tier 1, one source, but the useful version is filtered by *your* location, which GPS now gives us. |
 | **Band plan by region** | strong | The loader is generic; this is data. IARU Region 1 and 3 files would cover most of the world. |
 

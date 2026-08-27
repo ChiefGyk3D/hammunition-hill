@@ -732,6 +732,54 @@ ul.wx-alerts { list-style: none; margin: 0; padding: 0; }
 .tool-row-label { color: var(--muted); }
 .tool-row-value { color: var(--accent); font-weight: 600; white-space: nowrap; }
 .tool-row-note { color: var(--muted); font-size: 10.5px; }
+/* Licence exam. A question and four answers wants width and calm: the reader is
+   thinking, not scanning. */
+/* Not uppercased: a group title is a sentence of syllabus ("Current and
+   voltage: terminology and units, conductors and insulators...") and shouting
+   a whole line of it is harder to read, not easier. */
+.exam-id {
+  font-family: var(--mono); font-size: 10px; color: var(--muted);
+  letter-spacing: .04em; margin: 8px 0 4px; line-height: 1.45;
+}
+.exam-question {
+  font-size: 14px; color: var(--ink); line-height: 1.5; margin-bottom: 10px;
+}
+.exam-answers { display: grid; gap: 5px; }
+.exam-answer {
+  background: var(--panel-2); border: 1px solid var(--rule); border-radius: 2px;
+  color: var(--ink); font: inherit; font-size: 12.5px; line-height: 1.45;
+  padding: 8px 10px; cursor: pointer; text-align: left;
+}
+.exam-answer:hover:not(:disabled) { border-color: var(--accent); }
+.exam-answer:disabled { cursor: default; opacity: .55; }
+/* Colour is not the only signal: once answered, the others dim and these two
+   stay at full opacity. */
+.exam-answer.exam-right { border-color: var(--good); color: var(--good); opacity: 1; }
+.exam-answer.exam-wrong { border-color: var(--poor); color: var(--poor); opacity: 1; }
+.exam-note {
+  font-family: var(--mono); font-size: 10.5px; color: var(--muted);
+  margin: 8px 0 0; line-height: 1.5;
+}
+/* An expired pool is the quiet failure this feature exists to guard against --
+   the questions look completely normal and are the wrong ones. */
+.exam-expired {
+  font-family: var(--mono); font-size: 11px; color: var(--poor);
+  border-left: 3px solid var(--poor); background: var(--panel-2);
+  padding: 7px 9px; margin: 8px 0; line-height: 1.5;
+}
+.exam-result {
+  font-family: var(--mono); font-size: 14px; padding: 9px 10px; margin: 10px 0;
+  background: var(--panel-2); border-left: 3px solid var(--rule);
+}
+.exam-passed { color: var(--good); border-left-color: var(--good); }
+.exam-failed { color: var(--poor); border-left-color: var(--poor); }
+.exam-missed { display: grid; gap: 3px; margin-top: 4px; }
+.exam-missed-row {
+  font-family: var(--mono); font-size: 10.5px; color: var(--muted);
+  padding: 3px 6px; line-height: 1.45;
+}
+.exam-missed-row:nth-child(odd) { background: var(--panel-2); }
+
 /* Reverse Beacon. Two shapes in one grid: a report of you, and a band summary.
    The SNR carries the colour in both, because it is the measurement. */
 .rbn-list { display: grid; gap: 2px; }

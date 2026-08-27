@@ -25,11 +25,16 @@ dependencies = ["httpx>=0.27", "defusedxml>=0.7.1"]
 # not be verified to the same standard. It has no dependencies of its own.
 satellites = ["sgp4>=2.20"]
 
+# Reading a question pool out of the PDF the releases are published as. Optional
+# because it is used once every four years, and because the pools that ship with
+# this project are already imported.
+exam = ["pypdf>=4.0"]
+
 # PyYAML is test-only: tests/test_workflows.py parses the CI configuration, and
 # a hand-rolled reader for a security check is exactly the wrong economy.
 # sgp4 is here too so CI always exercises the satellite path rather than
 # skipping it -- an optional extra nobody tests is an extra that breaks.
-dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "ruff>=0.5", "PyYAML>=6.0", "sgp4>=2.20"]
+dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "ruff>=0.5", "PyYAML>=6.0", "sgp4>=2.20", "pypdf>=4.0"]
 
 [project.scripts]
 hamhill = "hammunition_hill.cli:main"
@@ -46,7 +51,7 @@ build-backend = "setuptools.build_meta"
 where = ["src"]
 
 [tool.setuptools.package-data]
-hammunition_hill = ["py.typed"]
+hammunition_hill = ["py.typed", "data/exam/*.json"]
 
 [tool.ruff]
 line-length = 100
