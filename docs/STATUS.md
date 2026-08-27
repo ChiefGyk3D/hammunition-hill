@@ -33,10 +33,11 @@ have. Where the two disagree, this page is the one kept current.
 | Weather outside the US | 🟡 feeds and images, no structured severity |
 | Callsign query endpoint | ❌ **not written** — config flag exists and does nothing |
 | GPS / portable auto-grid | ✅ working |
-| Satellites | ❌ **not written** |
-| RBN | ❌ **not written** |
+| Satellites | ✅ passes, look angles, Doppler |
+| RBN | ✅ working |
 | CW / Morse tools | ✅ working |
-| Metrics export to Grafana | ❌ **not written** |
+| Licence exam practice | ✅ all three US pools, five study modes |
+| Prometheus metrics endpoint | ✅ working, off by default |
 | Opaque image mode | ❌ **not written** |
 | Packaging (Docker, distro packages) | ❌ **not written** |
 | CI, CodeQL, dependency audit | ✅ working |
@@ -59,8 +60,8 @@ The parts everything else sits on.
 | Stream self-healing | ✅ | Exponential backoff; one dead stream cannot take down the run. |
 | `hamhill serve` / `check` / `fcc-import` | ✅ | |
 | Config validation with actionable errors | ✅ | |
-| Tests | ✅ | 952, ruff clean. |
-| CI | ✅ | Nine jobs: lint, pytest across 3.11–3.13 on x86, ARM and macOS, example-config validation, an end-to-end smoke test, a real-browser render of every dashboard, dependency audit, wheel build, and a weekly upstream-liveness check. |
+| Tests | ✅ | 1587, ruff clean. |
+| CI | ✅ | Ten jobs: lint, pytest across 3.11–3.13 on x86, ARM and macOS, example-config validation, an end-to-end smoke test, a real-browser render of every dashboard, dependency audit, wheel build, and a weekly upstream-liveness check. |
 | CodeQL | ✅ | Python and JavaScript, weekly and per-PR. |
 | Dependabot | ✅ | Actions and pip, weekly. |
 | Tests cannot reach the network | ✅ | Enforced by a conftest guard, not convention. |
@@ -70,9 +71,9 @@ The parts everything else sits on.
 
 ## Sources
 
-**Polled** (10 kinds): `swpc`, `hamqsl`, `rss`, `pota`, `sota`, `ics`, `aurora`,
-`noaa_scales`, `swpc_alerts`, `nws_alerts`.
-**Stream** (5): `dxcluster`, `wsjtx`, `rigctl`, `gpsd`, `nmea`.
+**Polled** (11 kinds): `swpc`, `hamqsl`, `rss`, `pota`, `sota`, `ics`, `aurora`,
+`noaa_scales`, `swpc_alerts`, `nws_alerts`, `tle`.
+**Stream** (6): `dxcluster`, `rbn`, `wsjtx`, `rigctl`, `gpsd`, `nmea`.
 **File** (1): `adif`.
 
 | Feature | Status | Notes |
@@ -89,9 +90,9 @@ The parts everything else sits on.
 | WSJT-X (UDP) | ✅ | Your own decodes, live |
 | `rigctld` | ✅ | Live frequency and mode |
 | ADIF log ingest | ✅ | Drives needed-slot colouring |
-| RBN | ❌ | The cluster client pointed at a different feed; aggregation is the work |
+| RBN | ✅ | Its own line parser, aggregated by band and mode. Bounded so a busy night cannot grow memory without limit |
 | PSK Reporter | ❌ | |
-| Satellite passes | ❌ | Needs cached TLEs and SGP4 |
+| Satellite passes | ✅ | Cached TLEs, SGP4 when the optional extra is installed, look angles and Doppler. Passes found by bisection, not by scanning |
 | WWFF / WWBOTA | ❌ | Same shape as POTA/SOTA |
 | Repeater directory | ❌ | RepeaterBook has a public API |
 | GPS (gpsd / NMEA) | ✅ | Auto grid square and a clock check when portable. Published at Maidenhead precision, never a raw fix — see [GPS.md](GPS.md) |
@@ -209,9 +210,14 @@ Sixteen are tier 1. One is tier 2 (`imagery`).
 
 What is actually being worked on, in order:
 
-1. **RBN**, which is the cluster client pointed somewhere else plus aggregation.
-2. **Satellites**, which needs real orbital mechanics.
-3. **The metrics exporter**, after parity.
+1. **Part 97 alongside the exam questions**, so a wrong answer explains itself
+   from the regulation rather than from a paraphrase somebody wrote.
+2. **The callsign query endpoint**, which is the one place a config flag still
+   parses and does nothing.
+3. **Packaging**, meaning a container and a `pip install` that carries `web/`.
+
+RBN, satellites and the Prometheus exporter were the previous three and have
+shipped; the table above is the record of what they actually do.
 
 Smaller items are listed in [PARITY.md](PARITY.md).
 
