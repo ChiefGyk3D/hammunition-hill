@@ -21,7 +21,7 @@ have. Where the two disagree, this page is the one kept current.
 |---|---|
 | Collector, snapshot architecture, static server | ✅ working |
 | Egress allowlist, CSP, path handling | ✅ working |
-| Panels | ✅ 22 across 6 dashboards |
+| Panels | ✅ 23 across 6 dashboards |
 | Source kinds | ✅ 10 polled, 5 stream, 1 file |
 | Space weather dials | ✅ 8 scales |
 | Your log driving spot colouring | ✅ working |
@@ -102,9 +102,9 @@ The parts everything else sits on.
 **Activity**, **Field & Weather**. Regroup them by editing
 `web/panels/index.json`.
 
-Seven are **tier 0** — they work with the internet unplugged: `bandplan`,
-`beacons`, `callsign`, `clock`, `cw`, `gps`, `logbook`. Fourteen are tier 1.
-One is tier 2 (`imagery`).
+Eight are **tier 0** — they work with the internet unplugged: `bandplan`,
+`beacons`, `callsign`, `clock`, `cw`, `gps`, `logbook`, `tools`. Fourteen are
+tier 1. One is tier 2 (`imagery`).
 
 | Feature | Status | Notes |
 |---|---|---|
@@ -125,6 +125,7 @@ One is tier 2 (`imagery`).
 | "AT YOUR QTH" vs "OPEN ELSEWHERE" band pills | ❌ | Spotted in hamdash; outstanding |
 | CW / Morse tools | ✅ | Reference charts, translator, timing, audio playback — see [CW.md](CW.md) |
 | CW trainer | ✅ | Four drills: Koch lessons, callsign copy from real DXCC prefixes, a two-sided QSO simulator (contest and ragchew), and a phonetics/Q-signal/abbreviation quiz. Generated in the browser from a seeded PRNG the Python side mirrors, so a test proves the two never diverge. |
+| Shack tools | ✅ | Antenna cut chart (dipole, vertical, EFHW, 5/8, loop), feedline loss for ten cable types, what an SWR reading costs through a given line, and distance/bearing between any two grid squares — see [TOOLS.md](TOOLS.md) |
 | Ionospheric map | ❌ | |
 | Built-in SDR receiver | ⛔ | WebUSB needs a secure context, which would force TLS onto a LAN appliance for one panel. Point a tier 2 panel at your own OpenWebRX+ or KiwiSDR instead. |
 
@@ -239,8 +240,9 @@ shape, a tier 0 computation, or the log we already read.
 | **Send practice via a straight-key input** | medium | Copy the space bar or a serial/GPIO key, decode the timing, and score it against what was asked for. Everything to decode it exists; capturing key-down timing accurately in a browser is the hard part. |
 | **Contest exchange drills at speed** | strong | The QSO simulator has the scripts; a pile-up mode that sends several stations at once, at settable speed, is the thing contest operators actually practise. |
 | **Farnsworth ramp / speed ladder** | strong | Hold character speed, close the gaps as you improve. The timing model already separates the two, so this is a UI and a stored setting. |
-| **Antenna calculators** | strong | Dipole, vertical, loop lengths from frequency; velocity factor; coax loss per 100 ft per band. Arithmetic and a table. |
-| **Great-circle / grid tools** | strong | Distance and bearing between two arbitrary grids, not just from your station. The maths is already in `geo.py`. |
+| **Smith chart** | medium | The one antenna tool the shack-tools panel does not have, and the only one that is real interactive drawing rather than arithmetic. |
+| **NanoVNA / analyser sweep input** | medium | A sweep read off a VNA would make the SWR tab far more useful than a typed number. Needs a serial or USB path into the collector, which is a posture change like `rigctld` was. |
+| **Coax length by measurement** | strong | Velocity factor and a known resonant frequency give cable length from a VNA null; the arithmetic is already here. |
 | **Licence exam practice** | medium | The question pools are public and large. A pool per class is a big data file and a real maintenance commitment — worth doing only if somebody will keep it current. |
 | **Repeater directory** | medium | RepeaterBook has a public API. Tier 1, one source, but the useful version is filtered by *your* location, which GPS now gives us. |
 | **Band plan by region** | strong | The loader is generic; this is data. IARU Region 1 and 3 files would cover most of the world. |

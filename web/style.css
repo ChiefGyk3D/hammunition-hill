@@ -708,3 +708,31 @@ ul.wx-alerts { list-style: none; margin: 0; padding: 0; }
    right answer is also the one still at full opacity. */
 .cw-option.cw-right { border-color: var(--good); color: var(--good); opacity: 1; }
 .cw-option.cw-wrong { border-color: var(--poor); color: var(--poor); opacity: 1; }
+
+/* Shack tools. Label above input, so a narrow column does not force the value
+   onto its own line; results as a label/value/note table like the CW charts. */
+.tool-field { display: block; margin-bottom: 8px; }
+.tool-label {
+  display: block; font-family: var(--mono); font-size: 9.5px; color: var(--muted);
+  text-transform: uppercase; letter-spacing: .08em; margin-bottom: 3px;
+}
+.tool-input {
+  width: 100%; background: var(--panel-2); border: 1px solid var(--rule);
+  border-radius: 2px; color: var(--ink); font-family: var(--mono);
+  font-size: 13px; padding: 5px 7px;
+}
+.tool-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.tool-rows { display: grid; gap: 2px; align-content: start; margin: 8px 0; }
+.tool-row {
+  display: grid; grid-template-columns: minmax(90px, 1fr) auto minmax(0, 1fr); gap: 10px;
+  align-items: baseline; font-family: var(--mono); font-size: 11.5px; padding: 3px 6px;
+}
+.tool-row:nth-child(odd) { background: var(--panel-2); }
+.tool-row-label { color: var(--muted); }
+.tool-row-value { color: var(--accent); font-weight: 600; white-space: nowrap; }
+.tool-row-note { color: var(--muted); font-size: 10.5px; }
+.tool-hint {
+  font-family: var(--mono); font-size: 10.5px; color: var(--muted);
+  margin: 6px 0; line-height: 1.5;
+}

@@ -127,6 +127,12 @@ job runs — with its output pointed at `docs/images/`, so what ships in the
 README is what a real Chromium actually rendered against a real collector. Check
 the PNGs in alongside the change that caused them.
 
+The page clock is frozen during the render, so a regeneration that changes
+nothing visual produces the same bytes. One exception: a dashboard carrying a
+live source also shows an age badge counting from the snapshot's real
+`fetched_at`, so `home.png` can differ by a few pixels for no reason you care
+about. Drop it from the commit if nothing on it actually changed.
+
 `tests/test_docs_images.py` keeps the set honest: every dashboard has an image,
 every image is referenced, nothing is left behind by a rename, and nothing is a
 truncated stub. What it cannot check is whether an image is *current* — only you
