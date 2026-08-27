@@ -31,6 +31,22 @@ def _strip_ns(tag: str) -> str:
     return tag.rsplit("}", 1)[-1].lower()
 
 
+def _first(root: Any, path: str) -> Any:
+    """The first match for ``path``, or ``root`` if there is none.
+
+    Written out rather than as ``root.find(path) or root``, which is wrong in a
+    way that reads as correct. An ElementTree element is falsy when it has no
+    *child elements*, so the ``or`` fires for a ``<session id="...">`` that
+    carries attributes and no children -- silently searching the whole document
+    instead of the element we found. Python is also changing that truthiness to
+    always-True, which would flip the behaviour again in the other direction.
+
+    ``is None`` is the only test that means what this needs in both worlds.
+    """
+    found = root.find(path)
+    return root if found is None else found
+
+
 def _fields(node: Any) -> dict[str, str]:
     """Child elements as a lowercase, namespace-free dict."""
     out: dict[str, str] = {}
@@ -119,7 +135,7 @@ class HamQthProvider(_SessionXmlProvider):
         return self._URL, {"u": self._username, "p": self._password}
 
     def _session_from(self, root: Any) -> str | None:
-        return _fields(root.find(".//{*}session") or root).get("session_id")
+        return _fields(_first(root, ".//{*}session")).get("session_id")
 
     def _query_request(self, session: str, callsign: str) -> tuple[str, dict[str, str]]:
         return self._URL, {
@@ -161,7 +177,7 @@ class QrzProvider(_SessionXmlProvider):
         }
 
     def _session_from(self, root: Any) -> str | None:
-        return _fields(root.find(".//{*}Session") or root).get("key")
+        return _fields(_first(root, ".//{*}Session")).get("key")
 
     def _query_request(self, session: str, callsign: str) -> tuple[str, dict[str, str]]:
         return self._URL, {"s": session, "callsign": callsign.upper()}

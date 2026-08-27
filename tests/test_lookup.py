@@ -356,3 +356,69 @@ def test_seen_callsigns_are_bounded():
     for i in range(SEEN_CALLSIGN_LIMIT + 500):
         enricher.note_callsign(f"W{i}ABC")
     assert len(enricher.seen_callsigns()) == SEEN_CALLSIGN_LIMIT
+
+
+# --- the Element truthiness trap ------------------------------------------
+def test_session_element_with_attributes_but_no_children_is_used():
+    """`root.find(...) or root` was wrong here, in a way that reads as correct.
+
+    An ElementTree element is falsy when it has no *child elements*. So for a
+    response whose session element carries its data in attributes, or is simply
+    empty, the `or` fired and the code searched the whole document instead of
+    the element it had just found.
+
+    Caught by CI on Python 3.12+, where the deprecation warning for this fires;
+    3.11 is silent, which is why it survived. Python is also changing the
+    truthiness to always-True, which would have flipped the behaviour a second
+    time. `is None` is the only test that means the right thing in both.
+    """
+    from defusedxml import ElementTree as DefusedET
+
+    from hammunition_hill.lookup.session_xml import _first
+
+    # A session element that is empty of children: falsy today, truthy later.
+    root = DefusedET.fromstring(
+        '<HamQTH><session id="x"><session_id>abc123</session_id></session></HamQTH>'
+    )
+    found = _first(root, ".//{*}session")
+    assert found.tag.endswith("session"), "must return the found element, not the root"
+
+    empty = DefusedET.fromstring('<HamQTH><session id="x"/></HamQTH>')
+    assert _first(empty, ".//{*}session") is not empty, "an empty match is still a match"
+
+    absent = DefusedET.fromstring("<HamQTH><other/></HamQTH>")
+    assert _first(absent, ".//{*}session") is absent, "no match falls back to root"
+
+
+def test_no_source_file_tests_an_element_for_truth():
+    """Whatever else changes, this pattern must not come back.
+
+    It is silent on 3.11, a warning on 3.12+, and a behaviour change after that
+    -- the worst combination for something a test suite might not exercise.
+    """
+    import ast
+    from pathlib import Path
+
+    offenders = []
+    for path in sorted(Path("src").rglob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            # `x.find(...) or y` and `if x.find(...)` are both the same mistake.
+            candidates = []
+            if isinstance(node, ast.BoolOp):
+                candidates = node.values
+            elif isinstance(node, ast.If):
+                candidates = [node.test]
+            for value in candidates:
+                call = value.operand if isinstance(value, ast.UnaryOp) else value
+                if (
+                    isinstance(call, ast.Call)
+                    and isinstance(call.func, ast.Attribute)
+                    and call.func.attr in ("find", "findall")
+                ):
+                    offenders.append(f"{path}:{node.lineno}")
+
+    assert not offenders, (
+        "these test an ElementTree result for truth instead of `is None`: "
+        + ", ".join(offenders)
+    )
