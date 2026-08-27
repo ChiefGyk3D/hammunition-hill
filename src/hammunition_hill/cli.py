@@ -94,9 +94,7 @@ def build_enricher(config: Config) -> Enricher:
     table = PrefixTable(config.cty_dat)
     station = Station.from_config(config.station, table)
     if not station.located:
-        log.warning(
-            "[station] has no grid or lat/lon: bearings and distances will be omitted"
-        )
+        log.warning("[station] has no grid or lat/lon: bearings and distances will be omitted")
     return Enricher(table, station)
 
 
@@ -195,8 +193,7 @@ def _serve(config: Config, guard: EgressGuard, enricher: Enricher) -> int:
         print(f"cannot listen on {bind}: {exc.strerror or exc}", file=sys.stderr)
         if exc.errno == errno.EADDRINUSE:
             print(
-                "  another process is using that port — stop it, or pick another "
-                "with --listen",
+                "  another process is using that port — stop it, or pick another with --listen",
                 file=sys.stderr,
             )
         return 1
@@ -218,9 +215,7 @@ def _serve(config: Config, guard: EgressGuard, enricher: Enricher) -> int:
     return 0
 
 
-def _check(
-    config: Config, guard: EgressGuard, enricher: Enricher, *, offline: bool = False
-) -> int:
+def _check(config: Config, guard: EgressGuard, enricher: Enricher, *, offline: bool = False) -> int:
     """Validate config and egress policy without fetching anything.
 
     ``offline`` additionally skips DNS. The egress guard resolves every host to

@@ -119,15 +119,27 @@ def km_to_miles(km: float) -> float:
 def compass_point(bearing: float) -> str:
     """Bearing to a 16-point compass name, for the label next to the number."""
     points = (
-        "N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE",
-        "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW",
+        "N",
+        "NNE",
+        "NE",
+        "ENE",
+        "E",
+        "ESE",
+        "SE",
+        "SSE",
+        "S",
+        "SSW",
+        "SW",
+        "WSW",
+        "W",
+        "WNW",
+        "NW",
+        "NNW",
     )
     return points[int((bearing % 360) / 22.5 + 0.5) % 16]
 
 
-def path(
-    from_lat: float, from_lon: float, to_lat: float, to_lon: float
-) -> dict[str, float | str]:
+def path(from_lat: float, from_lon: float, to_lat: float, to_lon: float) -> dict[str, float | str]:
     """Everything the UI shows for one path, computed once."""
     short = bearing_deg(from_lat, from_lon, to_lat, to_lon)
     km = distance_km(from_lat, from_lon, to_lat, to_lon)

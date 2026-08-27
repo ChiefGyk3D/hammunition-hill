@@ -155,9 +155,7 @@ class ClusterStream:
 
         while True:
             try:
-                raw = await asyncio.wait_for(
-                    reader.readuntil(b"\n"), timeout=flush_interval
-                )
+                raw = await asyncio.wait_for(reader.readuntil(b"\n"), timeout=flush_interval)
             except TimeoutError:
                 raw = b""
             except asyncio.LimitOverrunError:

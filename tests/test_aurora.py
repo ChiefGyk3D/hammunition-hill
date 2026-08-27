@@ -31,11 +31,13 @@ async def run(source, body, content_type="application/json"):
 
 def ovation(cells):
     """SWPC's shape: [longitude 0..359 east, latitude, probability]."""
-    return json.dumps({
-        "Observation Time": "2026-08-26T23:00:00Z",
-        "Forecast Time": "2026-08-26T23:30:00Z",
-        "coordinates": cells,
-    })
+    return json.dumps(
+        {
+            "Observation Time": "2026-08-26T23:00:00Z",
+            "Forecast Time": "2026-08-26T23:30:00Z",
+            "coordinates": cells,
+        }
+    )
 
 
 # --- aurora reduction ----------------------------------------------------
@@ -124,13 +126,20 @@ async def test_malformed_rows_are_skipped():
 
 
 # --- NOAA scales ---------------------------------------------------------
-SCALES_BODY = json.dumps({
-    "-1": {"R": {"Scale": "1", "Text": "Minor"}, "S": {"Scale": None, "Text": "none"},
-           "G": {"Scale": "0", "Text": "none"}},
-    "0": {"R": {"Scale": "2", "Text": "Moderate", "DateStamp": "2026-08-26"},
-          "S": {"Scale": None, "Text": "none"},
-          "G": {"Scale": "4", "Text": "Severe"}},
-})
+SCALES_BODY = json.dumps(
+    {
+        "-1": {
+            "R": {"Scale": "1", "Text": "Minor"},
+            "S": {"Scale": None, "Text": "none"},
+            "G": {"Scale": "0", "Text": "none"},
+        },
+        "0": {
+            "R": {"Scale": "2", "Text": "Moderate", "DateStamp": "2026-08-26"},
+            "S": {"Scale": None, "Text": "none"},
+            "G": {"Scale": "4", "Text": "Severe"},
+        },
+    }
+)
 
 
 async def test_scales_read_today_not_yesterday():
@@ -164,11 +173,16 @@ async def test_scales_reject_a_list():
 
 
 # --- SWPC alerts ---------------------------------------------------------
-ALERTS_BODY = json.dumps([
-    {"product_id": "K04A", "issue_datetime": "2026-08-26 22:00:00",
-     "message": "ALERT: Geomagnetic K-index of 4\n\nThreshold Reached: 22:00 UTC"},
-    {"product_id": "WARK05", "issue_datetime": "2026-08-26 21:00:00", "message": "   "},
-])
+ALERTS_BODY = json.dumps(
+    [
+        {
+            "product_id": "K04A",
+            "issue_datetime": "2026-08-26 22:00:00",
+            "message": "ALERT: Geomagnetic K-index of 4\n\nThreshold Reached: 22:00 UTC",
+        },
+        {"product_id": "WARK05", "issue_datetime": "2026-08-26 21:00:00", "message": "   "},
+    ]
+)
 
 
 async def test_alerts_take_the_first_line_as_the_headline():

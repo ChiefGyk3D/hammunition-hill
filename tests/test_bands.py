@@ -7,11 +7,23 @@ import pytest
 from hammunition_hill.bands import BAND_ORDER, band_for, classify, infer_mode, sort_key
 
 
-@pytest.mark.parametrize("khz,band", [
-    (1825.0, "160m"), (3573.0, "80m"), (7074.0, "40m"), (10136.0, "30m"),
-    (14074.0, "20m"), (18100.0, "17m"), (21074.0, "15m"), (24915.0, "12m"),
-    (28074.0, "10m"), (50313.0, "6m"), (144174.0, "2m"), (432100.0, "70cm"),
-])
+@pytest.mark.parametrize(
+    "khz,band",
+    [
+        (1825.0, "160m"),
+        (3573.0, "80m"),
+        (7074.0, "40m"),
+        (10136.0, "30m"),
+        (14074.0, "20m"),
+        (18100.0, "17m"),
+        (21074.0, "15m"),
+        (24915.0, "12m"),
+        (28074.0, "10m"),
+        (50313.0, "6m"),
+        (144174.0, "2m"),
+        (432100.0, "70cm"),
+    ],
+)
 def test_band_for_common_frequencies(khz, band):
     assert band_for(khz) == band
 
@@ -27,19 +39,26 @@ def test_band_edges_are_inclusive():
     assert band_for(14350.1) is None
 
 
-@pytest.mark.parametrize("khz,mode", [
-    (14074.0, "FT8"), (7074.0, "FT8"), (50313.0, "FT8"),
-    (14080.0, "FT4"), (7047.5, "FT4"),
-    (14070.0, "PSK31"), (14100.0, "RTTY"),
-])
+@pytest.mark.parametrize(
+    "khz,mode",
+    [
+        (14074.0, "FT8"),
+        (7074.0, "FT8"),
+        (50313.0, "FT8"),
+        (14080.0, "FT4"),
+        (7047.5, "FT4"),
+        (14070.0, "PSK31"),
+        (14100.0, "RTTY"),
+    ],
+)
 def test_digital_watering_holes(khz, mode):
     assert infer_mode(khz) == mode
 
 
 def test_digital_tolerance_is_narrow():
     assert infer_mode(14074.0) == "FT8"
-    assert infer_mode(14076.5) == "FT8"     # inside tolerance
-    assert infer_mode(14090.0) != "FT8"     # well outside
+    assert infer_mode(14076.5) == "FT8"  # inside tolerance
+    assert infer_mode(14090.0) != "FT8"  # well outside
 
 
 @pytest.mark.parametrize("khz", [14020.0, 7015.0, 21030.0, 3520.0, 28010.0])

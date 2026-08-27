@@ -211,7 +211,11 @@ def test_band_edges_agree_with_the_classifier(plan_items):
 # --- US specifics -------------------------------------------------------
 def test_us_plan_has_all_five_classes_least_to_most(plans):
     assert [c["id"] for c in plans["us"]["classes"]] == [
-        "novice", "technician", "general", "advanced", "extra",
+        "novice",
+        "technician",
+        "general",
+        "advanced",
+        "extra",
     ]
 
 

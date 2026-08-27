@@ -45,13 +45,16 @@ def test_spotter_with_ssid_is_kept():
     assert parse_spot_line(REAL_LINES[1])["spotter"] == "EA5ABC-#"
 
 
-@pytest.mark.parametrize("line", [
-    "",
-    "Hello and welcome to the cluster",
-    "WWV de VE7CC <18Z> : SFI=168, A=7, K=3",
-    "To ALL de W1ABC: anyone on 20m?",
-    ">>> W1ABC has left the cluster",
-])
+@pytest.mark.parametrize(
+    "line",
+    [
+        "",
+        "Hello and welcome to the cluster",
+        "WWV de VE7CC <18Z> : SFI=168, A=7, K=3",
+        "To ALL de W1ABC: anyone on 20m?",
+        ">>> W1ABC has left the cluster",
+    ],
+)
 def test_non_spot_traffic_is_dropped(line):
     """Clusters emit chat, bulletins, and announcements. None of it is a spot."""
     assert parse_spot_line(line) is None

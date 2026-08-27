@@ -113,9 +113,9 @@ NOON_ZENITH = 20.0
 @pytest.mark.parametrize(
     "sfi,zenith,low,high",
     [
-        (70, NIGHT_ZENITH, 3.0, 4.5),    # solar minimum, after dark
-        (70, NOON_ZENITH, 6.0, 8.5),     # solar minimum, midday
-        (200, NIGHT_ZENITH, 5.5, 8.0),   # solar maximum, after dark
+        (70, NIGHT_ZENITH, 3.0, 4.5),  # solar minimum, after dark
+        (70, NOON_ZENITH, 6.0, 8.5),  # solar minimum, midday
+        (200, NIGHT_ZENITH, 5.5, 8.0),  # solar maximum, after dark
         (200, NOON_ZENITH, 12.0, 14.5),  # solar maximum, midday
     ],
 )
@@ -200,7 +200,10 @@ def test_luf_rises_with_absorption():
 
 def test_bands_above_the_muf_are_closed():
     result = conditions(
-        sfi=70, k_index=2, latitude=39.74, longitude=-104.98,
+        sfi=70,
+        k_index=2,
+        latitude=39.74,
+        longitude=-104.98,
         moment=datetime(2026, 8, 27, 8, tzinfo=UTC),  # night in Denver
     )
     for band in result.bands:
@@ -254,7 +257,10 @@ def test_conditions_serialise_to_rounded_numbers():
 
 def test_daylight_flag_matches_the_zenith():
     result = conditions(
-        sfi=130, k_index=2, latitude=51.5, longitude=-0.13,
+        sfi=130,
+        k_index=2,
+        latitude=51.5,
+        longitude=-0.13,
         moment=datetime(2026, 8, 27, 12, tzinfo=UTC),
     )
     assert result.is_daylight
@@ -264,7 +270,10 @@ def test_daylight_flag_matches_the_zenith():
 def test_the_model_is_deterministic_for_a_given_moment():
     """Two viewers on the same LAN must not see different answers."""
     args = {
-        "sfi": 130, "k_index": 3, "latitude": 39.74, "longitude": -104.98,
+        "sfi": 130,
+        "k_index": 3,
+        "latitude": 39.74,
+        "longitude": -104.98,
         "moment": datetime(2026, 8, 27, 15, tzinfo=UTC),
     }
     assert conditions(**args).to_dict() == conditions(**args).to_dict()
@@ -288,7 +297,5 @@ def test_no_emoji_reaches_the_data():
     # An em-dash in a sentence meant for a human to read is prose, not
     # presentation, and a test that cannot tell the difference would push the
     # reasons towards being less readable to satisfy itself.
-    symbols = [
-        ch for ch in repr(payload) if unicodedata.category(ch) == "So"
-    ]
+    symbols = [ch for ch in repr(payload) if unicodedata.category(ch) == "So"]
     assert not symbols, f"presentation symbols leaked into the data: {symbols}"

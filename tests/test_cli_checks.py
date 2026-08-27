@@ -84,9 +84,7 @@ def test_web_dir_without_panel_index_is_detected(tmp_path):
 
 
 def test_the_shipped_web_dir_is_complete():
-    config = parse_config(
-        {"paths": {"web_dir": str(ROOT / "web")}, "sources": []}, base_dir=ROOT
-    )
+    config = parse_config({"paths": {"web_dir": str(ROOT / "web")}, "sources": []}, base_dir=ROOT)
     assert _web_dir_problem(config) is None
 
 
@@ -130,9 +128,7 @@ def test_offline_check_still_catches_a_host_off_the_allowlist(tmp_path, capsys):
     from hammunition_hill.enrich import Enricher, Station
     from hammunition_hill.prefix import PrefixTable
 
-    config = parse_config(
-        tomllib.loads(write_config(tmp_path).read_text()), base_dir=tmp_path
-    )
+    config = parse_config(tomllib.loads(write_config(tmp_path).read_text()), base_dir=tmp_path)
     table = PrefixTable(None)
     enricher = Enricher(table, Station.from_config({}, table))
     # A guard built with an empty allowlist stands in for a config whose

@@ -87,11 +87,7 @@ def build_chain(
     return [
         provider
         for name in names
-        if (
-            provider := build_provider(
-                name, username, password, data_dir=data_dir, uls_db=uls_db
-            )
-        )
+        if (provider := build_provider(name, username, password, data_dir=data_dir, uls_db=uls_db))
         is not None
     ]
 

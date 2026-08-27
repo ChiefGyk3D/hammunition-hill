@@ -72,11 +72,18 @@ def test_band_case_is_normalized():
     assert normalize_band("20M") == "20m"
 
 
-@pytest.mark.parametrize("mode,group", [
-    ("SSB", "PHONE"), ("USB", "PHONE"), ("FM", "PHONE"),
-    ("CW", "CW"),
-    ("FT8", "DIGITAL"), ("RTTY", "DIGITAL"), ("JS8", "DIGITAL"),
-])
+@pytest.mark.parametrize(
+    "mode,group",
+    [
+        ("SSB", "PHONE"),
+        ("USB", "PHONE"),
+        ("FM", "PHONE"),
+        ("CW", "CW"),
+        ("FT8", "DIGITAL"),
+        ("RTTY", "DIGITAL"),
+        ("JS8", "DIGITAL"),
+    ],
+)
 def test_mode_groups(mode, group):
     assert mode_group(mode) == group
 

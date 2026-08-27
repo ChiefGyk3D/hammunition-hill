@@ -123,8 +123,8 @@ def test_the_entity_check_catches_what_the_shape_check_cannot(monkeypatch, table
         name = "Somewhere Else"
 
     monkeypatch.setattr(table, "lookup", lambda call: Foreign())
-    assert guess_class("W1AW", None) is not None   # shape alone accepts it
-    assert guess_class("W1AW", table) is None      # the table rejects it
+    assert guess_class("W1AW", None) is not None  # shape alone accepts it
+    assert guess_class("W1AW", table) is None  # the table rejects it
 
 
 def test_an_unresolvable_callsign_gets_no_guess(monkeypatch, table):

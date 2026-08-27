@@ -181,9 +181,7 @@ def append(book: Logbook, fields: dict[str, str]) -> Path:
     return path
 
 
-def log_qso(
-    book: Logbook, record: dict[str, Any], station: dict[str, Any]
-) -> dict[str, str]:
+def log_qso(book: Logbook, record: dict[str, Any], station: dict[str, Any]) -> dict[str, str]:
     """Validate and append. Returns what was actually written."""
     fields = normalize(record, book, station)
     append(book, fields)

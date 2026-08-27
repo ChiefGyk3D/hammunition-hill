@@ -102,8 +102,8 @@ def test_void_rmc_is_not_a_position():
     [
         "",
         "garbage",
-        "$GPGGA,1235",                       # truncated mid-sentence
-        "$GPGSV,3,1,11,01,05,040,42*7A",     # a sentence type we do not use
+        "$GPGGA,1235",  # truncated mid-sentence
+        "$GPGSV,3,1,11,01,05,040,42*7A",  # a sentence type we do not use
         "$GPGGA,123519.00,,,,,1,08,0.9,,M,,M,,*4A",  # fix flag set, no position
         "$" + "A" * 5000,
     ],
@@ -194,7 +194,7 @@ def test_default_publish_hides_coordinates():
 
 
 def test_publish_says_so_when_there_is_no_fix():
-    """"Searching" and "not plugged in" are different problems under trees."""
+    """ "Searching" and "not plugged in" are different problems under trees."""
     payload = publish(None, FakeCfg(), source="gpsd")
     assert payload["has_fix"] is False
     assert "no fix" in payload["reason"]
@@ -221,7 +221,10 @@ def test_clock_ok_flags_the_threshold_ft8_cares_about():
 
 def test_a_stale_fix_is_flagged():
     old = Fix(
-        lat=39.7, lon=-105.0, grid="DM79", quality="3D",
+        lat=39.7,
+        lon=-105.0,
+        grid="DM79",
+        quality="3D",
         utc=datetime.now(UTC) - timedelta(hours=1),
     )
     assert publish(old, FakeCfg(), source="gpsd")["stale"] is True

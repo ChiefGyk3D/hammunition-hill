@@ -12,11 +12,12 @@
 PY ?= .venv/bin/python
 RUFF ?= .venv/bin/ruff
 
-.PHONY: help venv lint test check smoke render audit build clean
+.PHONY: help venv lint format test check smoke render audit build clean
 
 help:
 	@echo "make venv    - create .venv and install with dev extras"
-	@echo "make lint    - ruff"
+	@echo "make lint    - ruff check + format --check"
+	@echo "make format  - apply ruff format"
 	@echo "make test    - pytest, warnings as errors (as CI runs it)"
 	@echo "make check   - lint + test + config validation. Run before pushing."
 	@echo "make smoke   - start a real collector against a stub upstream"
@@ -31,6 +32,10 @@ venv:
 
 lint:
 	$(RUFF) check src/ tests/ .github/scripts/
+	$(RUFF) format --check src/ tests/ .github/scripts/
+
+format:
+	$(RUFF) format src/ tests/ .github/scripts/
 
 test:
 	$(PY) -m pytest -q -W error::DeprecationWarning

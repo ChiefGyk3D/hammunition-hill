@@ -58,9 +58,7 @@ def test_public_address_passes():
 
 def test_all_resolved_addresses_are_checked(monkeypatch):
     """Partial trust is not trust: one bad address poisons the host."""
-    monkeypatch.setattr(
-        "hammunition_hill.egress.resolve_all", lambda host: [PUBLIC, "10.0.0.7"]
-    )
+    monkeypatch.setattr("hammunition_hill.egress.resolve_all", lambda host: [PUBLIC, "10.0.0.7"])
     with pytest.raises(EgressDenied, match="10.0.0.7"):
         guard(["split.example"]).check("https://split.example/")
 

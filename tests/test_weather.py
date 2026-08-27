@@ -188,7 +188,7 @@ async def test_ordering_is_stable_across_viewers():
 
 @pytest.mark.asyncio
 async def test_counts_before_truncating():
-    """"12 of 60" has to be honest about what was dropped."""
+    """ "12 of 60" has to be honest about what was dropped."""
     many = body(*[feature(f"Event {i:03d}", "Moderate") for i in range(MAX_ALERTS + 15)])
     data = await run(many)
     assert data["count"] == MAX_ALERTS + 15

@@ -24,7 +24,7 @@ def decode_datagram(*, snr=-12, mode="FT8", message="CQ JA1XYZ PM95"):
     return (
         _header(2)
         + struct.pack(">?", True)
-        + struct.pack(">I", 45_296_000)   # 12:34:56 in ms since midnight
+        + struct.pack(">I", 45_296_000)  # 12:34:56 in ms since midnight
         + struct.pack(">i", snr)
         + struct.pack(">d", 0.2)
         + struct.pack(">I", 1500)
@@ -48,7 +48,9 @@ def status_datagram(dial_hz=14_074_000, mode="FT8", dx_call="JA1XYZ"):
 def logged_datagram(call="JA1XYZ", grid="PM95", dial_hz=14_074_000, mode="FT8"):
     return (
         _header(5)
-        + struct.pack(">Q", 0) + struct.pack(">I", 0) + struct.pack(">?", True)
+        + struct.pack(">Q", 0)
+        + struct.pack(">I", 0)
+        + struct.pack(">?", True)
         + _string(call)
         + _string(grid)
         + struct.pack(">Q", dial_hz)

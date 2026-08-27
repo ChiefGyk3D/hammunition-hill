@@ -118,12 +118,11 @@ def parse_ics(text: str, *, horizon_days: int = DEFAULT_HORIZON_DAYS) -> list[di
             "start": event["start"].isoformat().replace("+00:00", "Z"),
             "end": event["end"].isoformat().replace("+00:00", "Z") if event.get("end") else None,
             "url": event.get("url"),
-            "active": bool(
-                event.get("end") and event["start"] <= now <= event["end"]
-            ),
+            "active": bool(event.get("end") and event["start"] <= now <= event["end"]),
         }
         for event in events
-        if event.get("start") and event["start"] <= horizon
+        if event.get("start")
+        and event["start"] <= horizon
         # Keep an event that is running right now even though it started earlier.
         and (event["start"] >= now or (event.get("end") and event["end"] >= now))
     ]

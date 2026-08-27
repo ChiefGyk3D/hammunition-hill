@@ -28,12 +28,15 @@ def test_grid_to_latlon_returns_square_centre():
     assert lon == pytest.approx(-72.708, abs=0.002)
 
 
-@pytest.mark.parametrize("grid,lat,lon", [
-    ("JJ00", 0.5, 0.0833),        # origin corner of the grid system
-    ("IO91", 51.5, -1.0),         # London
-    ("PM95", 35.5, 139.0),        # Tokyo
-    ("QF56", -33.5, 151.0),       # Sydney
-])
+@pytest.mark.parametrize(
+    "grid,lat,lon",
+    [
+        ("JJ00", 0.5, 0.0833),  # origin corner of the grid system
+        ("IO91", 51.5, -1.0),  # London
+        ("PM95", 35.5, 139.0),  # Tokyo
+        ("QF56", -33.5, 151.0),  # Sydney
+    ],
+)
 def test_four_character_grids(grid, lat, lon):
     got_lat, got_lon = grid_to_latlon(grid)
     assert got_lat == pytest.approx(lat, abs=0.6)

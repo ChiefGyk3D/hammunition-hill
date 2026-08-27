@@ -401,7 +401,7 @@ def parse_config(raw: dict[str, Any], *, base_dir: Path) -> Config:
         )
     if chain is not None:
         if not isinstance(chain, list):
-            raise ConfigError("[lookup] providers must be an array, e.g. [\"fcc_uls\", \"qrz\"]")
+            raise ConfigError('[lookup] providers must be an array, e.g. ["fcc_uls", "qrz"]')
         names = [str(name).strip().lower() for name in chain]
     else:
         names = [str(single or "none").strip().lower()]

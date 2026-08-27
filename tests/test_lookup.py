@@ -76,11 +76,14 @@ def test_fcc_uls_is_built_now(tmp_path):
     assert provider.hosts == ()
 
 
-@pytest.mark.parametrize("name,host", [
-    ("callook", "callook.info"),
-    ("hamqth", "www.hamqth.com"),
-    ("qrz", "xmldata.qrz.com"),
-])
+@pytest.mark.parametrize(
+    "name,host",
+    [
+        ("callook", "callook.info"),
+        ("hamqth", "www.hamqth.com"),
+        ("qrz", "xmldata.qrz.com"),
+    ],
+)
 def test_providers_declare_their_hosts(name, host):
     """A provider cannot reach anywhere it has not declared."""
     assert provider_hosts(name) == (host,)
@@ -118,12 +121,9 @@ async def test_callook_rejects_non_json():
 
 # --- session providers ---------------------------------------------------
 HAMQTH_SESSION = (
-    '<?xml version="1.0"?><HamQTH><session>'
-    "<session_id>abc123</session_id></session></HamQTH>"
+    '<?xml version="1.0"?><HamQTH><session><session_id>abc123</session_id></session></HamQTH>'
 )
-HAMQTH_REJECTED = (
-    '<?xml version="1.0"?><HamQTH><session><error>Wrong</error></session></HamQTH>'
-)
+HAMQTH_REJECTED = '<?xml version="1.0"?><HamQTH><session><error>Wrong</error></session></HamQTH>'
 HAMQTH_RESULT = (
     '<?xml version="1.0"?><HamQTH><search><callsign>ok1abc</callsign>'
     "<nick>Petr</nick><grid>JO70</grid><country>Czech Republic</country></search></HamQTH>"
@@ -419,6 +419,5 @@ def test_no_source_file_tests_an_element_for_truth():
                     offenders.append(f"{path}:{node.lineno}")
 
     assert not offenders, (
-        "these test an ElementTree result for truth instead of `is None`: "
-        + ", ".join(offenders)
+        "these test an ElementTree result for truth instead of `is None`: " + ", ".join(offenders)
     )

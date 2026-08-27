@@ -34,7 +34,7 @@ make build    # wheel + sdist, then verify the wheel installs
 
 | Job | Catches |
 |---|---|
-| `lint` | ruff over `src/`, `tests/` and `.github/scripts/`, including the security rules |
+| `lint` | `ruff check` and `ruff format --check` over `src/`, `tests/` and `.github/scripts/` |
 | `test` | pytest on 3.11–3.13, on x86, ARM and macOS |
 | `example-config` | the file every new user copies having rotted |
 | `smoke` | the collector→snapshot→HTTP loop breaking, and the security headers going missing |
@@ -68,9 +68,16 @@ a host, it declares it. If a browser-side tile needs one, it goes in
 
 ## Formatting
 
-Hand-formatted; `ruff format` is deliberately not enforced. Match the
-surrounding code. Line length, import order and the security rules are checked
-by `ruff check`, which `make lint` runs.
+`ruff format` is enforced. Run `make format` before pushing, or `make check`
+will tell you.
+
+**The data tables are fenced off** with `# fmt: off` — the prefix table in
+`prefix.py`, the severity scales in `severity.py`, the band tables in
+`bands.py`. The formatter's value is consistency in *code*; those are *data*,
+laid out as tables because that is how they are read and reviewed, and
+expanding them costs about 500 lines to make a reviewer scroll for what
+currently fits in a glance. If you add a data table of that kind, fence it and
+say why.
 
 ## Documentation
 

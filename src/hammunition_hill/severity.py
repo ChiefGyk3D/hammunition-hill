@@ -113,6 +113,12 @@ def _z(upto, level, label):
 # Thresholds follow NOAA's published scales where they exist (G for geomagnetic,
 # R for radio blackout, S for radiation) and long-standing operating convention
 # where they do not (solar flux, sunspots, noise).
+# fmt: off
+# ruff format is enabled for this project, and deliberately switched off for the
+# data tables below. The formatter's value is consistency in *code*; these are
+# *data*, laid out as a table because that is how they are read and reviewed.
+# Expanding the severity scales to one field per line adds 55 lines and makes a
+# reviewer scroll a screen to check what currently fits in a glance.
 SCALES: dict[str, Scale] = {
     "sfi": Scale(
         id="sfi", name="Solar Flux", unit="SFU", low=60, high=300, higher_is_better=True,
@@ -193,6 +199,7 @@ SCALES: dict[str, Scale] = {
         ),
     ),
 }
+# fmt: on
 
 # --- value parsing -------------------------------------------------------
 _XRAY = re.compile(r"^([ABCMX])\s*([0-9]*\.?[0-9]*)$", re.IGNORECASE)
