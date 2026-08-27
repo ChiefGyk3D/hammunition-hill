@@ -49,6 +49,18 @@ What "robust" means in practice, learned the hard way in this repo:
   needed ~620 MB of RAM at real scale — more than a Pi Zero has — while its
   docstring claimed the opposite. Measuring changed the design to a streaming
   one at ~4 MB, flat.
+- **Never pin an action SHA from memory; resolve it.** Every pin in the first
+  version of these workflows was a real commit and two major versions stale —
+  `actions/checkout` v4.2.2 against a current v7.0.1, `codeql-action` v3.27.5
+  against v4.37.9. The stale CodeQL pin failed outright against the runner's
+  newer CLI; the rest emitted Node 20 deprecation warnings. Resolve the current
+  tag with `git ls-remote --tags`, pin that SHA, and put the version in a
+  trailing comment. Dependabot keeps them moving after that.
+- **Read the action's input names, and read the warnings.** `language:` is not
+  an input to `codeql-action/init`; `languages:` is. The singular form was
+  accepted silently and ignored, so the action auto-detected and built both
+  databases in every matrix leg. The log said `##[warning]Unexpected input(s)`
+  and I had not read it. That line is never noise.
 
 Run before pushing: `make check`. Heavier: `make smoke`, `make render`,
 `make audit`, `make build`. See `CONTRIBUTING.md`.
