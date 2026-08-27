@@ -53,7 +53,7 @@ Legend: **done** · **partial** · **planned** · **not planned** (with the reas
 | WWFF / WWBOTA | **planned** | Same source shape as POTA/SOTA |
 | Contests | **done** | Generic iCalendar, so any calendar works |
 | Satellites | **planned** | Needs cached TLEs and SGP4; v0.4 |
-| QSO log | **not planned** | Logging needs a write endpoint, which needs authentication, which dissolves this project's security model. The honest shape is a separate logger writing ADIF that we read — which is exactly how WSJT-X already works with us. |
+| QSO log | **done** | Reversed an earlier decision. A write endpoint does not need authentication here, because the network is already the access control — see [LOGBOOK.md](LOGBOOK.md) for the three defences that do the work instead. Multiple logbooks, plain ADIF, append-only, off by default. |
 
 ### Weather
 

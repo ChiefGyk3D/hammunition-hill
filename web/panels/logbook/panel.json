@@ -1,0 +1,9 @@
+{
+  "id": "logbook",
+  "name": "Logbook",
+  "tier": 0,
+  "sources": ["logbooks", "rig", "station", "lookups"],
+  "embed_hosts": [],
+  "span": 2,
+  "description": "Log a QSO, pre-filled from your rig and the station you have selected. Written straight to ADIF on your disk."
+}

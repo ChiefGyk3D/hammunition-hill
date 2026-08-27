@@ -95,6 +95,13 @@ class LookupConfig:
 
 
 @dataclass(frozen=True)
+class LoggingConfig:
+    """The one place the server accepts input, and it is off by default."""
+
+    enabled: bool = False
+
+
+@dataclass(frozen=True)
 class Config:
     server: ServerConfig
     sources: tuple[SourceConfig, ...]
@@ -104,6 +111,21 @@ class Config:
     embed_hosts: tuple[str, ...] = ()
     cty_dat: Path | None = None
     lookup: LookupConfig = field(default_factory=LookupConfig)
+    logging: LoggingConfig = field(default_factory=LoggingConfig)
+    logbooks: tuple[Any, ...] = ()
+
+    def primary_logbook(self) -> Any | None:
+        """The book that drives needed-slot colouring."""
+        for book in self.logbooks:
+            if book.primary:
+                return book
+        return self.logbooks[0] if self.logbooks else None
+
+    def logbook(self, book_id: str) -> Any | None:
+        for book in self.logbooks:
+            if book.id == book_id:
+                return book
+        return None
 
     def allowlist(self) -> tuple[set[str], set[str]]:
         """(all hosts the collector may contact, hosts explicitly marked local)."""
@@ -199,6 +221,48 @@ def parse_config(raw: dict[str, Any], *, base_dir: Path) -> Config:
     cty_raw = raw.get("log", {}).get("cty_dat")
     cty_dat = Path(str(cty_raw)).expanduser() if cty_raw else None
 
+    from .logbook import Logbook
+
+    raw_books = raw.get("logbooks", [])
+    if not isinstance(raw_books, list):
+        raise ConfigError("[[logbooks]] must be an array of tables")
+
+    books: list[Logbook] = []
+    seen_books: set[str] = set()
+    for idx, entry in enumerate(raw_books):
+        where = f"[[logbooks]] #{idx + 1}"
+        if not isinstance(entry, dict):
+            raise ConfigError(f"{where}: must be a table")
+        book_id = str(_require(entry, "id", where))
+        if not book_id.replace("_", "").replace("-", "").isalnum():
+            raise ConfigError(f"{where}: id {book_id!r} must be alphanumeric with - or _")
+        if book_id in seen_books:
+            raise ConfigError(f"{where}: duplicate id {book_id!r}")
+        seen_books.add(book_id)
+        books.append(
+            Logbook(
+                id=book_id,
+                name=str(entry.get("name") or book_id),
+                path=Path(str(_require(entry, "path", where))).expanduser(),
+                primary=bool(entry.get("primary", False)),
+                station_callsign=(
+                    str(entry["station_callsign"]).upper()
+                    if entry.get("station_callsign")
+                    else None
+                ),
+            )
+        )
+
+    if sum(1 for b in books if b.primary) > 1:
+        raise ConfigError("[[logbooks]]: only one logbook may be marked primary")
+
+    logging_tbl = raw.get("logging", {})
+    if not isinstance(logging_tbl, dict):
+        raise ConfigError("[logging] must be a table")
+    log_cfg = LoggingConfig(enabled=bool(logging_tbl.get("enabled", False)))
+    if log_cfg.enabled and not books:
+        raise ConfigError("[logging] enabled but no [[logbooks]] are configured")
+
     lookup_tbl = raw.get("lookup", {})
     if not isinstance(lookup_tbl, dict):
         raise ConfigError("[lookup] must be a table")
@@ -224,6 +288,8 @@ def parse_config(raw: dict[str, Any], *, base_dir: Path) -> Config:
         embed_hosts=tuple(str(h) for h in embed),
         cty_dat=cty_dat,
         lookup=lookup,
+        logging=log_cfg,
+        logbooks=tuple(books),
     )
 
 
