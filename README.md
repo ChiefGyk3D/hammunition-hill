@@ -74,7 +74,7 @@ finished, so here is exactly where things stand:
 | Metrics — Prometheus endpoint | ✅ working, off by default |
 | Metrics — InfluxDB push | ❌ **not written** |
 | Licence exam practice — all three US pools included | ✅ working |
-| CI — 9 jobs, 3 Python versions, x86 + ARM + macOS | ✅ working |
+| CI — 10 jobs, 3 Python versions, x86 + ARM + macOS | ✅ working |
 | Docker image, distro packages, `pip install` without a clone | ❌ **not written** |
 
 **Full inventory, every subsystem: [docs/STATUS.md](docs/STATUS.md).** That page
@@ -104,6 +104,7 @@ hardware finds it faster than we can.
 | **[Callsign lookup](docs/CALLSIGN-LOOKUP.md)** | Provider options, trade-offs, and the architectural line. |
 | **[CW & Morse](docs/CW.md)** | Reference, translator, timing, audio, and a four-drill trainer. |
 | **[Shack tools](docs/TOOLS.md)** | Antenna cut chart, feedline loss, what an SWR reading costs, grid-to-grid paths. |
+| **[Logbook](docs/LOGBOOK.md)** | Logging contacts, the ADIF file it writes, and why it is off by default. |
 | **[Satellites](docs/SATELLITES.md)** | Pass prediction computed here from cached elements, and why the propagator is the one borrowed thing. |
 | **[Reverse Beacon](docs/RBN.md)** | Who is hearing you with an SNR, band activity, and how a few thousand spots a minute stay bounded. |
 | **[Metrics](docs/METRICS.md)** | The Prometheus endpoint, what it exports, and why nothing is labelled by callsign. |
@@ -111,6 +112,7 @@ hardware finds it faster than we can.
 | **[GPS](docs/GPS.md)** | Automatic grid square when portable, and why it publishes a locator rather than a fix. |
 | **[Propagation](docs/PROPAGATION.md)** | The MUF/LUF indicator, what it is worth, and what it is not. |
 | **[Imagery & weather](docs/IMAGERY.md)** | Weather alerts, radar and satellite tiles, and what a tier 2 tile costs you. |
+| **[Branding](docs/BRANDING.md)** | The logo, the mark, the palette, and what you may do with them. |
 | **[Contributing](CONTRIBUTING.md)** | `make check` before you push, and what CI enforces. |
 | **[CLAUDE.md](CLAUDE.md)** | Architecture invariants and standing conventions, for humans and agents alike. |
 | **[Status](docs/STATUS.md)** | **Complete feature inventory — what works, what is partial, what is not written.** |

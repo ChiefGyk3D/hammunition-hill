@@ -22,6 +22,10 @@
   The hill has to be clipped to the disc or it escapes into the corners, and a
   version with a full lattice mast lost its bracing to mush below about 24
   pixels. Two shapes, two colours, one horizon: that is the whole budget.
+
+  For light backgrounds. The disc and the horizon are unchanged; only the mast
+  and its signal go white, because on a white page the mark is the only thing
+  there and amber on purple is a 2.4:1 contrast ratio.
 -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img"
      aria-label="Hammunition Hill">
@@ -30,11 +34,11 @@
   <circle cx="32" cy="32" r="30" fill="#912795"/>
   <path d="M-4 46 Q16 34 32 41 Q48 48 68 39 V68 H-4 Z"
         fill="#2b0b30" clip-path="url(#hh-disc)"/>
-  <g stroke="#ed9a1c" stroke-width="3.5" stroke-linecap="round" fill="none">
+  <g stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" fill="none">
     <path d="M32 14 V48"/>
     <path d="M32 26 L21 48 M32 26 L43 48"/>
   </g>
-  <g stroke="#ed9a1c" stroke-width="3" fill="none" stroke-linecap="round">
+  <g stroke="#ffffff" stroke-width="3" fill="none" stroke-linecap="round">
     <path d="M22 14 A10 10 0 0 1 32 4"/>
     <path d="M15.5 14.5 A17 17 0 0 1 32 -2"/>
   </g>

@@ -133,6 +133,41 @@ def test_unbuilt_features_are_not_described_as_working():
         )
 
 
+def test_every_documentation_page_is_linked_from_the_readme():
+    """A page nobody links to is a page nobody reads.
+
+    docs/LOGBOOK.md was written, committed, and left out of the README's
+    documentation table, so the only way to find it was to list the directory.
+    Adding a page and linking it are separate acts, and the second one is the
+    one that gets forgotten.
+    """
+    pages = sorted(p.name for p in (ROOT / "docs").glob("*.md"))
+    assert pages, "no documentation pages found"
+    missing = [name for name in pages if f"docs/{name}" not in README]
+    assert not missing, f"README.md does not link: {', '.join(missing)}"
+
+
+def test_no_documentation_page_links_to_a_file_that_does_not_exist():
+    """Relative links rot silently: nothing renders them until someone clicks.
+
+    This covers every markdown file in the repository, not just the README,
+    because a page is as likely to link a sibling page as the index is. Anchors
+    are not checked -- only that the file on the other end is there at all.
+    """
+    docs = sorted(list(ROOT.glob("*.md")) + list((ROOT / "docs").glob("*.md")))
+    assert len(docs) > 15, f"only found {len(docs)} docs; the glob is wrong"
+
+    broken = []
+    for doc in docs:
+        for target in re.findall(
+            r"\]\((?!https?:|mailto:)([^)\s]+)\)", doc.read_text(encoding="utf-8")
+        ):
+            path = target.partition("#")[0]
+            if path and not (doc.parent / path).resolve().exists():
+                broken.append(f"{doc.relative_to(ROOT)} -> {target}")
+    assert not broken, "broken relative links:\n  " + "\n  ".join(broken)
+
+
 def status_rows() -> dict[str, str]:
     """Every ``| feature | status | ...`` row in STATUS.md, feature -> status cell.
 
@@ -199,3 +234,121 @@ def test_every_source_kind_is_named_in_the_status_prose():
 
     for kind in sorted({*REGISTRY, *STREAM_KINDS, *LOCAL_KINDS}):
         assert f"`{kind}`" in STATUS, f"STATUS.md never names the {kind!r} source kind"
+
+
+def test_the_tier_breakdown_adds_up_to_the_panel_count():
+    """STATUS.md said "19 panels" in prose while the table above it said 26.
+
+    The existing count test matches the first "N across M dashboards" it finds
+    and stops, so a second statement of the same fact further down the page was
+    free to rot -- and did, through seven panels being added. The tier
+    breakdown beside it stayed correct the whole time, which is what made the
+    contradiction survive a read: nine plus sixteen plus one is twenty-six, so
+    only the headline was wrong.
+    """
+    counts = {0: 0, 1: 0, 2: 0}
+    for directory in panel_dirs():
+        manifest = json.loads((directory / "panel.json").read_text(encoding="utf-8"))
+        counts[manifest["tier"]] += 1
+
+    words = {9: "Nine", 16: "Sixteen", 1: "One"}
+    assert f"{sum(counts.values())} panels, {len(dashboards())} dashboards" in STATUS, (
+        f"STATUS.md prose disagrees: there are {sum(counts.values())} panels"
+    )
+    for tier, total in counts.items():
+        word = words.get(total, str(total))
+        assert (
+            f"{word} are **tier {tier}**" in STATUS
+            or f"{word} is tier {tier}" in STATUS
+            or (f"{word} are tier {tier}" in STATUS)
+        ), f"STATUS.md does not say {word} panels are tier {tier}"
+
+
+PARITY = (ROOT / "docs" / "PARITY.md").read_text(encoding="utf-8")
+
+# Row label as PARITY.md writes it -> a probe that is true when it is built.
+PARITY_BUILT = {
+    "RBN spots": lambda: __import__(
+        "hammunition_hill.streams", fromlist=["STREAM_KINDS"]
+    ).STREAM_KINDS["rbn"],
+    "Satellites": lambda: __import__("hammunition_hill.satellites", fromlist=["passes"]).passes,
+    "Education": lambda: __import__("hammunition_hill.exam", fromlist=["build_exam"]).build_exam,
+}
+
+
+@pytest.mark.parametrize("feature", sorted(PARITY_BUILT))
+def test_parity_does_not_call_a_built_feature_planned(feature):
+    """The comparison page drifts the same way the status page did, and worse.
+
+    PARITY.md carried four stale rows at once: RBN spots and its SNR matrix,
+    satellites, and -- the one that actually contradicted the product --
+    Education marked "not planned" with the reasoning that study sites do it
+    better, while licence exam practice was built, documented, and shipping
+    three question pools.
+
+    A comparison against someone else's product is exactly the page a reader
+    trusts to be current, because its whole purpose is to be a snapshot of two
+    moving things.
+    """
+    PARITY_BUILT[feature]()
+    rows = [line for line in PARITY.splitlines() if line.startswith(f"| {feature} |")]
+    assert rows, f"PARITY.md has no row for {feature!r}"
+    for row in rows:
+        assert "**planned**" not in row and "**not planned**" not in row, (
+            f"PARITY.md calls {feature!r} planned: {row}"
+        )
+
+
+CONFIGURATION = (ROOT / "docs" / "CONFIGURATION.md").read_text(encoding="utf-8")
+
+
+def test_configuration_documents_every_source_kind():
+    """The README calls this page "every option, every source kind". It was not.
+
+    Twelve of eighteen kinds had a section. `aurora`, `noaa_scales`,
+    `swpc_alerts`, `tle`, `rbn`, `gpsd` and `nmea` had none at all -- four of
+    them shipped after the page was written, and the page was never revisited.
+    The example config carried all of them, so the information existed; it was
+    only the reference that did not have it, which is the worse of the two to
+    be missing when someone is looking a kind up.
+    """
+    from hammunition_hill.sources import REGISTRY
+    from hammunition_hill.sources.local import LOCAL_KINDS
+    from hammunition_hill.streams import STREAM_KINDS
+
+    kinds = {*REGISTRY, *STREAM_KINDS, *LOCAL_KINDS}
+    headings = set(re.findall(r"^### `([a-z_]+)`", CONFIGURATION, re.M))
+    headings |= set(re.findall(r"^### `([a-z_]+)` / `([a-z_]+)`", CONFIGURATION, re.M))
+    # A heading of the form "### `pota` / `sota`" documents both.
+    for left, right in re.findall(r"^### `([a-z_]+)` / `([a-z_]+)`", CONFIGURATION, re.M):
+        headings |= {left, right}
+
+    missing = sorted(k for k in kinds if k not in headings)
+    assert not missing, f"CONFIGURATION.md has no section for: {', '.join(missing)}"
+
+
+@pytest.mark.parametrize("section", ["[satellites]", "[metrics]", "[server]", "[station]"])
+def test_configuration_documents_every_config_table(section):
+    """The same gap, for the top level tables rather than the source kinds."""
+    assert f"## `{section}`" in CONFIGURATION, f"CONFIGURATION.md does not document {section}"
+
+
+ARCHITECTURE = (ROOT / "docs" / "ARCHITECTURE.md").read_text(encoding="utf-8")
+
+
+def test_architecture_lists_every_module():
+    """The module map is what orients somebody opening the source for the first time.
+
+    It listed eleven modules while twenty-four existed. Everything added after
+    the page was written -- the whole tier 0 half of the product, satellites,
+    metrics, the exam pools -- was simply absent, so the map described a
+    smaller, older program than the one in the repository. A map that is
+    missing half the territory is worse than no map, because it is read as
+    complete.
+    """
+    package = ROOT / "src" / "hammunition_hill"
+    modules = {path.name for path in package.glob("*.py") if not path.name.startswith("__")}
+    assert len(modules) > 15, f"only found {len(modules)} modules; the glob is wrong"
+
+    missing = sorted(name for name in modules if f"`{name}`" not in ARCHITECTURE)
+    assert not missing, f"ARCHITECTURE.md does not list: {', '.join(missing)}"

@@ -264,12 +264,71 @@ does, "nothing the collector reads can change what it fetches next" stops being
 a property of the architecture and becomes something you check per-source. See
 [IMAGERY.md](IMAGERY.md) for the rest, including what happens outside the US.
 
+### `aurora` — OVATION auroral oval
+
+```toml
+[[sources]]
+id = "aurora"
+kind = "aurora"
+url = "https://services.swpc.noaa.gov/json/ovation_aurora_latest.json"
+interval = 900
+```
+
+A quarter of a million grid points, reduced here to an oval boundary and a
+coarse cell grid before anything is written. The raw product is about 8 MB; the
+snapshot is a few tens of kB, because a browser drawing a globe layer does not
+need per-degree resolution and a wall display should not re-parse 8 MB a minute.
+
+### `noaa_scales` — NOAA R/S/G storm scales
+
+```toml
+[[sources]]
+id = "scales"
+kind = "noaa_scales"
+url = "https://services.swpc.noaa.gov/products/noaa-scales.json"
+interval = 900
+```
+
+NOAA's own official reading, shown alongside the dials rather than instead of
+them. The dials are computed from the underlying indices; this is what NOAA
+themselves published, and when the two disagree that disagreement is worth
+seeing.
+
+### `swpc_alerts` — watches, warnings and summaries
+
+```toml
+[[sources]]
+id = "alerts"
+kind = "swpc_alerts"
+url = "https://services.swpc.noaa.gov/products/alerts.json"
+interval = 900
+```
+
+Issued as free text by SWPC and shown as issued. Nothing here re-grades their
+severity into our colour ramp — see [IMAGERY.md](IMAGERY.md) for why conflating
+somebody else's severity scale with your own is a bug rather than a tidy-up.
+
+### `tle` — orbital elements for satellite passes
+
+```toml
+[[sources]]
+id = "tle"
+kind = "tle"
+url = "https://celestrak.org/NORAD/elements/gp.php?GROUP=amateur&FORMAT=tle"
+interval = 86400
+```
+
+Daily is plenty: elements are re-fitted on roughly that cadence, and a set a day
+old costs a pass prediction very little. This is the only source the satellite
+panel needs — the passes themselves are computed here, not fetched. See
+[SATELLITES.md](SATELLITES.md).
+
 ---
 
 ## Stream sources
 
-Hold a connection open instead of polling. All three are one-directional: they
-*emit*, and nothing they receive can change what the collector fetches.
+Hold a connection open instead of polling. All of them are one-directional:
+they *emit*, and nothing they receive can change what the collector fetches.
 
 ### `dxcluster`
 
@@ -289,6 +348,33 @@ options = { callsign = "N0CALL", commands = ["set/ft8"] }
 
 Only your configured callsign and commands are ever sent. Nothing is built from
 what the cluster sends back.
+
+### `rbn` — Reverse Beacon Network
+
+| Option | Default | Meaning |
+|---|---|---|
+| `callsign` | **required** | Login. The RBN wants a real callsign, the same as a cluster. |
+| `watch` | your `callsign` | Callsigns to keep every spot of. |
+| `window_seconds` | `600` | How far back the band/mode tally reaches. |
+| `commands` | `[]` | Setup commands sent after login. |
+| `flush_seconds` | `10` | How often to write a snapshot. Floor 0.1. |
+
+```toml
+[[sources]]
+id = "rbn"
+kind = "rbn"
+url = "telnet://telnet.reversebeacon.net:7000"
+options = { callsign = "N0CALL", watch = ["N0CALL"], window_seconds = 600 }
+```
+
+Port 7000 carries CW and RTTY; 7001 carries FT8 and FT4.
+
+The network emits several thousand spots a minute. Everything not on the watch
+list collapses into a per-band, per-mode tally rather than being retained, so
+memory is bounded by the number of bands times modes rather than by how busy the
+bands are — see [RBN.md](RBN.md). It is a separate source kind from `dxcluster`
+and not a cluster pointed elsewhere: the line formats differ enough to need
+their own parser.
 
 ### `wsjtx`
 
@@ -325,6 +411,43 @@ options = { poll_seconds = 1.0 }
 Read-only, structurally: two get commands, no set path, and a test that fails if
 one is ever added.
 
+### `gpsd` / `nmea` — position and a clock check when portable
+
+Off by default, and two ways to read the same receiver. Prefer `gpsd` where you
+have it; `nmea` reads a bare USB puck directly.
+
+| Option | Default | Meaning |
+|---|---|---|
+| `precision` | `6` | Maidenhead characters published. 6 is a ~5 km square. |
+| `publish_coordinates` | `false` | Publish the raw fix as well as the locator. |
+| `baud` | `4800` | `nmea` only. 4800 is the NMEA 0183 rate; USB pucks are often 9600. Also accepts 19200, 38400, 57600, 115200. |
+
+```toml
+[[sources]]
+id = "gps"
+kind = "gpsd"
+url = "tcp://127.0.0.1:2947"
+local = true
+options = { precision = 6 }
+```
+
+```toml
+[[sources]]
+id = "gps"
+kind = "nmea"
+path = "/dev/ttyUSB0"
+options = { baud = 9600, precision = 6 }
+```
+
+`nmea` needs read access to the device, usually membership of `dialout`, which
+is not root-equivalent.
+
+What is published is a **locator, not a fix**, unless you ask otherwise: a grid
+square is what a dashboard actually needs, and it is a far weaker disclosure
+than coordinates. The panel also shows clock error against GPS time and never
+sets the clock — that needs privileges a dashboard should not have, and chrony
+or gpsd's own PPS handling do it properly. See [GPS.md](GPS.md).
+
 ---
 
 ## File sources
@@ -346,6 +469,55 @@ Re-read in full each cycle rather than tailed: logging programs rewrite,
 reorder, and back-fill, and an incremental reader would drift out of sync in
 ways invisible until a spot is coloured wrong. A 50,000-QSO log parses in well
 under a second.
+
+---
+
+## `[satellites]`
+
+| Option | Default | Meaning |
+|---|---|---|
+| `min_elevation` | `5.0` | Degrees above the horizon that count as a pass. |
+
+```toml
+[satellites]
+min_elevation = 5.0
+```
+
+Zero is the geometric horizon and nobody has one: trees, buildings and hills all
+sit above it. Five degrees is the conventional working floor. A valley station
+may want fifteen; a hilltop may want two.
+
+Needs a `tle` source for its elements. SGP4 itself is an optional extra —
+`pip install -e ".[satellites]"` — because it is the propagator two-line
+elements are *defined against*, and reimplementing it would be several hundred
+lines of orbital mechanics that could not be verified to the same standard.
+
+---
+
+## `[metrics]`
+
+| Option | Default | Meaning |
+|---|---|---|
+| `enabled` | `false` | Serve Prometheus metrics at `/metrics`. |
+
+```toml
+[metrics]
+enabled = true
+```
+
+On the dashboard's own port, so it is reachable by exactly the audience that can
+already read the dashboard, and it exposes the same numbers the dashboard
+already shows. That is still a decision rather than an inheritance, so it is off
+by default.
+
+This is a **read** path. Prometheus pulls, so nothing here originates a
+connection and the egress allowlist is untouched.
+
+It exists because snapshots deliberately cannot do history — each write replaces
+the last, which is right for a wall display and useless for "SFI over six
+months". Nothing is labelled by callsign: a label whose values are unbounded is
+how a time-series database is ruined, and there is a hard series cap besides.
+See [METRICS.md](METRICS.md).
 
 ---
 

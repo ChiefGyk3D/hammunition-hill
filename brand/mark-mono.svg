@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  This Source Code Form is subject to the terms of the Mozilla Public
+  License, v. 2.0. If a copy of the MPL was not distributed with this
+  file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
+  The Hammunition Hill mark: the guyed mast on the hill, against the sunset
+  disc, lifted straight out of the full logo's own composition.
+
+  Not a shrunk down logo. The full illustration is a sticker, with a lattice
+  antenna, guy wires, a radio carrying a button row and a waveform, a bunker
+  and a penguin, and at the 26 pixels this sits at in the header all of that is
+  mud. A mark that works small is a different drawing with the same identity.
+
+  It is deliberately NOT the HH monogram off the bunker hatch. HH standing on
+  its own, in heavy letterforms, is a recognised white supremacist abbreviation
+  for a phrase this project wants no part of, and a header mark is exactly the
+  context that strips a monogram of everything that would otherwise disambiguate
+  it. The antenna carries the same identity, is on the name, and cannot be
+  misread.
+
+  The hill has to be clipped to the disc or it escapes into the corners, and a
+  version with a full lattice mast lost its bracing to mush below about 24
+  pixels. Two shapes, two colours, one horizon: that is the whole budget.
+
+  One colour, inherited. The mast, its signal and the horizon are knocked out
+  of the disc with a mask rather than drawn on top of it, so a single fill is
+  enough: use this for screen printing, vinyl and laser cutting, embroidery,
+  and anywhere the two brand colours cannot both survive.
+
+  The mask reuses the colour mark's geometry verbatim, stroke widths and all,
+  so the two cannot drift apart. The hill becomes its horizon line here rather
+  than a solid mass: with only one ink, knocking out the whole landmass leaves
+  the bottom third of the disc missing, which reads as damage rather than as
+  ground.
+
+  It is drawn in currentColor, which means it is for INLINING. Loaded through
+  an img tag it renders black, because an SVG referenced that way is an
+  isolated document and cannot see the colour of the page around it. That is
+  not a bug in the file, it is how img works, and the fix is to paste the
+  markup in or to set fill on the circle.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img"
+     aria-label="Hammunition Hill">
+  <title>Hammunition Hill</title>
+  <defs>
+    <mask id="hh-cut">
+      <circle cx="32" cy="32" r="30" fill="#fff"/>
+      <path d="M-4 46 Q16 34 32 41 Q48 48 68 39" stroke="#000" stroke-width="3.5" fill="none"/>
+      <g stroke="#000" stroke-width="3.5" stroke-linecap="round" fill="none">
+        <path d="M32 14 V48"/>
+        <path d="M32 26 L21 48 M32 26 L43 48"/>
+      </g>
+      <g stroke="#000" stroke-width="3" fill="none" stroke-linecap="round">
+        <path d="M22 14 A10 10 0 0 1 32 4"/>
+        <path d="M15.5 14.5 A17 17 0 0 1 32 -2"/>
+      </g>
+    </mask>
+  </defs>
+  <circle cx="32" cy="32" r="30" fill="currentColor" mask="url(#hh-cut)"/>
+</svg>

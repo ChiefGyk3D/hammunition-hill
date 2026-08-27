@@ -117,11 +117,14 @@ speaks iCalendar.
 ## Not worth taking
 
 - **Grid maths.** penguin-overlord has a Maidenhead implementation, but `geo.py`
-  already has one with 28 tests behind it, including round-trip and pole/dateline
-  cases. No reason to swap.
-- **Satellite passes.** The `satellite` command turned out to be static reference
-  text and AMSAT links, not orbital mechanics. v0.4 still needs a real
-  implementation against cached TLEs.
+  already has one, tested against a JavaScript mirror of itself and covering
+  round-trip, pole and dateline cases. No reason to swap. (Deliberately no test
+  count here: a number that has to be edited every time somebody adds a test is
+  a claim that rots by design.)
+- **Satellite passes.** The `satellite` command turned out to be static
+  reference text and AMSAT links, not orbital mechanics, so there was nothing
+  to take. Pass prediction has since been written here against cached TLEs —
+  see [SATELLITES.md](SATELLITES.md).
 - **Everything transport-shaped.** Discord cogs, Mastodon and Bluesky posting,
   embed builders, chart rendering for social images. Different medium, no overlap.
 

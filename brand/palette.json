@@ -1,0 +1,32 @@
+{
+  "_comment": [
+    "The Hammunition Hill palette. The two brand colours are sampled from the",
+    "logo artwork itself, not chosen beside it: #912795 and #ed9a1c are the two",
+    "most common chromatic values in docs/images/logo.png, at 2.6% and 1.8% of",
+    "its opaque pixels. brand-deep is the shadow tone the artwork already uses",
+    "under the purple.",
+    "The surface and status ramps are the dashboard's, reproduced here so that",
+    "anything made off this package matches what the product actually looks",
+    "like. web/style.css is the source of truth for those; tests keep the two",
+    "in step."
+  ],
+  "brand": {
+    "brand": "#912795",
+    "brand-ink": "#ed9a1c",
+    "brand-deep": "#481050"
+  },
+  "surface": {
+    "ground": "#0e1218",
+    "panel": "#151a21",
+    "panel-2": "#1b222b",
+    "rule": "#28313c",
+    "ink": "#e3e7ed",
+    "muted": "#8f98a4",
+    "accent": "#3bc6d0"
+  },
+  "status": {
+    "good": "#0ca30c",
+    "fair": "#fab219",
+    "poor": "#d03b3b"
+  }
+}

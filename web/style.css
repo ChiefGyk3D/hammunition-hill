@@ -8,11 +8,13 @@
   --ink: #e3e7ed;
   --muted: #8f98a4;
   --accent: #3bc6d0;
-  /* The logo's colours, as their own tokens. Deliberately separate from
-     --accent: the dashboard's accent is cyan and is used by every panel, so
-     repainting it purple is a change worth making on purpose rather than as a
-     side effect of adding a logo. These are used by the mark and nothing else
-     until that decision is made. */
+  /* The logo's colours, as their own tokens, sampled from the artwork rather
+     than picked beside it: these are the two most common chromatic values in
+     docs/images/logo.png. Deliberately separate from --accent, which is cyan
+     and is used by every panel, so repainting the dashboard purple stays a
+     change made on purpose rather than a side effect of adding a logo.
+     brand/palette.json publishes the same values for anything made off the
+     brand package, and a test keeps the two in step. */
   --brand: #912795;
   --brand-ink: #ed9a1c;
   /* Status ramp, validated for separation on this surface: normal-vision

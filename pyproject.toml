@@ -34,7 +34,20 @@ exam = ["pypdf>=4.0"]
 # a hand-rolled reader for a security check is exactly the wrong economy.
 # sgp4 is here too so CI always exercises the satellite path rather than
 # skipping it -- an optional extra nobody tests is an extra that breaks.
-dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "ruff>=0.5", "PyYAML>=6.0", "sgp4>=2.20", "pypdf>=4.0"]
+# Pillow is test-only for the same reason: the brand tests read the logo's alpha
+# channel, and two separate encoding bugs shipped an opaque logo. Behind an
+# importorskip that check would quietly not run in CI, which is worse than not
+# having it, because the suite would report it as passing.
+dev = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.5",
+    "PyYAML>=6.0",
+    "sgp4>=2.20",
+    "pypdf>=4.0",
+    "pillow>=10.0",
+    "defusedxml>=0.7",
+]
 
 [project.scripts]
 hamhill = "hammunition_hill.cli:main"
