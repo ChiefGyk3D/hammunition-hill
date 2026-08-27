@@ -174,6 +174,7 @@ BUILT_IN_SNAPSHOTS = {
     "logbooks",
     "lookups",
     "propagation",
+    "morse",
 }
 
 

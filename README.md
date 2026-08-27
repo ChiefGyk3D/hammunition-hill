@@ -20,7 +20,7 @@ finished, so here is exactly where things stand:
 |---|---|
 | Collector, snapshot architecture, static server | ✅ working |
 | Egress allowlist, CSP, path handling | ✅ working |
-| Panels | ✅ 21 across 6 dashboards |
+| Panels | ✅ 22 across 6 dashboards |
 | Source kinds | ✅ 10 polled, 5 stream, 1 file |
 | Space weather dials | ✅ 8 scales |
 | Map — rotatable globe, greyline, spots, aurora | ✅ working |
@@ -35,13 +35,16 @@ finished, so here is exactly where things stand:
 | Weather outside the US | 🟡 feeds and maps; no structured severity |
 | Callsign query endpoint | ❌ **not written** — the config flag parses and does nothing |
 | GPS — portable auto-grid and clock check | ✅ working |
-| Satellites, RBN, CW tools | ❌ **not written** |
+| CW / Morse tools | ✅ working |
+| Satellites, RBN | ❌ **not written** |
 | Metrics export to Grafana | ❌ **not written** |
 | CI — 9 jobs, 3 Python versions, x86 + ARM + macOS | ✅ working |
 | Docker image, distro packages, `pip install` without a clone | ❌ **not written** |
 
 **Full inventory, every subsystem: [docs/STATUS.md](docs/STATUS.md).** That page
-is the one kept current; anything here is a summary of it.
+is the one kept current; anything here is a summary of it. It also carries the
+**candidate feature list** — the gap between this and covering most of what an
+operator needs in one place, with an honest fit assessment for each.
 
 You can run this today on a Pi or a laptop and get a genuinely useful shack
 display. What you should not do is expose it to the internet — see below, it has
@@ -63,6 +66,7 @@ hardware finds it faster than we can.
 | **[Architecture](docs/ARCHITECTURE.md)** | How it works and why it is shaped this way. |
 | **[Writing panels](docs/PANELS.md)** | The panel contract. |
 | **[Callsign lookup](docs/CALLSIGN-LOOKUP.md)** | Provider options, trade-offs, and the architectural line. |
+| **[CW & Morse](docs/CW.md)** | Reference, translator, timing, audio and Koch practice. |
 | **[GPS](docs/GPS.md)** | Automatic grid square when portable, and why it publishes a locator rather than a fix. |
 | **[Propagation](docs/PROPAGATION.md)** | The MUF/LUF indicator, what it is worth, and what it is not. |
 | **[Imagery & weather](docs/IMAGERY.md)** | Weather alerts, radar and satellite tiles, and what a tier 2 tile costs you. |
@@ -153,7 +157,7 @@ More in [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Dashboards
 
-Twenty-one panels in one grid is unusable, so they are grouped into tabs:
+Twenty-two panels in one grid is unusable, so they are grouped into tabs:
 
 | | |
 |---|---|

@@ -65,12 +65,18 @@ def test_digits_follow_the_standard_progression():
 @pytest.mark.parametrize(
     "char,code",
     [
-        ("E", "."), ("T", "-"),          # the two shortest, by design
-        ("A", ".-"), ("N", "-."),
-        ("S", "..."), ("O", "---"),      # the ones everyone knows from SOS
-        ("H", "...."), ("5", "....."),
-        ("Q", "--.-"), ("Z", "--.."),    # commonly confused pair
-        ("F", "..-."), ("L", ".-.."),    # the other commonly confused pair
+        ("E", "."),
+        ("T", "-"),  # the two shortest, by design
+        ("A", ".-"),
+        ("N", "-."),
+        ("S", "..."),
+        ("O", "---"),  # the ones everyone knows from SOS
+        ("H", "...."),
+        ("5", "....."),
+        ("Q", "--.-"),
+        ("Z", "--.."),  # commonly confused pair
+        ("F", "..-."),
+        ("L", ".-.."),  # the other commonly confused pair
     ],
 )
 def test_known_characters(char, code):
@@ -276,8 +282,14 @@ def test_higher_wpm_is_faster():
 def test_reference_carries_every_section():
     ref = reference()
     for key in (
-        "letters", "digits", "punctuation", "extended",
-        "prosigns", "q_codes", "abbreviations", "cut_numbers",
+        "letters",
+        "digits",
+        "punctuation",
+        "extended",
+        "prosigns",
+        "q_codes",
+        "abbreviations",
+        "cut_numbers",
     ):
         assert ref[key], f"{key} is empty"
 
@@ -309,3 +321,79 @@ def test_cut_numbers_match_their_letters():
 def test_decode_table_covers_every_encodable_character():
     for code in ENCODE.values():
         assert code in DECODE
+
+
+# --- the browser agrees with the tables ------------------------------------
+def test_the_browser_translator_matches_this_module():
+    """web/lib/morse.js must not drift from the tables tested above.
+
+    The tables live in Python because that is where they can be checked. The
+    browser receives them as data, but it implements encode, decode and the
+    timing arithmetic itself -- it has to, to translate as you type and to make
+    a sound. That is a second implementation, and a second implementation is
+    something that drifts.
+
+    So it is run under node against the same reference payload and every answer
+    compared. Skipped rather than failed where node is absent, because a
+    contributor without it should still be able to run the suite.
+    """
+    import json
+    import shutil
+    import subprocess
+    import tempfile
+    from pathlib import Path
+
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("node not installed")
+
+    root = Path(__file__).resolve().parents[1]
+    cases = ["CQ CQ DE W1AW", "SOS", "HELLO WORLD", "73 ES TU", "PARIS", "TEST 599", "A?B"]
+    speeds = [5, 13, 20, 25, 40]
+
+    with tempfile.TemporaryDirectory() as tmp:
+        ref_path = Path(tmp) / "ref.json"
+        ref_path.write_text(json.dumps(reference()), encoding="utf-8")
+
+        driver = Path(tmp) / "cmp.mjs"
+        driver.write_text(
+            f"""
+import {{ readFileSync }} from "fs";
+import {{ tables, encodeText, decodeMorse, timing }} from "{root / "web/lib/morse.js"}";
+const ref = JSON.parse(readFileSync({str(ref_path)!r}, "utf8"));
+const {{ encode, decode }} = tables(ref);
+const cases = {json.dumps(cases)};
+const out = {{ encode: {{}}, decode: {{}}, timing: {{}} }};
+for (const c of cases) out.encode[c] = encodeText(c, encode, {{ unknown: "" }});
+for (const c of cases) {{
+  const m = encodeText(c, encode, {{ unknown: "" }});
+  out.decode[m] = decodeMorse(m, decode);
+}}
+for (const w of {json.dumps(speeds)}) out.timing[w] = timing(w);
+out.farnsworth = timing(20, 10);
+console.log(JSON.stringify(out));
+""",
+            encoding="utf-8",
+        )
+
+        result = subprocess.run(  # noqa: S603
+            [node, str(driver)], capture_output=True, text=True, timeout=60
+        )
+        assert result.returncode == 0, result.stderr
+        js = json.loads(result.stdout)
+
+    for text, got in js["encode"].items():
+        assert got == encode(text), f"encode({text!r})"
+    for morse, got in js["decode"].items():
+        assert got == decode(morse), f"decode({morse!r})"
+
+    for wpm, got in js["timing"].items():
+        want = timing(float(wpm))
+        assert got["dit"] == pytest.approx(want.dit_ms), wpm
+        assert got["dah"] == pytest.approx(want.dah_ms), wpm
+        assert got["inter"] == pytest.approx(want.inter_character_ms), wpm
+        assert got["word"] == pytest.approx(want.inter_word_ms), wpm
+
+    farnsworth = timing(20, 10)
+    assert js["farnsworth"]["inter"] == pytest.approx(farnsworth.inter_character_ms)
+    assert js["farnsworth"]["word"] == pytest.approx(farnsworth.inter_word_ms)

@@ -201,3 +201,39 @@ def test_a_taken_port_reports_cleanly_rather_than_traceback(tmp_path, capsys):
     errors = capsys.readouterr().err
     assert "cannot listen" in errors
     assert "--listen" in errors
+
+
+@pytest.mark.asyncio
+async def test_a_tier_zero_config_keeps_serving(tmp_path):
+    """No sources must not mean no dashboard.
+
+    `run_collector` returning shuts the HTTP server down, so returning early on
+    an empty source list made `hamhill serve` exit immediately -- and the
+    configuration it exited on was the offline one. A tier 0 dashboard (CW
+    reference, band plan, clock, callsign lookup, beacons) needs no upstream by
+    definition, and is exactly what an operator wants portable.
+
+    Found by running the CW panel, which is the first genuinely useful
+    zero-source configuration this project has had.
+    """
+    import asyncio
+
+    from hammunition_hill.collector import run_collector
+    from hammunition_hill.config import Config, ServerConfig
+    from hammunition_hill.egress import EgressGuard
+
+    config = Config(
+        server=ServerConfig(host="127.0.0.1", port=0),
+        sources=(),
+        data_dir=tmp_path / "data",
+        web_dir=tmp_path / "web",
+    )
+    enricher = Enricher(PrefixTable(None), Station.from_config({}))
+
+    with pytest.raises(TimeoutError):
+        # It must still be running when the timeout fires. Returning would mean
+        # the server is about to be torn down.
+        await asyncio.wait_for(
+            run_collector(config, EgressGuard.build(set(), set()), enricher),
+            timeout=0.5,
+        )
