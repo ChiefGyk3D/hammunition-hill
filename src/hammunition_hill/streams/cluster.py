@@ -32,6 +32,11 @@ DEFAULT_PORT = 7300
 MAX_SPOTS = 500
 MAX_LINE_BYTES = 4096
 
+# A zero or negative flush interval is a spin: asyncio.wait_for with a timeout
+# of zero never lets the read start, so the loop turns forever without
+# consuming a byte. Clamp rather than reject.
+MIN_FLUSH_SECONDS = 0.1
+
 # DX de W1ABC:     14074.0  JA1XYZ       FT8 -12 dB              1234Z
 #
 # The spotter field allows '#' because RBN skimmer nodes identify themselves as
@@ -128,30 +133,13 @@ class ClusterStream:
         callsign: str,
         commands: list[str],
     ) -> None:
-        """Wait for a login prompt, then send the configured callsign and setup."""
-        deadline = asyncio.get_running_loop().time() + 30.0
-        while asyncio.get_running_loop().time() < deadline:
-            chunk = await asyncio.wait_for(reader.read(1024), timeout=10.0)
-            if not chunk:
-                raise ConnectionError("closed before a login prompt")
-            if _LOGIN_PROMPT.search(chunk):
-                break
-        else:
-            raise TimeoutError("no login prompt within 30s")
-
-        writer.write(f"{callsign}\r\n".encode("ascii", "ignore"))
-        await writer.drain()
-
-        for command in commands:
-            await asyncio.sleep(0.5)
-            writer.write(f"{command}\r\n".encode("ascii", "ignore"))
-            await writer.drain()
+        await login(reader, writer, callsign, commands)
 
     async def _read_spots(self, reader: asyncio.StreamReader, cfg: Any, emit: Any) -> None:
         """Read lines until the peer closes. Flush a snapshot when spots change."""
         dirty = False
         last_flush = asyncio.get_running_loop().time()
-        flush_interval = float(cfg.options.get("flush_seconds", 5))
+        flush_interval = max(MIN_FLUSH_SECONDS, float(cfg.options.get("flush_seconds", 5)))
 
         while True:
             try:
@@ -179,3 +167,38 @@ class ClusterStream:
                 await emit(list(self.spots))
                 dirty = False
                 last_flush = now
+
+
+async def login(
+    reader: asyncio.StreamReader,
+    writer: asyncio.StreamWriter,
+    callsign: str,
+    commands: list[str],
+) -> None:
+    """Wait for a login prompt, then send the configured callsign and setup.
+
+    Shared with the RBN client, which speaks the same dialect: a prompt, a
+    callsign, then lines. Module level rather than a method because the two
+    clients have nothing else in common and a base class for one function would
+    be more structure than the problem has.
+
+    **Only ever sends what the operator configured.** No command is constructed
+    from anything the peer sent.
+    """
+    deadline = asyncio.get_running_loop().time() + 30.0
+    while asyncio.get_running_loop().time() < deadline:
+        chunk = await asyncio.wait_for(reader.read(1024), timeout=10.0)
+        if not chunk:
+            raise ConnectionError("closed before a login prompt")
+        if _LOGIN_PROMPT.search(chunk):
+            break
+    else:
+        raise TimeoutError("no login prompt within 30s")
+
+    writer.write(f"{callsign}\r\n".encode("ascii", "ignore"))
+    await writer.drain()
+
+    for command in commands:
+        await asyncio.sleep(0.5)
+        writer.write(f"{command}\r\n".encode("ascii", "ignore"))
+        await writer.drain()

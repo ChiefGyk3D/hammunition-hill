@@ -1,0 +1,9 @@
+{
+  "id": "rbn",
+  "name": "Reverse Beacon",
+  "tier": 1,
+  "sources": ["rbn"],
+  "embed_hosts": [],
+  "span": 2,
+  "description": "Who is hearing you, with a signal-to-noise figure, and where the bands are actually open. Automated decodes, not opinions."
+}

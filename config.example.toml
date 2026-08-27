@@ -161,6 +161,24 @@ min_elevation = 5.0
 # These hold a socket open rather than polling. They emit only; nothing they
 # receive can change what the collector fetches or from where.
 
+# The Reverse Beacon Network. Several hundred unattended receivers reporting
+# what they decoded, with a signal-to-noise figure -- which makes it the only
+# feedback loop that tells you your own signal is getting out before anybody
+# answers you.
+#
+# Port 7000 is CW and RTTY; 7001 is the FT8/FT4 feed. It needs a real callsign
+# to log in, the same as a cluster.
+#
+# `watch` defaults to your login callsign, which is the point of the panel. The
+# network emits several thousand spots a minute and everything not on the watch
+# list collapses into a per-band tally rather than being kept -- nothing here
+# grows with how busy the bands are.
+# [[sources]]
+# id = "rbn"
+# kind = "rbn"
+# url = "telnet://telnet.reversebeacon.net:7000"
+# options = { callsign = "N0CALL", watch = ["N0CALL"], window_seconds = 600 }
+
 # A DX cluster needs a real callsign to log in -- clusters do not accept
 # anonymous connections, and node operators can and do ban abusive clients.
 # [[sources]]

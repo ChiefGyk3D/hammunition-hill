@@ -11,6 +11,7 @@
         "propagation",
         "bandconditions",
         "geomag",
+        "rbn",
         "spots",
         "wsjtx"
       ]
