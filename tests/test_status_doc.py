@@ -297,3 +297,37 @@ def test_parity_does_not_call_a_built_feature_planned(feature):
         assert "**planned**" not in row and "**not planned**" not in row, (
             f"PARITY.md calls {feature!r} planned: {row}"
         )
+
+
+CONFIGURATION = (ROOT / "docs" / "CONFIGURATION.md").read_text(encoding="utf-8")
+
+
+def test_configuration_documents_every_source_kind():
+    """The README calls this page "every option, every source kind". It was not.
+
+    Twelve of eighteen kinds had a section. `aurora`, `noaa_scales`,
+    `swpc_alerts`, `tle`, `rbn`, `gpsd` and `nmea` had none at all -- four of
+    them shipped after the page was written, and the page was never revisited.
+    The example config carried all of them, so the information existed; it was
+    only the reference that did not have it, which is the worse of the two to
+    be missing when someone is looking a kind up.
+    """
+    from hammunition_hill.sources import REGISTRY
+    from hammunition_hill.sources.local import LOCAL_KINDS
+    from hammunition_hill.streams import STREAM_KINDS
+
+    kinds = {*REGISTRY, *STREAM_KINDS, *LOCAL_KINDS}
+    headings = set(re.findall(r"^### `([a-z_]+)`", CONFIGURATION, re.M))
+    headings |= set(re.findall(r"^### `([a-z_]+)` / `([a-z_]+)`", CONFIGURATION, re.M))
+    # A heading of the form "### `pota` / `sota`" documents both.
+    for left, right in re.findall(r"^### `([a-z_]+)` / `([a-z_]+)`", CONFIGURATION, re.M):
+        headings |= {left, right}
+
+    missing = sorted(k for k in kinds if k not in headings)
+    assert not missing, f"CONFIGURATION.md has no section for: {', '.join(missing)}"
+
+
+@pytest.mark.parametrize("section", ["[satellites]", "[metrics]", "[server]", "[station]"])
+def test_configuration_documents_every_config_table(section):
+    """The same gap, for the top level tables rather than the source kinds."""
+    assert f"## `{section}`" in CONFIGURATION, f"CONFIGURATION.md does not document {section}"
