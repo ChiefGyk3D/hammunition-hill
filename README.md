@@ -74,6 +74,7 @@ finished, so here is exactly where things stand:
 | Metrics — Prometheus endpoint | ✅ working, off by default |
 | Metrics — InfluxDB push | ❌ **not written** |
 | Licence exam practice — all three US pools included | ✅ working |
+| Part 97 quoted beside a rules answer | ✅ working |
 | CI — 9 jobs plus CodeQL, 3 Python versions, x86 + ARM + macOS | ✅ working |
 | Docker image, distro packages, `pip install` without a clone | ❌ **not written** |
 

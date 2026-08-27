@@ -74,6 +74,19 @@ An imported pool is written to the data directory and takes precedence over the
 shipped one. Upgrading the package refreshes what it shipped and never
 overwrites what you imported.
 
+### Updating Part 97
+
+The CFR is revised annually. The shipped copy says which edition it is, and the
+panel prints that under every quote.
+
+```bash
+hamhill part97-import --file CFR-2025-title47-vol5-part97.pdf
+```
+
+Volumes are published at [govinfo](https://www.govinfo.gov/app/collection/cfr) —
+title 47, volume 5. Like the pools, the result is checked in, so this is a
+maintainer's command rather than something an operator has to run.
+
 ## What the importer checks
 
 Parsing a pool that "looks fine" is not the same as parsing it correctly, and
@@ -122,11 +135,38 @@ question listed. A blank counts wrong, because a VE session counts it wrong.
 
 **review** — everything you have got wrong this session, in one go.
 
-## What it does not tell you: why
+## Why an answer is right
 
-Each question carries its Part 97 rule reference and the panel shows it. There
-is no written explanation of *why* an answer is right, and there will not be one
-that this project invented.
+For a rules question, "why" is a citation — so the rule is shown.
+
+192 of the 1431 questions carry a Part 97 reference, and 47 CFR Part 97 ships
+with the project. Answer one of them and the section it comes from appears
+underneath, in full, exactly as the FCC published it:
+
+> **T1D01** — With which countries are FCC-licensed amateur radio stations
+> prohibited from exchanging communications?
+> **Rule reference: §97.111(a)(1)**
+>
+> §97.111 *Authorized transmissions.*
+> (a) An amateur station may transmit the following types of two-way
+> communications:
+> (1) Transmissions necessary to exchange messages with other stations in the
+> amateur service, **except those in any country whose administration has
+> notified the ITU that it objects to such communications.** …
+
+The answer is not paraphrased into an explanation; the regulation simply says
+it. **The whole section is shown, not the cited paragraph.** Quoting one
+paragraph out of its section is how a rule gets misread — the exceptions
+usually live two paragraphs further down — so the citation says which part the
+question came from and the section is there to be read around it.
+
+Two questions cite Part 1 rather than Part 97 (§1.931 and §1.1307). They get the
+citation and a note saying the text is not bundled, rather than nothing.
+
+### The other 1240 questions
+
+There is no written explanation of why a *technical* answer is right, and there
+will not be one this project invented.
 
 Writing 1431 explanations that nobody checked would be generating study material
 at scale, and a wrong explanation is worse than no explanation: it teaches a
@@ -134,21 +174,18 @@ mental model that then fails on every related question, not just the one. That
 is the same reason the questions themselves are the official ones and nothing
 else.
 
-What can honestly be added is the **regulation itself** — for the rules
-questions, "why" is a citation, and shipping Part 97 alongside the pool would
-turn "the answer is C" into "here is §97.301(d), read it". That is on the
-candidate list in [STATUS.md](STATUS.md). Explanations for the technical
-questions would be a written contribution with an author's name on it, reviewed
-like any other, rather than something generated.
+Explanations for the technical questions would be a written contribution with
+an author's name on it, reviewed like any other, rather than something
+generated.
 
 ## What it does not do
 
 - **No progress across sessions.** The score is for the session you are in.
   Storing a study history would mean storing data about you, which this project
   does not do.
-- **No Part 97 text.** Each question carries its rule reference and the panel
-  shows it; the regulation itself is not included. Linking the two is on the
-  candidate list in [STATUS.md](STATUS.md).
+- **No explanations for the technical questions.** The rules questions cite
+  Part 97 and Part 97 is shipped, so those explain themselves. Ohm's law does
+  not come with a citation.
 - **No Canadian, UK or other syllabuses.** The parser is written for the NCVEC
   format. Another country's pool is a data contribution and probably a second
   parser.
