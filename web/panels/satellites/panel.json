@@ -1,0 +1,9 @@
+{
+  "id": "satellites",
+  "name": "Satellite passes",
+  "tier": 1,
+  "sources": ["satellites"],
+  "embed_hosts": [],
+  "span": 2,
+  "description": "Upcoming passes for the amateur satellites, computed on this machine from cached elements. The elements are fetched; the predictions are not."
+}

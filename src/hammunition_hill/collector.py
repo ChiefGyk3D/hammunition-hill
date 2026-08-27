@@ -466,6 +466,121 @@ async def _propagation_loop(config: Config, enricher: Enricher) -> None:
         await asyncio.sleep(PROPAGATION_REFRESH_SECONDS)
 
 
+# --- derived satellite passes ---------------------------------------------
+SATELLITES_REFRESH_SECONDS = 300
+# Shorter than the propagation model's: reading elements off disk is cheap,
+# and on a cold start the tle source lands a second or two after this loop
+# first looks. Waiting fifteen seconds to notice would leave the panel
+# reading "no elements yet" long after the elements were there.
+SATELLITES_STARTUP_RETRY_SECONDS = 5
+
+# A day of passes is what fits on a panel and what an operator plans around.
+SATELLITES_WINDOW_HOURS = 24.0
+SATELLITES_LIMIT = 40
+
+
+async def _satellites_loop(config: Config, enricher: Enricher) -> None:
+    """Recompute the pass list from elements already on disk.
+
+    Derived, like the propagation model, and for the same two reasons: it adds
+    no network of its own, and its largest input is the clock. Elements change
+    once a day at most; which satellites are up changes every minute.
+
+    That split is what makes this work offline. Elements stay usable for days,
+    so a WAN outage costs nothing here for a long time -- which matters, because
+    the operator most likely to be chasing a satellite is the one in a field.
+    """
+    from .satellites import (
+        Observer,
+        Tle,
+        propagator_available,
+        upcoming,
+    )
+
+    cfg = SourceConfig(id="satellites", kind="satellites", url="")
+    stale = SATELLITES_REFRESH_SECONDS * STALE_MULTIPLIER
+    station = enricher.station
+
+    while True:
+        try:
+            if not propagator_available():
+                _write(
+                    config,
+                    cfg,
+                    {
+                        "available": False,
+                        "reason": "pass prediction needs the sgp4 extra — "
+                        "pip install 'hammunition-hill[satellites]'",
+                    },
+                    stale,
+                )
+                # Installing a package is not something the next cycle will fix.
+                await asyncio.sleep(SATELLITES_REFRESH_SECONDS)
+                continue
+
+            if not station.located:
+                _write(
+                    config,
+                    cfg,
+                    {
+                        "available": False,
+                        "reason": "no [station] grid or lat/lon — "
+                        "a pass is a fact about a place, not about a satellite",
+                    },
+                    stale,
+                )
+                await asyncio.sleep(SATELLITES_REFRESH_SECONDS)
+                continue
+
+            snapshot = read_snapshot(config.data_dir, "tle") or {}
+            rows = (snapshot.get("data") or {}).get("satellites") or []
+            if not rows:
+                _write(
+                    config,
+                    cfg,
+                    {
+                        "available": False,
+                        "reason": 'no elements yet — add a [[sources]] entry with kind = "tle"',
+                    },
+                    stale,
+                )
+                await asyncio.sleep(SATELLITES_STARTUP_RETRY_SECONDS)
+                continue
+
+            tles = [
+                Tle(name=row["name"], line1=row["line1"], line2=row["line2"])
+                for row in rows
+                if isinstance(row, dict) and {"name", "line1", "line2"} <= set(row)
+            ]
+            observer = Observer(lat=station.lat, lon=station.lon)
+            found = upcoming(
+                tles,
+                observer,
+                _now(),
+                SATELLITES_WINDOW_HOURS,
+                min_elevation=config.satellites.min_elevation,
+                limit=SATELLITES_LIMIT,
+            )
+            _write(
+                config,
+                cfg,
+                {
+                    "available": True,
+                    "grid": station.grid,
+                    "min_elevation": config.satellites.min_elevation,
+                    "window_hours": SATELLITES_WINDOW_HOURS,
+                    "tracked": len(tles),
+                    "elements_from": snapshot.get("fetched_at"),
+                    "passes": [item.to_dict() for item in found],
+                },
+                stale,
+            )
+        except Exception as exc:  # noqa: BLE001 - a model error must not end the run
+            log.warning("satellite pass model failed: %s", exc)
+            _write_failure(config, cfg, f"{type(exc).__name__}: {exc}", stale)
+        await asyncio.sleep(SATELLITES_REFRESH_SECONDS)
+
+
 # --- entry point ----------------------------------------------------------
 async def run_collector(config: Config, guard: EgressGuard, enricher: Enricher) -> None:
     """Run every source until cancelled.
@@ -514,6 +629,7 @@ async def run_collector(config: Config, guard: EgressGuard, enricher: Enricher) 
                 group.create_task(_logbook_loop(config), name="logbooks")
 
             group.create_task(_propagation_loop(config, enricher), name="propagation")
+            group.create_task(_satellites_loop(config, enricher), name="satellites")
 
             if config.lookup.enabled:
                 group.create_task(_lookup_loop(client, guard, config, enricher), name="lookup")

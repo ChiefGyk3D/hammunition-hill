@@ -135,6 +135,28 @@ interval = 120
 # interval = 21600
 # options = { label = "Contests", horizon_days = 21 }
 
+# Two-line elements for the amateur satellites. The elements are fetched; the
+# pass predictions are computed on this machine from them, which is why this is
+# the only satellite-related thing that touches the network.
+#
+# Daily is generous. A set a week old still predicts a pass to within seconds,
+# so anything more frequent is wasted traffic on somebody's volunteer bandwidth
+# -- and it is why the panel keeps working through a long WAN outage.
+#
+# Pass prediction needs the optional extra:
+#     pip install 'hammunition-hill[satellites]'
+[[sources]]
+id = "tle"
+kind = "tle"
+url = "https://celestrak.org/NORAD/elements/gp.php?GROUP=amateur&FORMAT=tle"
+interval = 86400
+
+# How high above the horizon counts as a pass. Zero is the geometric horizon
+# and nobody has one: trees, buildings and hills all sit above it. Five is the
+# conventional working floor; a valley station may want fifteen.
+[satellites]
+min_elevation = 5.0
+
 # --- Streams: long-lived connections ----------------------------------------
 # These hold a socket open rather than polling. They emit only; nothing they
 # receive can change what the collector fetches or from where.
