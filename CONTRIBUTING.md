@@ -46,6 +46,37 @@ make build    # wheel + sdist, then verify the wheel installs
 ARM is in the matrix because a Raspberry Pi is the primary deployment target,
 not an afterthought.
 
+`all-green` is the one job branch protection points at, so that adding a job
+later does not mean remembering to update a settings page.
+
+### The workflows themselves are tested
+
+`tests/test_workflows.py` reads `.github/` and fails on the things that would
+otherwise go unnoticed, because their failure mode is a green build that has
+quietly stopped meaning anything:
+
+- an action pinned to a tag instead of a commit SHA, or a SHA with no `# vX.Y.Z`
+  comment saying what it is
+- a `pull_request_target` trigger, a missing `permissions:` block, a write
+  permission not on the short allowlist in that file, or a checkout that leaves
+  the token in `.git/config`
+- `${{ github.event.* }}` interpolated into a `run:` block, where a branch name
+  is code rather than a value
+- a job with no `timeout-minutes`
+- **a job missing from `all-green`'s `needs`** — it would run, fail, and merge
+  anyway, because the check branch protection watches never heard about it
+- the artifact path drifting from where `render_check.py` writes screenshots
+  (`if-no-files-found: warn` means that drift uploads nothing and still passes)
+- a script under `.github/scripts/` that no workflow invokes, or one that binds
+  a fixed port
+
+Two of them run the gate's real grep pattern against sample `toJSON(needs)`
+payloads, in both spacings, rather than trusting a reimplementation of it.
+
+If you add a job, add it to `needs` — the test will tell you if you forget. If
+it is deliberately outside the gate, add it to `UNGATED` there with the reason,
+and it must be gated to `schedule`/`workflow_dispatch` or the next test fails.
+
 ## Things that will fail review
 
 **Tests must not touch the network.** `tests/conftest.py` blocks every socket to
