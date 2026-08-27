@@ -36,7 +36,8 @@ finished, so here is exactly where things stand:
 | GPS / portable auto-grid | ❌ **not written** |
 | Satellites, RBN, CW tools | ❌ **not written** |
 | Metrics export to Grafana | ❌ **not written** |
-| Docker image, distro packages, CI | ❌ **not written** |
+| CI — 9 jobs, 3 Python versions, x86 + ARM + macOS | ✅ working |
+| Docker image, distro packages, `pip install` without a clone | ❌ **not written** |
 
 **Full inventory, every subsystem: [docs/STATUS.md](docs/STATUS.md).** That page
 is the one kept current; anything here is a summary of it.
@@ -62,6 +63,7 @@ hardware finds it faster than we can.
 | **[Writing panels](docs/PANELS.md)** | The panel contract. |
 | **[Callsign lookup](docs/CALLSIGN-LOOKUP.md)** | Provider options, trade-offs, and the architectural line. |
 | **[Imagery & weather](docs/IMAGERY.md)** | Weather alerts, radar and satellite tiles, and what a tier 2 tile costs you. |
+| **[Contributing](CONTRIBUTING.md)** | `make check` before you push, and what CI enforces. |
 | **[Status](docs/STATUS.md)** | **Complete feature inventory — what works, what is partial, what is not written.** |
 | **[Parity](docs/PARITY.md)** | Feature-by-feature against hamdash.com, including where we deliberately differ. |
 | **[Reuse audit](docs/REUSE.md)** | What is worth borrowing from the sibling projects. |

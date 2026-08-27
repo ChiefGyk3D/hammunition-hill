@@ -177,8 +177,14 @@ def test_a_taken_port_reports_cleanly_rather_than_traceback(tmp_path, capsys):
     holder.listen(1)
     port = holder.getsockname()[1]
 
+    # A minimally valid dashboard: _serve checks the web directory before it
+    # binds, so that a missing dashboard is reported instead of a port being
+    # taken for something that could never serve. This test is about the port,
+    # so give it something serveable.
     web = tmp_path / "web"
-    web.mkdir()
+    (web / "panels").mkdir(parents=True)
+    (web / "index.html").write_text("<h1>hi</h1>")
+    (web / "panels" / "index.json").write_text('{"dashboards": []}')
     config = Config(
         server=ServerConfig(host="127.0.0.1", port=port),
         sources=(),
