@@ -200,7 +200,14 @@ def _check(config: Config, guard: EgressGuard, enricher: Enricher) -> int:
         caveat = "  (approximate -- set [log] cty_dat for accuracy)"
     print(f"prefixes     : {enricher.table.source}{caveat}")
     if config.lookup.enabled:
-        endpoint = "  + query endpoint ENABLED" if config.lookup.query_endpoint else ""
+        # Do not report this as ENABLED. The flag parses, nothing reads it, and
+        # an operator who believes they switched on an endpoint that does not
+        # exist has been told something false by their own tooling.
+        endpoint = (
+            "  + query_endpoint set, but NOT IMPLEMENTED (see docs/STATUS.md)"
+            if config.lookup.query_endpoint
+            else ""
+        )
         chain = " -> ".join(config.lookup.providers)
         print(f"lookup       : {chain}{endpoint}")
         _report_uls(config)

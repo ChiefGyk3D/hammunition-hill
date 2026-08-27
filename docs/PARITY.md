@@ -6,6 +6,10 @@ deliberately do something else.
 
 **Local and LAN is priority one.** Parity is the gate on everything after it.
 
+This page answers *how does this compare to hamdash.com*. For *what can I use
+today* — every subsystem, including everything hamdash does not have — see
+**[STATUS.md](STATUS.md)**, which is the page kept current where the two overlap.
+
 ## Where we deliberately differ
 
 Their guide is explicit that a browser-delivered hosted dashboard is the modern
@@ -77,6 +81,7 @@ Legend: **done** · **partial** · **planned** · **not planned** (with the reas
 
 | Feature | Status | Notes |
 |---|---|---|
+| Callsign query endpoint | **planned** | Designed in CALLSIGN-LOOKUP.md; the flag parses and does nothing. |
 | Callsign lookup | **done** | Ordered provider chains, local-first. The offline FCC ULS index resolves US calls with no network at all, and stale cache entries are still served (flagged) when the WAN is gone — a portable station keeps working. |
 | Bearing calculator | **done** | Inside callsign lookup and on every spot |
 | Band plan | **done** | By licence class, which theirs does not do |
