@@ -24,7 +24,6 @@ from __future__ import annotations
 
 import json
 import re
-import xml.etree.ElementTree as ET
 from pathlib import Path
 
 import pytest
@@ -48,11 +47,16 @@ def test_there_are_marks_to_check():
 @pytest.mark.parametrize("svg", MARKS + [ROOT / "web" / "mark.svg"], ids=lambda p: p.name)
 def test_every_mark_is_well_formed_xml(svg):
     """A mark that will not parse renders as a broken image icon, not as nothing."""
-    # S314 warns about parsing untrusted XML. The input here is a file in this
-    # repository, and parsing it is the entire assertion: pulling in defusedxml
-    # to check that our own committed asset is well formed would be a
-    # dependency bought to silence a warning.
-    ET.parse(svg)  # noqa: S314
+    # defusedxml rather than the standard library: ruff's S314 and CodeQL's
+    # py/xxe both flag xml.etree here, and CodeQL fails the build over it.
+    # The input is a file in this repository, so the finding is theoretical,
+    # but "the input is trusted" is an argument that stops being true the
+    # moment somebody reuses the helper -- and defusedxml is a pure-python
+    # test-only dependency with nothing behind it. Cheaper than an exemption
+    # that has to be re-justified every time the rule fires.
+    from defusedxml.ElementTree import parse
+
+    parse(svg)
 
 
 @pytest.mark.parametrize("svg", MARKS + [ROOT / "web" / "mark.svg"], ids=lambda p: p.name)

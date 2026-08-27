@@ -234,3 +234,31 @@ def test_every_source_kind_is_named_in_the_status_prose():
 
     for kind in sorted({*REGISTRY, *STREAM_KINDS, *LOCAL_KINDS}):
         assert f"`{kind}`" in STATUS, f"STATUS.md never names the {kind!r} source kind"
+
+
+def test_the_tier_breakdown_adds_up_to_the_panel_count():
+    """STATUS.md said "19 panels" in prose while the table above it said 26.
+
+    The existing count test matches the first "N across M dashboards" it finds
+    and stops, so a second statement of the same fact further down the page was
+    free to rot -- and did, through seven panels being added. The tier
+    breakdown beside it stayed correct the whole time, which is what made the
+    contradiction survive a read: nine plus sixteen plus one is twenty-six, so
+    only the headline was wrong.
+    """
+    counts = {0: 0, 1: 0, 2: 0}
+    for directory in panel_dirs():
+        manifest = json.loads((directory / "panel.json").read_text(encoding="utf-8"))
+        counts[manifest["tier"]] += 1
+
+    words = {9: "Nine", 16: "Sixteen", 1: "One"}
+    assert f"{sum(counts.values())} panels, {len(dashboards())} dashboards" in STATUS, (
+        f"STATUS.md prose disagrees: there are {sum(counts.values())} panels"
+    )
+    for tier, total in counts.items():
+        word = words.get(total, str(total))
+        assert (
+            f"{word} are **tier {tier}**" in STATUS
+            or f"{word} is tier {tier}" in STATUS
+            or (f"{word} are tier {tier}" in STATUS)
+        ), f"STATUS.md does not say {word} panels are tier {tier}"

@@ -99,7 +99,7 @@ The parts everything else sits on.
 
 ## Panels
 
-19 panels, 6 dashboards: **Home**, **Map**, **Space Weather**, **Operating**,
+26 panels, 6 dashboards: **Home**, **Map**, **Space Weather**, **Operating**,
 **Activity**, **Field & Weather**. Regroup them by editing
 `web/panels/index.json`.
 

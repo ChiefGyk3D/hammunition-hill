@@ -46,6 +46,7 @@ dev = [
     "sgp4>=2.20",
     "pypdf>=4.0",
     "pillow>=10.0",
+    "defusedxml>=0.7",
 ]
 
 [project.scripts]
