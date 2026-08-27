@@ -1,5 +1,9 @@
 # Contributing
 
+Project context and the standing conventions are in
+[CLAUDE.md](CLAUDE.md) — worth reading before a first change, and it is
+what Claude Code loads automatically.
+
 ## Run the checks before you push
 
 Everything CI runs, runs here:

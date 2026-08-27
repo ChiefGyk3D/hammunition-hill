@@ -64,6 +64,7 @@ hardware finds it faster than we can.
 | **[Callsign lookup](docs/CALLSIGN-LOOKUP.md)** | Provider options, trade-offs, and the architectural line. |
 | **[Imagery & weather](docs/IMAGERY.md)** | Weather alerts, radar and satellite tiles, and what a tier 2 tile costs you. |
 | **[Contributing](CONTRIBUTING.md)** | `make check` before you push, and what CI enforces. |
+| **[CLAUDE.md](CLAUDE.md)** | Architecture invariants and standing conventions, for humans and agents alike. |
 | **[Status](docs/STATUS.md)** | **Complete feature inventory — what works, what is partial, what is not written.** |
 | **[Parity](docs/PARITY.md)** | Feature-by-feature against hamdash.com, including where we deliberately differ. |
 | **[Reuse audit](docs/REUSE.md)** | What is worth borrowing from the sibling projects. |
