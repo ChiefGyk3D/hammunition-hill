@@ -38,22 +38,24 @@ _A_SECOND = frozenset("ABCDEFGHIJKL")
 
 # Entities the FCC issues callsigns for. A DL or JA call has its own structure
 # and none of this applies.
-US_ENTITIES = frozenset({
-    "United States",
-    "Hawaii",
-    "Alaska",
-    "Puerto Rico",
-    "US Virgin Islands",
-    "Guam",
-    "Mariana Islands",
-    "American Samoa",
-    "Midway Island",
-    "Wake Island",
-    "Baker & Howland Islands",
-    "Johnston Island",
-    "Navassa Island",
-    "Palmyra & Jarvis Islands",
-})
+US_ENTITIES = frozenset(
+    {
+        "United States",
+        "Hawaii",
+        "Alaska",
+        "Puerto Rico",
+        "US Virgin Islands",
+        "Guam",
+        "Mariana Islands",
+        "American Samoa",
+        "Midway Island",
+        "Wake Island",
+        "Baker & Howland Islands",
+        "Johnston Island",
+        "Navassa Island",
+        "Palmyra & Jarvis Islands",
+    }
+)
 
 
 @dataclass(frozen=True)

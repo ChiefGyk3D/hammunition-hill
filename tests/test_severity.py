@@ -25,9 +25,16 @@ from hammunition_hill.severity import (
 
 
 # --- X-ray class round trip ---------------------------------------------
-@pytest.mark.parametrize("text,watts", [
-    ("A5.0", 5e-8), ("B2.0", 2e-7), ("C1.4", 1.4e-6), ("M5.0", 5e-5), ("X2.0", 2e-4),
-])
+@pytest.mark.parametrize(
+    "text,watts",
+    [
+        ("A5.0", 5e-8),
+        ("B2.0", 2e-7),
+        ("C1.4", 1.4e-6),
+        ("M5.0", 5e-5),
+        ("X2.0", 2e-4),
+    ],
+)
 def test_xray_class_to_watts(text, watts):
     assert xray_to_watts(text) == pytest.approx(watts)
 
@@ -52,9 +59,15 @@ def test_xray_letter_without_a_magnitude():
 
 
 # --- S-units -------------------------------------------------------------
-@pytest.mark.parametrize("text,expected", [
-    ("S0-S1", 1.0), ("S2", 2.0), ("S4-S6", 6.0), ("S0", 0.0),
-])
+@pytest.mark.parametrize(
+    "text,expected",
+    [
+        ("S0-S1", 1.0),
+        ("S2", 2.0),
+        ("S4-S6", 6.0),
+        ("S0", 0.0),
+    ],
+)
 def test_noise_takes_the_worse_end_of_a_range(text, expected):
     """HamQSL reports a range; the loud end is the one that stops you working."""
     assert s_units(text) == expected
@@ -66,17 +79,31 @@ def test_noise_rejects_junk(junk):
 
 
 # --- the scales ----------------------------------------------------------
-@pytest.mark.parametrize("value,level", [
-    (60, CRITICAL), (69, CRITICAL), (85, WARN), (110, GOOD), (200, GOOD),
-])
+@pytest.mark.parametrize(
+    "value,level",
+    [
+        (60, CRITICAL),
+        (69, CRITICAL),
+        (85, WARN),
+        (110, GOOD),
+        (200, GOOD),
+    ],
+)
 def test_solar_flux_severity(value, level):
     """Low flux is the problem for HF, so the scale runs bad-to-good upward."""
     assert classify("sfi", value)["level"] == level
 
 
-@pytest.mark.parametrize("value,level", [
-    (0, GOOD), (3, GOOD), (4, WARN), (5, CRITICAL), (9, CRITICAL),
-])
+@pytest.mark.parametrize(
+    "value,level",
+    [
+        (0, GOOD),
+        (3, GOOD),
+        (4, WARN),
+        (5, CRITICAL),
+        (9, CRITICAL),
+    ],
+)
 def test_k_index_severity(value, level):
     assert classify("kindex", value)["level"] == level
 
@@ -87,16 +114,31 @@ def test_k_index_names_the_noaa_g_scale():
     assert "G2" in classify("kindex", 6)["label"]
 
 
-@pytest.mark.parametrize("value,level", [
-    (0, GOOD), (7, GOOD), (12, WARN), (25, WARN), (40, CRITICAL), (80, CRITICAL),
-])
+@pytest.mark.parametrize(
+    "value,level",
+    [
+        (0, GOOD),
+        (7, GOOD),
+        (12, WARN),
+        (25, WARN),
+        (40, CRITICAL),
+        (80, CRITICAL),
+    ],
+)
 def test_a_index_severity(value, level):
     assert classify("aindex", value)["level"] == level
 
 
-@pytest.mark.parametrize("text,level", [
-    ("A5.0", GOOD), ("B7.2", GOOD), ("C1.4", WARN), ("M1.0", CRITICAL), ("X5.0", CRITICAL),
-])
+@pytest.mark.parametrize(
+    "text,level",
+    [
+        ("A5.0", GOOD),
+        ("B7.2", GOOD),
+        ("C1.4", WARN),
+        ("M1.0", CRITICAL),
+        ("X5.0", CRITICAL),
+    ],
+)
 def test_xray_severity(text, level):
     assert classify("xray", text)["level"] == level
 
@@ -106,9 +148,16 @@ def test_xray_labels_mention_the_blackout_scale():
     assert "R3" in classify("xray", "X1.0")["label"]
 
 
-@pytest.mark.parametrize("value,level", [
-    (300, GOOD), (400, GOOD), (500, WARN), (650, CRITICAL), (800, CRITICAL),
-])
+@pytest.mark.parametrize(
+    "value,level",
+    [
+        (300, GOOD),
+        (400, GOOD),
+        (500, WARN),
+        (650, CRITICAL),
+        (800, CRITICAL),
+    ],
+)
 def test_solar_wind_severity(value, level):
     assert classify("solarwind", value)["level"] == level
 
@@ -118,7 +167,7 @@ def test_proton_severity(value, level):
     assert classify("protons", value)["level"] == level
 
 
-def test_proton_display_keeps_small_values(): 
+def test_proton_display_keeps_small_values():
     """0.40 pfu must not round to 0 -- background flux is a fraction."""
     assert classify("protons", 0.4)["display"] == "0.40"
 

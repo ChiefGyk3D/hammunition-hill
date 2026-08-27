@@ -155,10 +155,15 @@ def test_recent_reads_only_the_tail_of_a_long_log(book):
 
 # --- config --------------------------------------------------------------
 def test_multiple_logbooks(tmp_path):
-    config = parse_config({"logbooks": [
-        {"id": "main", "name": "Home", "path": "a.adi", "primary": True},
-        {"id": "kx2", "path": "b.adi"},
-    ]}, base_dir=tmp_path)
+    config = parse_config(
+        {
+            "logbooks": [
+                {"id": "main", "name": "Home", "path": "a.adi", "primary": True},
+                {"id": "kx2", "path": "b.adi"},
+            ]
+        },
+        base_dir=tmp_path,
+    )
     assert [b.id for b in config.logbooks] == ["main", "kx2"]
     assert config.primary_logbook().id == "main"
 
@@ -169,10 +174,12 @@ def test_first_logbook_is_primary_by_default(tmp_path):
 
 
 def test_only_one_logbook_may_be_primary(tmp_path):
-    raw = {"logbooks": [
-        {"id": "a", "path": "a.adi", "primary": True},
-        {"id": "b", "path": "b.adi", "primary": True},
-    ]}
+    raw = {
+        "logbooks": [
+            {"id": "a", "path": "a.adi", "primary": True},
+            {"id": "b", "path": "b.adi", "primary": True},
+        ]
+    }
     with pytest.raises(ConfigError, match="only one logbook"):
         parse_config(raw, base_dir=tmp_path)
 
@@ -243,9 +250,15 @@ def test_logging_is_refused_when_disabled(tmp_path):
         server.server_close()
 
 
-@pytest.mark.parametrize("content_type", [
-    "application/x-www-form-urlencoded", "text/plain", "multipart/form-data", "",
-])
+@pytest.mark.parametrize(
+    "content_type",
+    [
+        "application/x-www-form-urlencoded",
+        "text/plain",
+        "multipart/form-data",
+        "",
+    ],
+)
 def test_only_json_bodies_are_accepted(live, content_type):
     """These three are exactly what a page can send cross-origin without preflight."""
     base, _ = live

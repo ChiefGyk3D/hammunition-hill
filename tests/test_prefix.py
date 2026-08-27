@@ -23,15 +23,18 @@ def cty(tmp_path):
 
 
 # --- callsign normalization --------------------------------------------
-@pytest.mark.parametrize("call,expected", [
-    ("W1AW", "W1AW"),
-    ("W1AW/P", "W1AW"),      # portable says nothing about location
-    ("W1AW/QRP", "W1AW"),
-    ("W1AW/4", "W1AW"),      # a district within the same entity
-    ("DL/W1AW", "DL"),       # prefix qualifier: the operator is in Germany
-    ("W1AW/DL", "DL"),       # suffix qualifier, same meaning
-    ("VP2E/W1AW/P", "VP2E"),
-])
+@pytest.mark.parametrize(
+    "call,expected",
+    [
+        ("W1AW", "W1AW"),
+        ("W1AW/P", "W1AW"),  # portable says nothing about location
+        ("W1AW/QRP", "W1AW"),
+        ("W1AW/4", "W1AW"),  # a district within the same entity
+        ("DL/W1AW", "DL"),  # prefix qualifier: the operator is in Germany
+        ("W1AW/DL", "DL"),  # suffix qualifier, same meaning
+        ("VP2E/W1AW/P", "VP2E"),
+    ],
+)
 def test_base_call(call, expected):
     assert base_call(call) == expected
 
@@ -85,19 +88,22 @@ def test_builtin_is_marked_approximate(builtin):
     assert builtin.lookup("W1AW").approximate is True
 
 
-@pytest.mark.parametrize("call,name,continent", [
-    ("W1AW", "United States", "NA"),
-    ("KH6ABC", "Hawaii", "OC"),
-    ("KL7ABC", "Alaska", "NA"),
-    ("VE3XYZ", "Canada", "NA"),
-    ("G0ABC", "England", "EU"),
-    ("DL1ABC", "Germany", "EU"),
-    ("JA1ABC", "Japan", "AS"),
-    ("VK2ABC", "Australia", "OC"),
-    ("ZS6ABC", "South Africa", "AF"),
-    ("PY2ABC", "Brazil", "SA"),
-    ("EA8ABC", "Canary Islands", "AF"),
-])
+@pytest.mark.parametrize(
+    "call,name,continent",
+    [
+        ("W1AW", "United States", "NA"),
+        ("KH6ABC", "Hawaii", "OC"),
+        ("KL7ABC", "Alaska", "NA"),
+        ("VE3XYZ", "Canada", "NA"),
+        ("G0ABC", "England", "EU"),
+        ("DL1ABC", "Germany", "EU"),
+        ("JA1ABC", "Japan", "AS"),
+        ("VK2ABC", "Australia", "OC"),
+        ("ZS6ABC", "South Africa", "AF"),
+        ("PY2ABC", "Brazil", "SA"),
+        ("EA8ABC", "Canary Islands", "AF"),
+    ],
+)
 def test_builtin_common_entities(builtin, call, name, continent):
     entity = builtin.lookup(call)
     assert entity.name == name

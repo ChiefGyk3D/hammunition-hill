@@ -106,9 +106,11 @@ if it passes.
   NetBird, Tailscale, Headscale, WireGuard).
 - **Opt in, one line at a time.** Lookup providers, the logbook, imagery tiles
   and LAN binding are all off by default, because each costs something real.
-- **Hand-formatted.** Match the surrounding code; `ruff check` enforces what
-  matters. Comments explain *why*, especially where an obvious-looking
-  alternative is wrong.
+- **`ruff format` is enforced** — `make format` applies it. The data tables in
+  `prefix.py`, `severity.py` and `bands.py` are fenced with `# fmt: off`,
+  because the formatter's value is consistency in code and those are data.
+  Fence a new data table the same way and say why. Comments explain *why*,
+  especially where an obvious-looking alternative is wrong.
 - **Alpha: merge to main.** Feature branch → PR → squash merge. Keep README and
   every affected doc current in the same PR.
 - **`docs/STATUS.md` is the feature inventory** and the page kept current;

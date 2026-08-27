@@ -89,9 +89,7 @@ def test_tier_zero_panels_named_in_status_are_actually_tier_zero():
     claimed = set(re.findall(r"`([a-z]+)`", match[1]))
 
     actual = {
-        d.name
-        for d in panel_dirs()
-        if json.loads((d / "panel.json").read_text())["tier"] == 0
+        d.name for d in panel_dirs() if json.loads((d / "panel.json").read_text())["tier"] == 0
     }
     assert claimed == actual, f"STATUS.md tier 0 list is {claimed}; the manifests say {actual}"
 

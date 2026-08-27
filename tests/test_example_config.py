@@ -197,6 +197,5 @@ def test_every_shipped_panel_can_get_its_data():
                 problems.append(f"{manifest['id']} reads {source_id!r}")
 
     assert not problems, (
-        "panels read snapshot ids that config.example.toml does not produce: "
-        + "; ".join(problems)
+        "panels read snapshot ids that config.example.toml does not produce: " + "; ".join(problems)
     )

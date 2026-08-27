@@ -43,12 +43,26 @@ _WANTED = frozenset({"CALL", "BAND", "MODE", "SUBMODE", "QSO_DATE", "QSL_RCVD", 
 # DXCC on "digital" does not care whether it was FT8 or RTTY, and one chasing
 # phone does not care whether it was SSB or FM.
 _MODE_GROUPS: dict[str, str] = {
-    "SSB": "PHONE", "USB": "PHONE", "LSB": "PHONE", "AM": "PHONE", "FM": "PHONE",
+    "SSB": "PHONE",
+    "USB": "PHONE",
+    "LSB": "PHONE",
+    "AM": "PHONE",
+    "FM": "PHONE",
     "CW": "CW",
-    "FT8": "DIGITAL", "FT4": "DIGITAL", "JT65": "DIGITAL", "JT9": "DIGITAL",
-    "RTTY": "DIGITAL", "PSK31": "DIGITAL", "PSK": "DIGITAL", "MFSK": "DIGITAL",
-    "OLIVIA": "DIGITAL", "JS8": "DIGITAL", "Q65": "DIGITAL", "MSK144": "DIGITAL",
-    "DATA": "DIGITAL", "DIGITALVOICE": "DIGITAL",
+    "FT8": "DIGITAL",
+    "FT4": "DIGITAL",
+    "JT65": "DIGITAL",
+    "JT9": "DIGITAL",
+    "RTTY": "DIGITAL",
+    "PSK31": "DIGITAL",
+    "PSK": "DIGITAL",
+    "MFSK": "DIGITAL",
+    "OLIVIA": "DIGITAL",
+    "JS8": "DIGITAL",
+    "Q65": "DIGITAL",
+    "MSK144": "DIGITAL",
+    "DATA": "DIGITAL",
+    "DIGITALVOICE": "DIGITAL",
 }
 
 
@@ -153,7 +167,6 @@ class LogIndex:
             "known": True,
         }
 
-
     def worked_summary(self) -> dict[str, object]:
         """Worked and confirmed entities, for the callsign panel.
 
@@ -169,8 +182,7 @@ class LogIndex:
 
 def _is_confirmed(record: dict[str, str]) -> bool:
     return (
-        record.get("QSL_RCVD", "").upper() == "Y"
-        or record.get("LOTW_QSL_RCVD", "").upper() == "Y"
+        record.get("QSL_RCVD", "").upper() == "Y" or record.get("LOTW_QSL_RCVD", "").upper() == "Y"
     )
 
 

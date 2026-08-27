@@ -35,10 +35,12 @@ def test_lan_bind_is_detected(tmp_path):
 
 
 def test_duplicate_ids_rejected(tmp_path):
-    raw = cfg(sources=[
-        {"id": "dup", "kind": "rss", "url": "https://a.example/f"},
-        {"id": "dup", "kind": "rss", "url": "https://b.example/f"},
-    ])
+    raw = cfg(
+        sources=[
+            {"id": "dup", "kind": "rss", "url": "https://a.example/f"},
+            {"id": "dup", "kind": "rss", "url": "https://b.example/f"},
+        ]
+    )
     with pytest.raises(ConfigError, match="duplicate id"):
         parse_config(raw, base_dir=tmp_path)
 
@@ -68,9 +70,9 @@ def test_a_source_needs_either_url_or_path(tmp_path):
 
 
 def test_a_source_cannot_have_both(tmp_path):
-    raw = cfg(sources=[
-        {"id": "x", "kind": "adif", "url": "https://a.example/f", "path": "log.adi"}
-    ])
+    raw = cfg(
+        sources=[{"id": "x", "kind": "adif", "url": "https://a.example/f", "path": "log.adi"}]
+    )
     with pytest.raises(ConfigError, match="exactly one of url or path"):
         parse_config(raw, base_dir=tmp_path)
 
@@ -101,10 +103,12 @@ def test_cty_dat_defaults_to_none(tmp_path):
 
 
 def test_allowlist_separates_local_sources(tmp_path):
-    raw = cfg(sources=[
-        {"id": "remote", "kind": "rss", "url": "https://a.example/f"},
-        {"id": "pistar", "kind": "rss", "url": "http://pi-star.local/f", "local": True},
-    ])
+    raw = cfg(
+        sources=[
+            {"id": "remote", "kind": "rss", "url": "https://a.example/f"},
+            {"id": "pistar", "kind": "rss", "url": "http://pi-star.local/f", "local": True},
+        ]
+    )
     allowed, local = parse_config(raw, base_dir=tmp_path).allowlist()
     assert allowed == {"a.example", "pi-star.local"}
     assert local == {"pi-star.local"}

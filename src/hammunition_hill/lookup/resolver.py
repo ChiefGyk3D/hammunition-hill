@@ -156,9 +156,7 @@ class Resolver:
         self._network_failures = 0
         self._offline_until = 0.0
 
-    async def _resolve_one(
-        self, client: httpx.AsyncClient, callsign: str
-    ) -> tuple[Any, bool]:
+    async def _resolve_one(self, client: httpx.AsyncClient, callsign: str) -> tuple[Any, bool]:
         """Walk the chain for one callsign.
 
         Returns ``(result, decided)``. ``decided`` is False when every provider

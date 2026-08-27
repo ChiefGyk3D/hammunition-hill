@@ -46,14 +46,14 @@ jobs:
       - run: pip install --disable-pip-version-check "ruff>=0.5"
       - name: ruff check
         run: ruff check --output-format=github src/ tests/ .github/scripts/
-      # `ruff format --check` is deliberately NOT run. This codebase is
-      # hand-formatted and the layout is often load-bearing -- a test that
-      # mirrors a wire format reads as one line per field, and the formatter
-      # wants to split it differently. Turning it on today means a 36-file
-      # churn commit that fights intentional layout, for no defect caught:
-      # line length, import order and the security rules are all enforced by
-      # `ruff check` above. Worth revisiting when there are enough contributors
-      # for style arguments to cost more than the churn would.
+      - name: ruff format --check
+        # Enabled, with the data tables in prefix.py, severity.py and bands.py
+        # fenced off by `# fmt: off`. The formatter's value is consistency in
+        # *code*; those are *data*, laid out as tables because that is how they
+        # are read and reviewed, and expanding them costs ~500 lines to make a
+        # reviewer scroll for what currently fits in a glance. Everything else
+        # is formatted, which is the trade that makes this worth having.
+        run: ruff format --check src/ tests/ .github/scripts/
 
   test:
     name: pytest ${{ matrix.python }} · ${{ matrix.os }}

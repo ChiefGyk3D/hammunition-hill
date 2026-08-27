@@ -208,7 +208,7 @@ async def test_provider_declines_a_callsign_not_on_file(tmp_path):
 
 @pytest.mark.asyncio
 async def test_a_missing_index_raises_rather_than_declining(tmp_path):
-    """"No index" is a config problem, not "not on file".
+    """ "No index" is a config problem, not "not on file".
 
     Declining would cache a miss for a day for a callsign that is in fact on
     file, and would stop the chain falling through to a network provider.
@@ -233,9 +233,7 @@ def test_single_provider_still_works(tmp_path):
 
 
 def test_chain_parses_in_order(tmp_path):
-    config = parse_config(
-        base_cfg(lookup={"providers": ["fcc_uls", "qrz"]}), base_dir=tmp_path
-    )
+    config = parse_config(base_cfg(lookup={"providers": ["fcc_uls", "qrz"]}), base_dir=tmp_path)
     assert config.lookup.providers == ("fcc_uls", "qrz")
 
 
@@ -263,9 +261,7 @@ def test_duplicate_provider_is_refused(tmp_path):
 
 
 def test_every_chain_provider_reaches_the_egress_allowlist(tmp_path):
-    config = parse_config(
-        base_cfg(lookup={"providers": ["fcc_uls", "hamqth"]}), base_dir=tmp_path
-    )
+    config = parse_config(base_cfg(lookup={"providers": ["fcc_uls", "hamqth"]}), base_dir=tmp_path)
     allowed, _ = config.allowlist()
     assert "www.hamqth.com" in allowed
 

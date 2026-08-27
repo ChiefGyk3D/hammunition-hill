@@ -272,8 +272,7 @@ def _pass_hd(
 
     _batched(
         connection,
-        "INSERT OR REPLACE INTO licences (callsign, status, granted, expires) "
-        "VALUES (?, ?, ?, ?)",
+        "INSERT OR REPLACE INTO licences (callsign, status, granted, expires) VALUES (?, ?, ?, ?)",
         rows(),
     )
 
@@ -402,9 +401,11 @@ class UlsIndex:
         if not self.available:
             return None
         try:
-            row = self._connect().execute(
-                "SELECT * FROM licences WHERE callsign = ?", (callsign.upper(),)
-            ).fetchone()
+            row = (
+                self._connect()
+                .execute("SELECT * FROM licences WHERE callsign = ?", (callsign.upper(),))
+                .fetchone()
+            )
         except sqlite3.Error as exc:
             log.warning("ULS lookup failed for %s: %s", callsign, exc)
             return None

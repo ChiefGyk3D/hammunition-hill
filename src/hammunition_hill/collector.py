@@ -420,9 +420,7 @@ async def _propagation_loop(config: Config, enricher: Enricher) -> None:
             k_index = _first_number(k_data.get("kp"), ham_data.get("kindex"))
 
             missing = [
-                name
-                for name, value in (("solar flux", sfi), ("K index", k_index))
-                if value is None
+                name for name, value in (("solar flux", sfi), ("K index", k_index)) if value is None
             ]
             if missing:
                 _write(
@@ -460,7 +458,9 @@ async def _propagation_loop(config: Config, enricher: Enricher) -> None:
         except Exception as exc:  # noqa: BLE001 - a model error must not end the run
             log.warning("propagation model failed: %s", exc)
             _write_failure(
-                config, cfg, f"{type(exc).__name__}: {exc}",
+                config,
+                cfg,
+                f"{type(exc).__name__}: {exc}",
                 PROPAGATION_REFRESH_SECONDS * STALE_MULTIPLIER,
             )
         await asyncio.sleep(PROPAGATION_REFRESH_SECONDS)
@@ -499,6 +499,4 @@ async def run_collector(config: Config, guard: EgressGuard, enricher: Enricher) 
             group.create_task(_propagation_loop(config, enricher), name="propagation")
 
             if config.lookup.enabled:
-                group.create_task(
-                    _lookup_loop(client, guard, config, enricher), name="lookup"
-                )
+                group.create_task(_lookup_loop(client, guard, config, enricher), name="lookup")

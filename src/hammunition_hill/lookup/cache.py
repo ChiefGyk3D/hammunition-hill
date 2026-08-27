@@ -40,8 +40,8 @@ from .base import LookupResult
 
 log = logging.getLogger(__name__)
 
-DEFAULT_TTL_HOURS = 720          # 30 days: licence data barely moves.
-NEGATIVE_TTL_HOURS = 24          # Retry a not-found sooner than a hit.
+DEFAULT_TTL_HOURS = 720  # 30 days: licence data barely moves.
+NEGATIVE_TTL_HOURS = 24  # Retry a not-found sooner than a hit.
 DEFAULT_MAX_ENTRIES = 5000
 
 CACHE_FILE = "lookup_cache.json"

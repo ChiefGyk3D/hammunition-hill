@@ -105,16 +105,18 @@ class HamQslSource:
         # What the numbers mean, not just what they are. Classified here because
         # "K=5 is a G1 storm" is domain knowledge, and because a dial needs a
         # position and a severity, not a bare figure.
-        gauges = classify_all({
-            "sfi": result.get("solarflux"),
-            "sunspots": result.get("sunspots"),
-            "xray": result.get("xray"),
-            "aindex": result.get("aindex"),
-            "kindex": result.get("kindex"),
-            "solarwind": result.get("solarwind"),
-            "noise": result.get("signalnoise"),
-            "protons": result.get("protonflux"),
-        })
+        gauges = classify_all(
+            {
+                "sfi": result.get("solarflux"),
+                "sunspots": result.get("sunspots"),
+                "xray": result.get("xray"),
+                "aindex": result.get("aindex"),
+                "kindex": result.get("kindex"),
+                "solarwind": result.get("solarwind"),
+                "noise": result.get("signalnoise"),
+                "protons": result.get("protonflux"),
+            }
+        )
         result["gauges"] = gauges
         result["worst_level"] = worst(gauges)
 

@@ -21,6 +21,12 @@ from dataclasses import dataclass
 # Band edges in kHz, widest common allocation across IARU regions. A spot just
 # outside an edge is still recognisably on that band, which is what matters for
 # grouping -- this is not a transmit-legality check and must never be used as one.
+# fmt: off
+# ruff format is enabled for this project, and deliberately switched off for the
+# data tables below. The formatter's value is consistency in *code*; these are
+# *data*, laid out as a table because that is how they are read and reviewed.
+# Expanding the band tables to one field per line adds 49 lines and makes a
+# reviewer scroll a screen to check what currently fits in a glance.
 BANDS: tuple[tuple[str, float, float], ...] = (
     ("2190m", 135.7, 137.8),
     ("630m", 472.0, 479.0),
@@ -65,6 +71,7 @@ _CW_CEILING: dict[str, float] = {
     "20m": 14070.0, "17m": 18095.0, "15m": 21070.0, "12m": 24910.0, "10m": 28070.0,
     "6m": 50100.0, "2m": 144100.0,
 }
+# fmt: on
 
 
 @dataclass(frozen=True)

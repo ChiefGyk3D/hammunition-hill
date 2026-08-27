@@ -75,9 +75,7 @@ def configure(fd: int, baud: int) -> None:
     cc[termios.VMIN] = 0
     cc[termios.VTIME] = 10  # Tenths of a second: a 1s read timeout.
 
-    termios.tcsetattr(
-        fd, termios.TCSANOW, [iflag, oflag, cflag, lflag, speed, speed, cc]
-    )
+    termios.tcsetattr(fd, termios.TCSANOW, [iflag, oflag, cflag, lflag, speed, speed, cc])
     termios.tcflush(fd, termios.TCIFLUSH)
 
 

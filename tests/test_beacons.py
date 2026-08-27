@@ -40,13 +40,21 @@ def at(hour=0, minute=0, second=0):
 def test_the_cycle_starts_with_the_published_lineup():
     """At 00:00:00 UTC the official table reads 4U1UN, YV5B, OA4B, LU4AA, CS3B."""
     assert [e["beacon"] for e in schedule(at(0, 0, 0))] == [
-        "4U1UN", "YV5B", "OA4B", "LU4AA", "CS3B",
+        "4U1UN",
+        "YV5B",
+        "OA4B",
+        "LU4AA",
+        "CS3B",
     ]
 
 
 def test_the_lineup_advances_every_ten_seconds():
     assert [e["beacon"] for e in schedule(at(0, 0, 10))] == [
-        "VE8AT", "4U1UN", "YV5B", "OA4B", "LU4AA",
+        "VE8AT",
+        "4U1UN",
+        "YV5B",
+        "OA4B",
+        "LU4AA",
     ]
 
 

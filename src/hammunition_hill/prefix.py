@@ -50,6 +50,12 @@ class Entity:
 # (prefix, name, continent, lat, lon). Longest prefix wins at lookup time.
 # Coordinates are entity centroids, good enough for a beam heading at HF
 # distances and not good enough for anything else.
+# fmt: off
+# ruff format is enabled for this project, and deliberately switched off for the
+# data tables below. The formatter's value is consistency in *code*; these are
+# *data*, laid out as a table because that is how they are read and reviewed.
+# Expanding the prefix table to one field per line adds 414 lines and makes a
+# reviewer scroll a screen to check what currently fits in a glance.
 _BUILTIN: tuple[tuple[str, str, str, float, float], ...] = (
     ("K", "United States", "NA", 37.5, -91.7), ("W", "United States", "NA", 37.5, -91.7),
     ("N", "United States", "NA", 37.5, -91.7), ("A", "United States", "NA", 37.5, -91.7),
@@ -192,6 +198,8 @@ _BUILTIN: tuple[tuple[str, str, str, float, float], ...] = (
 )
 
 # Longest first, so a longest-prefix match is a simple linear scan.
+# fmt: on
+
 _BUILTIN_SORTED = tuple(sorted(_BUILTIN, key=lambda row: -len(row[0])))
 
 
