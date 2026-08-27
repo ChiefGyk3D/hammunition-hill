@@ -186,7 +186,8 @@ tier 1. One is tier 2 (`imagery`).
 |---|---|---|
 | ADIF import | ✅ | |
 | ADIF export | ✅ | The logbook writes plain ADIF; it is the same file |
-| Prometheus / InfluxDB export | ❌ | Planned as an optional feature of this project rather than a separate one. It would be the first outbound *write* the collector ever makes, so it belongs in the same opt-in category as the logbook. |
+| Prometheus endpoint | ✅ | `/metrics` on the dashboard's own port, off by default. A *read* path — Prometheus pulls, so nothing originates a connection and the egress allowlist is untouched. Nothing is labelled by callsign; see [METRICS.md](METRICS.md) |
+| InfluxDB push | ❌ | The remaining half, and the one that really would be the first outbound *write* the collector makes. Same opt-in category as the logbook when it lands. |
 | Grafana dashboard | ❌ | After the exporter |
 | VA3HDL `config.js` importer | ❌ | |
 

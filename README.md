@@ -66,7 +66,8 @@ finished, so here is exactly where things stand:
 | Shack tools — antenna cut chart, feedline loss, SWR, grid path | ✅ working |
 | Satellites — cached TLEs, SGP4 passes, Doppler | ✅ working, optional extra |
 | RBN — who is hearing you, and band activity | ✅ working, off by default |
-| Metrics export to Grafana | ❌ **not written** |
+| Metrics — Prometheus endpoint | ✅ working, off by default |
+| Metrics — InfluxDB push | ❌ **not written** |
 | CI — 9 jobs, 3 Python versions, x86 + ARM + macOS | ✅ working |
 | Docker image, distro packages, `pip install` without a clone | ❌ **not written** |
 
@@ -99,6 +100,7 @@ hardware finds it faster than we can.
 | **[Shack tools](docs/TOOLS.md)** | Antenna cut chart, feedline loss, what an SWR reading costs, grid-to-grid paths. |
 | **[Satellites](docs/SATELLITES.md)** | Pass prediction computed here from cached elements, and why the propagator is the one borrowed thing. |
 | **[Reverse Beacon](docs/RBN.md)** | Who is hearing you with an SNR, band activity, and how a few thousand spots a minute stay bounded. |
+| **[Metrics](docs/METRICS.md)** | The Prometheus endpoint, what it exports, and why nothing is labelled by callsign. |
 | **[GPS](docs/GPS.md)** | Automatic grid square when portable, and why it publishes a locator rather than a fix. |
 | **[Propagation](docs/PROPAGATION.md)** | The MUF/LUF indicator, what it is worth, and what it is not. |
 | **[Imagery & weather](docs/IMAGERY.md)** | Weather alerts, radar and satellite tiles, and what a tier 2 tile costs you. |
