@@ -168,11 +168,5 @@ def test_the_logo_is_actually_transparent(png):
     )
 
 
-def test_branding_doc_references_only_files_that_exist():
-    for target in re.findall(r"\]\((?!https?:)([^)#]+)\)", DOC):
-        resolved = (ROOT / "docs" / target).resolve()
-        assert resolved.exists(), f"BRANDING.md links {target}, which does not exist"
-
-
 def test_branding_doc_is_linked_from_the_readme():
     assert "BRANDING.md" in (ROOT / "README.md").read_text(encoding="utf-8")

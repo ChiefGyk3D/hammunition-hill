@@ -145,3 +145,24 @@ def test_every_documentation_page_is_linked_from_the_readme():
     assert pages, "no documentation pages found"
     missing = [name for name in pages if f"docs/{name}" not in README]
     assert not missing, f"README.md does not link: {', '.join(missing)}"
+
+
+def test_no_documentation_page_links_to_a_file_that_does_not_exist():
+    """Relative links rot silently: nothing renders them until someone clicks.
+
+    This covers every markdown file in the repository, not just the README,
+    because a page is as likely to link a sibling page as the index is. Anchors
+    are not checked -- only that the file on the other end is there at all.
+    """
+    docs = sorted(list(ROOT.glob("*.md")) + list((ROOT / "docs").glob("*.md")))
+    assert len(docs) > 15, f"only found {len(docs)} docs; the glob is wrong"
+
+    broken = []
+    for doc in docs:
+        for target in re.findall(
+            r"\]\((?!https?:|mailto:)([^)\s]+)\)", doc.read_text(encoding="utf-8")
+        ):
+            path = target.partition("#")[0]
+            if path and not (doc.parent / path).resolve().exists():
+                broken.append(f"{doc.relative_to(ROOT)} -> {target}")
+    assert not broken, "broken relative links:\n  " + "\n  ".join(broken)
