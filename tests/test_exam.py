@@ -766,3 +766,33 @@ def test_a_section_test_is_the_size_the_release_says(element_id):
     # Every section back to back is one exam's worth, which is what "section"
     # means here rather than "a quiz about that topic".
     assert total == payload["exam_length"]
+
+
+def test_the_shipped_pools_are_readable_json():
+    """The vendored pools are review material, so they are formatted for review.
+
+    They shipped minified: three files of one line each, 130 kB wide. Nothing
+    about that is wrong at runtime -- the panel is served the collector's
+    snapshot, not these files, so the extra bytes never cross a wire -- but a
+    pool is a claim about what the official release says, and a claim nobody can
+    read is a claim nobody can check. It also makes the diff for a pool update
+    a single changed line, which is the one moment the diff matters most.
+    """
+    import json
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[1] / "src/hammunition_hill/data/exam"
+    files = sorted(root.glob("*.json"))
+    assert files, "no shipped pools found"
+    for path in files:
+        text = path.read_text(encoding="utf-8")
+        lines = text.splitlines()
+        assert len(lines) > 100, f"{path.name} is {len(lines)} lines; it has been minified"
+        assert lines[0] == "{", f"{path.name} does not start on its own line"
+        assert any(line.startswith('      "id":') for line in lines), (
+            f"{path.name} is not indented per question"
+        )
+        # Real characters, not escapes: an en dash written – defeats the
+        # point of formatting these for a human to check against the release.
+        assert "\\u" not in text, f"{path.name} contains escaped non-ASCII"
+        json.loads(text)

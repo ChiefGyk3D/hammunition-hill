@@ -131,3 +131,17 @@ def test_unbuilt_features_are_not_described_as_working():
         assert "NOT IMPLEMENTED" in (ROOT / "src/hammunition_hill/cli.py").read_text(), (
             "hamhill check must not report query_endpoint as ENABLED"
         )
+
+
+def test_every_documentation_page_is_linked_from_the_readme():
+    """A page nobody links to is a page nobody reads.
+
+    docs/LOGBOOK.md was written, committed, and left out of the README's
+    documentation table, so the only way to find it was to list the directory.
+    Adding a page and linking it are separate acts, and the second one is the
+    one that gets forgotten.
+    """
+    pages = sorted(p.name for p in (ROOT / "docs").glob("*.md"))
+    assert pages, "no documentation pages found"
+    missing = [name for name in pages if f"docs/{name}" not in README]
+    assert not missing, f"README.md does not link: {', '.join(missing)}"
