@@ -45,7 +45,7 @@ jobs:
           python-version: "3.13"
       - run: pip install --disable-pip-version-check "ruff>=0.5"
       - name: ruff check
-        run: ruff check --output-format=github src/ tests/
+        run: ruff check --output-format=github src/ tests/ .github/scripts/
       # `ruff format --check` is deliberately NOT run. This codebase is
       # hand-formatted and the layout is often load-bearing -- a test that
       # mirrors a wire format reads as one line per field, and the formatter

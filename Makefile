@@ -30,7 +30,7 @@ venv:
 	$(PY) -m pip install -e ".[dev]"
 
 lint:
-	$(RUFF) check src/ tests/
+	$(RUFF) check src/ tests/ .github/scripts/
 
 test:
 	$(PY) -m pytest -q -W error::DeprecationWarning

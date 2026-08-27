@@ -19,6 +19,7 @@ service, which is not a reasonable thing to do on every push.
 from __future__ import annotations
 
 import json
+import socket
 import subprocess
 import sys
 import time
@@ -28,6 +29,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from threading import Thread
+from typing import NoReturn
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -65,11 +67,42 @@ class Upstream(BaseHTTPRequestHandler):
 _process: subprocess.Popen | None = None
 
 
-def fail(message: str) -> None:
-    """Fail loudly, and always with the collector's own output attached.
+class SmokeFailed(Exception):
+    """A check did not pass. Raised rather than exiting in place.
+
+    `fail()` used to call sys.exit, which meant every function that ended in a
+    call to it had one path returning a value and one falling off the end --
+    syntactically an implicit `return None`, even though it could never be
+    reached. CodeQL flagged exactly that, and it was right: nothing in the
+    signature or the control flow told a reader the call was terminal.
+
+    Raising makes every path either return a value or raise, and puts the
+    diagnostics in one handler instead of in a function called from everywhere.
+    """
+
+
+def free_port() -> int:
+    """A port nothing is listening on right now.
+
+    Fixed ports are fine on a fresh CI runner and a nuisance locally: a
+    collector left over from an interrupted run holds the port, and the next
+    attempt then fails looking like a broken test rather than a busy socket.
+    The bind-and-release race is acceptable for a test harness.
+    """
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        return int(probe.getsockname()[1])
+
+
+def fail(message: str) -> NoReturn:
+    raise SmokeFailed(message)
+
+
+def report_failure(message: str) -> None:
+    """Print the failure with the collector's own output attached.
 
     A timeout that says only "timed out" sends whoever is reading the log off to
-    reproduce it locally. The reason is nearly always in the collector's stderr,
+    reproduce it locally. The reason is nearly always in the collector's output,
     so print it here rather than making them go and find it.
     """
     if _process is not None and _process.poll() is None:
@@ -85,7 +118,6 @@ def fail(message: str) -> None:
             print(output)
             print("--- end collector output ---")
     print(f"::error::{message}")
-    sys.exit(1)
 
 
 def wait_for(predicate, timeout: float, description: str):  # type: ignore[no-untyped-def]
@@ -102,7 +134,7 @@ def wait_for(predicate, timeout: float, description: str):  # type: ignore[no-un
                 return result
             last = result
         time.sleep(0.5)
-    fail(f"timed out after {timeout}s waiting for {description} (last: {last!r})")
+    raise SmokeFailed(f"timed out after {timeout}s waiting for {description} (last: {last!r})")
 
 
 def main() -> int:
@@ -113,7 +145,7 @@ def main() -> int:
 
     with TemporaryDirectory() as workdir:
         work = Path(workdir)
-        dashboard_port = 8973
+        dashboard_port = free_port()
         (work / "config.toml").write_text(
             f"""
 [server]
@@ -232,4 +264,8 @@ options = {{ product = "planetary_k_index" }}
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except SmokeFailed as failure:
+        report_failure(str(failure))
+        sys.exit(1)

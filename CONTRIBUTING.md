@@ -34,7 +34,7 @@ make build    # wheel + sdist, then verify the wheel installs
 
 | Job | Catches |
 |---|---|
-| `lint` | ruff, including the security rules |
+| `lint` | ruff over `src/`, `tests/` and `.github/scripts/`, including the security rules |
 | `test` | pytest on 3.11–3.13, on x86, ARM and macOS |
 | `example-config` | the file every new user copies having rotted |
 | `smoke` | the collector→snapshot→HTTP loop breaking, and the security headers going missing |

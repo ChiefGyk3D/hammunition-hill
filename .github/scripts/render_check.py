@@ -30,6 +30,8 @@ right" are different claims and only a person can make the second one.
 from __future__ import annotations
 
 import json
+import os
+import socket
 import subprocess
 import sys
 import time
@@ -37,12 +39,14 @@ import urllib.error
 import urllib.request
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from tempfile import TemporaryDirectory
+from tempfile import TemporaryDirectory, gettempdir
 from threading import Thread
+from typing import NoReturn
 
 ROOT = Path(__file__).resolve().parents[2]
-SHOTS = Path("/tmp/hamhill-render")
-PORT = 8974
+# Where the CI job's upload step looks for them; RENDER_SHOTS overrides it
+# so a contributor can put them elsewhere.
+SHOTS = Path(os.environ.get("RENDER_SHOTS") or Path(gettempdir()) / "hamhill-render")
 
 KINDEX = json.dumps(
     [
@@ -176,7 +180,27 @@ const BASE = `http://127.0.0.1:${PORT}/`;
 """
 
 
-def fail(message: str) -> None:
+def free_port() -> int:
+    """A port nothing is listening on right now.
+
+    Fixed ports are fine on a fresh CI runner and a nuisance locally: a
+    collector left over from an interrupted run holds the port, and the next
+    attempt then fails looking like a broken test rather than a busy socket.
+    The bind-and-release race is acceptable for a test harness.
+    """
+    with socket.socket() as probe:
+        probe.bind(("127.0.0.1", 0))
+        return int(probe.getsockname()[1])
+
+
+def fail(message: str) -> NoReturn:
+    """Annotated NoReturn so callers -- and type checkers -- know it is terminal.
+
+    Not flagged by CodeQL the way smoke.py's was, because these calls sit inside
+    a loop rather than mixing with a return in the same function. Same honesty
+    either way: a signature saying `-> None` on something that never returns is
+    just wrong.
+    """
     print(f"::error::{message}")
     sys.exit(1)
 
@@ -188,13 +212,14 @@ def main() -> int:
     upstream_port = upstream.server_address[1]
     Thread(target=upstream.serve_forever, daemon=True).start()
 
+    port = free_port()
     with TemporaryDirectory() as workdir:
         work = Path(workdir)
         (work / "config.toml").write_text(
             f"""
 [server]
 host = "127.0.0.1"
-port = {PORT}
+port = {port}
 
 [station]
 callsign = "N0CALL"
@@ -239,7 +264,7 @@ options = {{ product = "planetary_k_index" }}
                     fail(f"the dashboard exited before serving:\n{output}")
                 try:
                     with urllib.request.urlopen(  # noqa: S310
-                        f"http://127.0.0.1:{PORT}/", timeout=2
+                        f"http://127.0.0.1:{port}/", timeout=2
                     ) as response:
                         if response.status == 200:
                             break
@@ -253,7 +278,7 @@ options = {{ product = "planetary_k_index" }}
             time.sleep(6)
 
             result = subprocess.run(  # noqa: S603
-                ["node", str(driver), str(PORT), str(SHOTS)],  # noqa: S607
+                ["node", str(driver), str(port), str(SHOTS)],  # noqa: S607
                 cwd=ROOT,
                 text=True,
                 timeout=300,
