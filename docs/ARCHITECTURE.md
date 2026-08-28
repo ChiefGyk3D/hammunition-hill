@@ -278,6 +278,30 @@ shows an error in its own frame instead of taking the dashboard down.
 Tier 0 panels re-render on a one-second tick independent of any fetch, which is
 why the clock keeps working when nothing else does.
 
+### Layout: masonry over a CSS grid
+
+Panels pack like masonry. The grid's rows are a fine 8px lattice, a
+`ResizeObserver` measures each panel's natural height and spans it across as
+many rows as it needs, and `grid-auto-flow: dense` lets a later panel fill a
+hole an earlier wide one left. CSS grid alone cannot do this — a row is as tall
+as the tallest panel in it, so a short panel beside a tall one strands the
+whole difference as dead space; on the Operating dashboard that was over a
+thousand pixels of nothing.
+
+The lattice's row unit and gap are read from computed style rather than
+assumed, because the phone breakpoint uses a tighter gap than the desktop one
+and a constant in the JavaScript shipped every span short by the difference —
+each panel painted over by the next. The render harness now fails if any two
+panels overlap by more than a couple of pixels, on every dashboard, because
+that failure mode is otherwise silent: no console error, every panel renders,
+and each one is underneath the next.
+
+One sheet serves three rooms. Under 680px — a phone in the field, usually over
+ZTNA back to the shack — the grid is one column, chrome shrinks, and tap
+targets grow. From 1920px up — a TV on the shack wall — the page scales up
+via zoom tiers, so layout and type grow together and the 320px column minimum
+becomes the wider column a 10-foot read needs anyway.
+
 ## Why Python
 
 The original sketch called for a single static Go binary, on the grounds that

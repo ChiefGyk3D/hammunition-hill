@@ -265,6 +265,31 @@ const BASE = `http://127.0.0.1:${PORT}/`;
         problems.push(`${tab}/${panel.id}: ${panel.body.trim().slice(0, 200)}`);
       }
     }
+
+    // No two panels may overlap. The masonry sizing computes each panel's
+    // row span from its measured height, and the failure mode of getting
+    // that arithmetic wrong is silent everywhere else: the page loads, no
+    // console error, every panel renders -- and each one is painted over by
+    // the next. It shipped exactly that way once, on the phone breakpoint,
+    // where the grid gap differed from the constant the arithmetic assumed.
+    const overlaps = await page.$$eval('#grid .panel', (els) => {
+      const found = [];
+      const rects = els.map((e) => ({ id: e.dataset.panel, r: e.getBoundingClientRect() }));
+      for (let i = 0; i < rects.length; i++) {
+        for (let j = i + 1; j < rects.length; j++) {
+          const a = rects[i].r, b = rects[j].r;
+          const x = Math.min(a.right, b.right) - Math.max(a.left, b.left);
+          const y = Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top);
+          // A shared border rounds to a sliver; demand real intrusion.
+          if (x > 2 && y > 2) {
+            const size = `${Math.round(x)}x${Math.round(y)}px`;
+            found.push(`${rects[i].id} overlaps ${rects[j].id} by ${size}`);
+          }
+        }
+      }
+      return found;
+    });
+    for (const overlap of overlaps) problems.push(`${tab}: ${overlap}`);
     const slug = tab.toLowerCase().replace(/[^a-z0-9]+/g, '-');
     await page.screenshot({ path: `${SHOTS}/${slug}.png`, fullPage: true });
     console.log(`  ${tab}: ${panels.length} panels ok`);
