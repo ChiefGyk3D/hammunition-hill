@@ -251,7 +251,11 @@ def test_the_tier_breakdown_adds_up_to_the_panel_count():
         manifest = json.loads((directory / "panel.json").read_text(encoding="utf-8"))
         counts[manifest["tier"]] += 1
 
-    words = {9: "Nine", 16: "Sixteen", 1: "One"}
+    words = {
+        1: "One", 2: "Two", 3: "Three", 4: "Four", 5: "Five", 6: "Six", 7: "Seven",
+        8: "Eight", 9: "Nine", 10: "Ten", 11: "Eleven", 12: "Twelve", 13: "Thirteen",
+        14: "Fourteen", 15: "Fifteen", 16: "Sixteen", 17: "Seventeen", 18: "Eighteen",
+    }  # fmt: skip
     assert f"{sum(counts.values())} panels, {len(dashboards())} dashboards" in STATUS, (
         f"STATUS.md prose disagrees: there are {sum(counts.values())} panels"
     )
