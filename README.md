@@ -69,7 +69,7 @@ finished, so here is exactly where things stand:
 | CW / Morse tools — reference, translator, audio | ✅ working |
 | Pocket reference — Q signals, RST, phonetics, calling freqs | ✅ working |
 | CW trainer — Koch, callsigns, QSO simulator, quiz | ✅ working |
-| Shack tools — antenna cut chart, feedline loss, SWR, grid path | ✅ working |
+| Shack tools — antenna, feedline, SWR, Ohm's law, dB, wire, battery | ✅ working |
 | Satellites — cached TLEs, SGP4 passes, Doppler | ✅ working, optional extra |
 | RBN — who is hearing you, and band activity | ✅ working, off by default |
 | Metrics — Prometheus endpoint | ✅ working, off by default |
@@ -106,7 +106,7 @@ hardware finds it faster than we can.
 | **[Callsign lookup](docs/CALLSIGN-LOOKUP.md)** | Provider options, trade-offs, and the architectural line. |
 | **[CW & Morse](docs/CW.md)** | Reference, translator, timing, audio, and a four-drill trainer. |
 | **[Pocket reference](docs/REFERENCE.md)** | Q signals, RST, phonetics, the number codes, calling frequencies — the lookups, offline. |
-| **[Shack tools](docs/TOOLS.md)** | Antenna cut chart, feedline loss, what an SWR reading costs, grid-to-grid paths. |
+| **[Shack tools](docs/TOOLS.md)** | Antenna cut chart, feedline loss, SWR, Ohm's law, dB, voltage drop, battery runtime, grid paths. |
 | **[Logbook](docs/LOGBOOK.md)** | Logging contacts, the ADIF file it writes, and why it is off by default. |
 | **[Satellites](docs/SATELLITES.md)** | Pass prediction computed here from cached elements, and why the propagator is the one borrowed thing. |
 | **[Reverse Beacon](docs/RBN.md)** | Who is hearing you with an SNR, band activity, and how a few thousand spots a minute stay bounded. |

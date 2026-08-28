@@ -217,6 +217,7 @@ product. None of these fetch anything.
 | `propagation.py` | A crude HF propagation indicator. |
 | `satellites.py` | When the satellites are up, and where to point. |
 | `antenna.py` | Antenna, feedline and SWR arithmetic. |
+| `electrical.py` | Ohm's law, decibels, wire gauge and battery runtime. |
 | `morse.py` | Morse code: the tables, the timing, and the shorthand. |
 | `cwpractice.py` | What to send when you are learning to copy it. |
 | `exam.py` | Licence exam practice, from the official question pools. |
