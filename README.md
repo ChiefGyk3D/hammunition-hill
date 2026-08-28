@@ -15,7 +15,7 @@ monitor above it — the high ground you watch the bands from.
 
 ![The Home dashboard](https://raw.githubusercontent.com/ChiefGyk3D/hammunition-hill/main/docs/images/home.png)
 
-Six dashboards, twenty-six panels, one machine. Nothing above was fetched by
+Six dashboards, twenty-seven panels, one machine. Nothing above was fetched by
 your browser from anyone else's server — the screenshots are taken by CI, from a
 real Chromium, against a real collector, so they are what the code renders
 rather than what a designer drew.
@@ -51,7 +51,7 @@ finished, so here is exactly where things stand:
 |---|---|
 | Collector, snapshot architecture, static server | ✅ working |
 | Egress allowlist, CSP, path handling | ✅ working |
-| Panels | ✅ 26 across 6 dashboards |
+| Panels | ✅ 27 across 6 dashboards |
 | Source kinds | ✅ 11 polled, 6 stream, 1 file |
 | Space weather dials | ✅ 8 scales |
 | Map — rotatable globe, greyline, spots, aurora | ✅ working |
@@ -67,6 +67,7 @@ finished, so here is exactly where things stand:
 | Callsign query endpoint | ✅ working — off by default, local index only |
 | GPS — portable auto-grid and clock check | ✅ working |
 | CW / Morse tools — reference, translator, audio | ✅ working |
+| Pocket reference — Q signals, RST, phonetics, calling freqs | ✅ working |
 | CW trainer — Koch, callsigns, QSO simulator, quiz | ✅ working |
 | Shack tools — antenna, feedline, SWR, Ohm's law, dB, wire, battery | ✅ working |
 | Satellites — cached TLEs, SGP4 passes, Doppler | ✅ working, optional extra |
@@ -104,6 +105,7 @@ hardware finds it faster than we can.
 | **[Writing panels](docs/PANELS.md)** | The panel contract. |
 | **[Callsign lookup](docs/CALLSIGN-LOOKUP.md)** | Provider options, trade-offs, and the architectural line. |
 | **[CW & Morse](docs/CW.md)** | Reference, translator, timing, audio, and a four-drill trainer. |
+| **[Pocket reference](docs/REFERENCE.md)** | Q signals, RST, phonetics, the number codes, calling frequencies — the lookups, offline. |
 | **[Shack tools](docs/TOOLS.md)** | Antenna cut chart, feedline loss, SWR, Ohm's law, dB, voltage drop, battery runtime, grid paths. |
 | **[Logbook](docs/LOGBOOK.md)** | Logging contacts, the ADIF file it writes, and why it is off by default. |
 | **[Satellites](docs/SATELLITES.md)** | Pass prediction computed here from cached elements, and why the propagator is the one borrowed thing. |

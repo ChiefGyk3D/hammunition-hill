@@ -21,7 +21,7 @@ have. Where the two disagree, this page is the one kept current.
 |---|---|
 | Collector, snapshot architecture, static server | ✅ working |
 | Egress allowlist, CSP, path handling | ✅ working |
-| Panels | ✅ 26 across 6 dashboards |
+| Panels | ✅ 27 across 6 dashboards |
 | Source kinds | ✅ 11 polled, 6 stream, 1 file |
 | Space weather dials | ✅ 8 scales |
 | Your log driving spot colouring | ✅ working |
@@ -99,13 +99,13 @@ The parts everything else sits on.
 
 ## Panels
 
-26 panels, 6 dashboards: **Home**, **Map**, **Space Weather**, **Operating**,
+27 panels, 6 dashboards: **Home**, **Map**, **Space Weather**, **Operating**,
 **Activity**, **Field & Weather**. Regroup them by editing
 `web/panels/index.json`.
 
-Nine are **tier 0** — they work with the internet unplugged: `bandplan`,
-`beacons`, `callsign`, `clock`, `cw`, `exam`, `gps`, `logbook`, `tools`.
-Sixteen are tier 1. One is tier 2 (`imagery`).
+Ten are **tier 0** — they work with the internet unplugged: `bandplan`,
+`beacons`, `callsign`, `clock`, `cw`, `exam`, `gps`, `logbook`, `reference`,
+`tools`. Sixteen are tier 1. One is tier 2 (`imagery`).
 
 | Feature | Status | Notes |
 |---|---|---|
