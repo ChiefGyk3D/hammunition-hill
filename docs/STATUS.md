@@ -21,7 +21,7 @@ have. Where the two disagree, this page is the one kept current.
 |---|---|
 | Collector, snapshot architecture, static server | ✅ working |
 | Egress allowlist, CSP, path handling | ✅ working |
-| Panels | ✅ 27 across 6 dashboards |
+| Panels | ✅ 28 across 6 dashboards |
 | Source kinds | ✅ 11 polled, 6 stream, 1 file |
 | Space weather dials | ✅ 8 scales |
 | Your log driving spot colouring | ✅ working |
@@ -99,17 +99,18 @@ The parts everything else sits on.
 
 ## Panels
 
-27 panels, 6 dashboards: **Home**, **Map**, **Space Weather**, **Operating**,
+28 panels, 6 dashboards: **Home**, **Map**, **Space Weather**, **Operating**,
 **Activity**, **Field & Weather**. Regroup them by editing
 `web/panels/index.json`.
 
 Ten are **tier 0** — they work with the internet unplugged: `bandplan`,
 `beacons`, `callsign`, `clock`, `cw`, `exam`, `gps`, `logbook`, `reference`,
-`tools`. Sixteen are tier 1. One is tier 2 (`imagery`).
+`tools`. Seventeen are tier 1. One is tier 2 (`imagery`).
 
 | Feature | Status | Notes |
 |---|---|---|
 | Rotatable globe with greyline | ✅ | Orthographic projection on 2D canvas. No WebGL, no library. |
+| Band globes | ✅ | One small sphere per band with activity, greyline on each, drawn from your own cluster spots and WSJT-X decodes. Appear and disappear with the bands — a fixed six would show dead spheres at 3 AM and hide a 6 m opening at noon |
 | Spots on the map with great-circle arcs | ✅ | |
 | Aurora oval as a globe layer | ✅ | |
 | Severity dials | ✅ | 8 scales, with the number alongside — both, not either |
