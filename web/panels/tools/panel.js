@@ -22,9 +22,16 @@ import {
   swrFigures,
   totalLineLossDb,
 } from "../../lib/antenna.js";
+import {
+  batteryRuntime,
+  dbBetweenWatts,
+  ohm,
+  powerRatioFromDb,
+  voltageDrop,
+} from "../../lib/electrical.js";
 import { compassPoint, gridToLatLon, pathTo } from "../../lib/callsign.js";
 
-const VIEWS = ["antenna", "feedline", "SWR", "grid path"];
+const VIEWS = ["antenna", "feedline", "SWR", "ohm", "dB", "wire", "battery", "grid path"];
 
 let state = null;
 
@@ -38,6 +45,17 @@ function ensureState() {
     swr: Number(recall("tools-swr", 2)) || 2,
     from: recall("tools-from", ""),
     to: recall("tools-to", "JO65"),
+    // The power wheel keeps raw strings: "" means "not given", and exactly
+    // two must be given, so emptiness is data here, not absence.
+    ohm: { volts: "13.8", amps: "", ohms: "", watts: "100" },
+    dbFrom: Number(recall("tools-db-from", 5)) || 5,
+    dbTo: Number(recall("tools-db-to", 100)) || 100,
+    awg: recall("tools-awg", "12"),
+    runM: Number(recall("tools-run", 5)) || 5,
+    runA: Number(recall("tools-amps", 20)) || 20,
+    battAh: Number(recall("tools-batt-ah", 20)) || 20,
+    battChem: recall("tools-batt-chem", "lifepo4"),
+    battW: Number(recall("tools-batt-w", 60)) || 60,
   };
   return state;
 }
@@ -117,7 +135,7 @@ export function render(root, { data, station, el }) {
     }
     parts.push(tabs);
 
-    if (s.view !== "grid path") {
+    if (["antenna", "feedline", "SWR"].includes(s.view)) {
       parts.push(
         numberField(el, "frequency", s.freq, "MHz", (v) => {
           const parsed = Number(v);
@@ -241,6 +259,194 @@ export function render(root, { data, station, el }) {
           "High SWR is not by itself the problem — high SWR through a lossy line is. " +
             "Change the cable and the length above and watch the same reading cost " +
             "almost nothing, or almost everything.",
+        ),
+      );
+    }
+
+    if (s.view === "ohm") {
+      const fields = el("div", "tool-grid");
+      for (const key of ["volts", "amps", "ohms", "watts"]) {
+        fields.append(
+          numberField(el, key, s.ohm[key], "", (value) => {
+            s.ohm[key] = value;
+            draw();
+          }),
+        );
+      }
+      parts.push(fields);
+      const given = Object.fromEntries(
+        Object.entries(s.ohm)
+          .filter(([, value]) => value !== "" && !Number.isNaN(Number(value)))
+          .map(([key, value]) => [key, Number(value)]),
+      );
+      const result = ohm({ volts: null, amps: null, ohms: null, watts: null, ...given });
+      if (Object.keys(given).length !== 2) {
+        parts.push(el("p", "tool-hint", "Give exactly two — clear the rest."));
+      } else if (!result) {
+        parts.push(el("p", "tool-hint", "No finite answer for that pair."));
+      } else {
+        parts.push(
+          rows(el, [
+            ["volts", `${result.volts.toFixed(2)} V`],
+            ["amps", `${result.amps === Infinity ? "∞" : result.amps.toFixed(3)} A`],
+            ["ohms", `${result.ohms === Infinity ? "∞" : result.ohms.toFixed(2)} Ω`],
+            ["watts", `${result.watts.toFixed(1)} W`],
+          ]),
+        );
+      }
+    }
+
+    if (s.view === "dB") {
+      parts.push(
+        numberField(el, "from", s.dbFrom, "W", (value) => {
+          const parsed = Number(value);
+          if (parsed > 0) {
+            s.dbFrom = parsed;
+            remember("tools-db-from", parsed);
+          }
+          draw();
+        }),
+        numberField(el, "to", s.dbTo, "W", (value) => {
+          const parsed = Number(value);
+          if (parsed > 0) {
+            s.dbTo = parsed;
+            remember("tools-db-to", parsed);
+          }
+          draw();
+        }),
+      );
+      const db = dbBetweenWatts(s.dbFrom, s.dbTo);
+      parts.push(
+        rows(el, [
+          ["difference", `${db >= 0 ? "+" : ""}${db.toFixed(2)} dB`],
+          ["ratio", `×${powerRatioFromDb(db).toFixed(2)}`],
+          ["in S-units", `≈${(db / 6).toFixed(1)}`, "6 dB per S-unit, by convention"],
+        ]),
+      );
+      parts.push(
+        el(
+          "p",
+          "tool-hint",
+          "3 dB is double, 10 dB is ten times. Going from 5 W to 100 W buys 13 dB " +
+            "— about two S-units at the far end.",
+        ),
+      );
+    }
+
+    if (s.view === "wire") {
+      const table = reference.electrical?.awg_ohms_per_kft || {};
+      const picker = el("div", "cw-tabs cw-subtabs");
+      for (const gauge of Object.keys(table).sort((a, b) => Number(a) - Number(b))) {
+        const button = el("button", "chip" + (gauge === s.awg ? " on" : ""), `AWG ${gauge}`);
+        button.type = "button";
+        button.addEventListener("click", () => {
+          s.awg = gauge;
+          remember("tools-awg", gauge);
+          draw();
+        });
+        picker.append(button);
+      }
+      parts.push(picker);
+      parts.push(
+        numberField(el, "one-way run", s.runM, "m", (value) => {
+          const parsed = Number(value);
+          if (parsed >= 0) {
+            s.runM = parsed;
+            remember("tools-run", parsed);
+          }
+          draw();
+        }),
+        numberField(el, "current", s.runA, "A", (value) => {
+          const parsed = Number(value);
+          if (parsed >= 0) {
+            s.runA = parsed;
+            remember("tools-amps", parsed);
+          }
+          draw();
+        }),
+      );
+      const drop = voltageDrop(
+        table,
+        reference.feet_per_metre,
+        Number(s.awg),
+        s.runM,
+        s.runA,
+        13.8,
+      );
+      if (drop) {
+        parts.push(
+          rows(el, [
+            ["drop", `${drop.drop_volts.toFixed(2)} V`, `${drop.percent.toFixed(1)}% of 13.8`],
+            ["at the radio", `${drop.at_load_volts.toFixed(2)} V`],
+            ["round trip", `${drop.ohms.toFixed(4)} Ω`, "both conductors counted"],
+          ]),
+        );
+      }
+      parts.push(
+        el(
+          "p",
+          "tool-hint",
+          "A 100 W HF radio wants ~13.8 V at 20+ A and folds back power below " +
+            "≈11.5 V on transmit. The round trip is the resistance: ten metres " +
+            "of cable is twenty metres of copper.",
+        ),
+      );
+    }
+
+    if (s.view === "battery") {
+      const usable = reference.electrical?.battery_usable || {};
+      const picker = el("div", "cw-tabs cw-subtabs");
+      const labels = { lifepo4: "LiFePO₄", lead_acid: "lead-acid", agm: "AGM" };
+      for (const chem of Object.keys(usable).sort()) {
+        const button = el(
+          "button",
+          "chip" + (chem === s.battChem ? " on" : ""),
+          labels[chem] || chem,
+        );
+        button.type = "button";
+        button.addEventListener("click", () => {
+          s.battChem = chem;
+          remember("tools-batt-chem", chem);
+          draw();
+        });
+        picker.append(button);
+      }
+      parts.push(picker);
+      parts.push(
+        numberField(el, "capacity", s.battAh, "Ah", (value) => {
+          const parsed = Number(value);
+          if (parsed > 0) {
+            s.battAh = parsed;
+            remember("tools-batt-ah", parsed);
+          }
+          draw();
+        }),
+        numberField(el, "load", s.battW, "W", (value) => {
+          const parsed = Number(value);
+          if (parsed > 0) {
+            s.battW = parsed;
+            remember("tools-batt-w", parsed);
+          }
+          draw();
+        }),
+      );
+      const runtime = batteryRuntime(usable, s.battAh, s.battChem, s.battW, 12.8);
+      if (runtime) {
+        parts.push(
+          rows(el, [
+            ["runtime", `${runtime.hours.toFixed(1)} h`],
+            ["usable energy", `${runtime.usable_watt_hours.toFixed(0)} Wh`,
+              `${(runtime.usable_fraction * 100).toFixed(0)}% of nameplate`],
+          ]),
+        );
+      }
+      parts.push(
+        el(
+          "p",
+          "tool-hint",
+          "Derated by chemistry, not hope: lead-acid past half charge trades " +
+            "battery life for minutes; LiFePO₄ holds voltage nearly to the floor. " +
+            "A 20/80 duty cycle on SSB stretches these numbers a lot.",
         ),
       );
     }
