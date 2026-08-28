@@ -104,6 +104,34 @@ Great-circle over a spherical Earth. That is within a few kilometres of the
 ellipsoidal answer at any distance a radio path covers, and both are far more
 precise than a grid square is — a square is 1° by 2°.
 
+## ohm
+
+The power wheel without the wheel: give any two of volts, amps, ohms and
+watts, get all four. Exactly two — with three the system is overdetermined,
+and silently ignoring one would turn a typo into an answer.
+
+## dB
+
+Watts to watts, as a decibel difference, a ratio, and an approximate S-unit
+count (6 dB per S-unit, by convention). The landmark worth memorising: 5 W to
+100 W is 13 dB, about two S-units at the far end.
+
+## wire
+
+Voltage drop over a DC power run, by AWG gauge, with the resistance table
+every handbook carries. **The round trip is the resistance**: current goes out
+one conductor and back the other, so ten metres of cable is twenty metres of
+copper — halving the answer is the classic mistake, and the drift test pins it.
+The hint states the number that matters: a 100 W HF radio folds back power
+below roughly 11.5 V on transmit.
+
+## battery
+
+Runtime from capacity, chemistry and load — derated by chemistry, not hope.
+Lead-acid past half charge trades battery life for minutes; LiFePO₄ is usable
+to about 90%. The derates are published constants the browser receives as
+data, so the panel and the tests cannot disagree about them.
+
 ## Two implementations, held together
 
 The tables and the arithmetic live in `src/hammunition_hill/antenna.py`, where

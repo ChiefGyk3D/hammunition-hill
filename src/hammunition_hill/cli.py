@@ -211,7 +211,14 @@ def _publish_antenna(config: Config) -> None:
     disagree with a test about how long a 40 m dipole is.
     """
     from .antenna import reference
+    from .electrical import reference as electrical_reference
 
+    # One snapshot for one panel, the same trade as morse + cwpractice: the RF
+    # tables and the DC tables are both startup-time constants read by the
+    # shack-tools panel, and splitting them would double the fetches to save a
+    # key.
+    payload = reference()
+    payload["electrical"] = electrical_reference()
     write_snapshot(
         config.data_dir,
         Snapshot(
@@ -219,7 +226,7 @@ def _publish_antenna(config: Config) -> None:
             kind="antenna",
             fetched_at=datetime.now(UTC),
             stale_after_seconds=0,
-            data=reference(),
+            data=payload,
         ),
     )
 

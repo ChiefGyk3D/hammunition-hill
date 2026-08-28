@@ -883,3 +883,6 @@ ul.wx-alerts { list-style: none; margin: 0; padding: 0; }
   line-height: 1.5;
   color: var(--ink);
 }
+
+/* Four inputs on one row for the power wheel, collapsing on a phone. */
+.tool-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; }
