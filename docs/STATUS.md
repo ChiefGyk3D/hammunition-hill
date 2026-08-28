@@ -39,7 +39,7 @@ have. Where the two disagree, this page is the one kept current.
 | Licence exam practice | ✅ all three US pools, five study modes |
 | Prometheus metrics endpoint | ✅ working, off by default |
 | Opaque image mode | ❌ **not written** |
-| Packaging (Docker, distro packages) | ❌ **not written** |
+| Packaging | ✅ Docker image and a bare `pip install` both serve the dashboard; distro packages ❌ |
 | CI, CodeQL, dependency audit | ✅ working |
 
 ---
@@ -61,12 +61,12 @@ The parts everything else sits on.
 | `hamhill serve` / `check` / `fcc-import` | ✅ | |
 | Config validation with actionable errors | ✅ | |
 | Tests | ✅ | 1587, ruff clean. |
-| CI | ✅ | Nine jobs, plus CodeQL in its own workflow: lint, pytest across 3.11–3.13 on x86, ARM and macOS, example-config validation, an end-to-end smoke test, a real-browser render of every dashboard, dependency audit, wheel build, and a weekly upstream-liveness check. |
+| CI | ✅ | Ten jobs, plus CodeQL in its own workflow: lint, pytest across 3.11–3.13 on x86, ARM and macOS, example-config validation, an end-to-end smoke test, a real-browser render of every dashboard, dependency audit, wheel build, a weekly upstream-liveness check, and a container build that must serve the dashboard. |
 | CodeQL | ✅ | Python and JavaScript, weekly and per-PR. |
 | Dependabot | ✅ | Actions and pip, weekly. |
 | Tests cannot reach the network | ✅ | Enforced by a conftest guard, not convention. |
 | `make check` reproduces CI locally | ✅ | |
-| Docker image | ❌ | systemd is documented; a container is not built. |
+| Docker image | ✅ | Built and exercised in CI: the container must serve the dashboard before anything merges. |
 | Distro packages | ❌ | |
 
 ## Sources
@@ -202,7 +202,7 @@ Ten are **tier 0** — they work with the internet unplugged: `bandplan`,
 | systemd unit | ✅ | Documented in [INSTALL.md](INSTALL.md) |
 | Kiosk / wall display notes | ✅ | |
 | Docker image | ❌ | |
-| `pip install` alone | ❌ | The wheel carries the CLI, not `web/`. A clone is the supported install and the CLI now says so instead of serving 404s. |
+| `pip install` alone | ✅ | The wheel carries `web/` and the question pools; with no checkout the server falls back to the packaged copy. CI installs the bare wheel and curls the dashboard. |
 | Hosted / multi-user mode | ⛔ | Not until there is a real authn/authz model, TLS, rate limiting and a threat model this version deliberately does not have. Reach it over ZTNA or a VPN instead — see [SECURITY.md](SECURITY.md). |
 
 ---

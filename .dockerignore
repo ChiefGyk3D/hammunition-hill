@@ -1,0 +1,10 @@
+.git
+.venv
+node_modules
+dist
+build
+docs/images
+*.png
+.pytest_cache
+.ruff_cache
+__pycache__
