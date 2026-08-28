@@ -215,6 +215,7 @@ product. None of these fetch anything.
 | `solar.py` | Where the sun is. |
 | `severity.py` | What a space weather number actually means. |
 | `propagation.py` | A crude HF propagation indicator. |
+| `minimuf.py` | MINIMUF 3.5: point-to-point MUF over a chosen path. Public-domain NOSC algorithm, mirrored in `web/lib/muf.js` with a drift test. |
 | `satellites.py` | When the satellites are up, and where to point. |
 | `antenna.py` | Antenna, feedline and SWR arithmetic. |
 | `electrical.py` | Ohm's law, decibels, wire gauge and battery runtime. |

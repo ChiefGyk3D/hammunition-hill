@@ -21,7 +21,7 @@ have. Where the two disagree, this page is the one kept current.
 |---|---|
 | Collector, snapshot architecture, static server | ✅ working |
 | Egress allowlist, CSP, path handling | ✅ working |
-| Panels | ✅ 29 across 6 dashboards |
+| Panels | ✅ 30 across 6 dashboards |
 | Source kinds | ✅ 13 polled, 6 stream, 1 file |
 | Space weather dials | ✅ 8 scales |
 | Your log driving spot colouring | ✅ working |
@@ -100,13 +100,13 @@ The parts everything else sits on.
 
 ## Panels
 
-29 panels, 6 dashboards: **Home**, **Map**, **Space Weather**, **Operating**,
+30 panels, 6 dashboards: **Home**, **Map**, **Space Weather**, **Operating**,
 **Activity**, **Field & Weather**. Regroup them by editing
 `web/panels/index.json`.
 
 Ten are **tier 0** — they work with the internet unplugged: `bandplan`,
 `beacons`, `callsign`, `clock`, `cw`, `exam`, `gps`, `logbook`, `reference`,
-`tools`. Eighteen are tier 1. One is tier 2 (`imagery`).
+`tools`. Nineteen are tier 1. One is tier 2 (`imagery`).
 
 | Feature | Status | Notes |
 |---|---|---|
@@ -161,7 +161,8 @@ Ten are **tier 0** — they work with the internet unplugged: `bandplan`,
 | Solar terminator / greyline | ✅ | Computed offline from the solar subpoint |
 | MUF predictor | ✅ | Derived from SFI, K and the sun's height over *your* station. An indicator, not a prediction — see [PROPAGATION.md](PROPAGATION.md) |
 | D-layer absorption | ✅ | Real solar zenith at your grid square, not a UTC-hour proxy |
-| VOACAP point-to-point | ❌ | The genuinely hard one, and still open: this indicator is not it. Either bundle the public-domain ITSHFBC binaries and shell out, or accept that a path-free estimate is where this stops. |
+| Point-to-point MUF chart (MINIMUF 3.5) | ✅ | Pick a target grid, get the 24-hour band-by-band opening chart, computed in the browser. The honest substitute: F2 only, RMS ≈ 3.8 MHz, and the panel says so |
+| VOACAP point-to-point | ❌ | Still the genuinely hard one: reliability, signal level, antennas, power. MINIMUF answers "when does the band open"; VOACAP answers "how well will this circuit work". Bundling the public-domain ITSHFBC binaries remains the only honest route to the second question |
 | FT8 propagation globes | ✅ | One sphere per active band, lit by cluster spots, WSJT-X decodes, and PSK Reporter / WSPR reception reports |
 
 ## Weather
@@ -213,11 +214,13 @@ Ten are **tier 0** — they work with the internet unplugged: `bandplan`,
 
 What is actually being worked on, in order:
 
-1. **VOACAP or an honest substitute** — the genuinely hard propagation item,
-   and the last ❌ in the summary table that is code rather than data.
-2. **International band plans and exam pools** — data contributions the
+1. **International band plans and exam pools** — data contributions the
    loaders are already generic for.
-3. **Distro packages**, now that the container and the bare wheel both work.
+2. **Distro packages**, now that the container and the bare wheel both work.
+
+The honest VOACAP substitute shipped as MINIMUF 3.5 (the DX Path panel);
+VOACAP itself — reliability and signal level, not just the MUF — stays in
+the candidate list below until someone bundles ITSHFBC.
 
 Everything the roadmap listed before this — the query endpoint, packaging,
 opaque image mode, Part 97 beside the exam answers, RBN, satellites, the
@@ -268,7 +271,7 @@ shape, a tier 0 computation, or the log we already read.
 | Idea | Fit | Notes |
 |---|---|---|
 | **Grayline DX prediction** | strong | We compute the terminator already; the useful version is "which entities are on the greyline with me right now", which is the terminator crossed with the prefix table. |
-| **VOACAP point-to-point** | hard | The genuinely hard one, and still open. Either bundle the public-domain ITSHFBC binaries and shell out, or accept that a path-free indicator is where this stops. |
+| **VOACAP point-to-point** | hard | MINIMUF now answers the when-does-it-open half in the DX Path panel. What VOACAP would add is reliability and signal level per circuit; that still means bundling the public-domain ITSHFBC binaries and shelling out. |
 | **Sporadic-E and aurora alerting** | medium | We have the aurora oval and the band data. "Tell me when 6m opens" is a threshold and a notification, and notification is a whole capability this project does not have yet. |
 
 ### Station and shack

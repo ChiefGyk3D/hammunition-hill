@@ -1017,3 +1017,60 @@ ul.wx-alerts { list-style: none; margin: 0; padding: 0; }
 }
 .globe-band { font-weight: 700; letter-spacing: .08em; }
 .globe-count { color: var(--muted); }
+
+/* --- DX path (MINIMUF) --------------------------------------------------- */
+.pmf-controls { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+.pmf-input {
+  width: 90px;
+  background: var(--panel-2);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 13px;
+  letter-spacing: .06em;
+  padding: 5px 8px;
+  text-transform: uppercase;
+}
+.pmf-input::placeholder { color: var(--muted); text-transform: none; letter-spacing: 0; }
+.pmf-input:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.pmf-path { font-family: var(--mono); font-size: 12px; color: var(--ink); margin: 0 0 8px; }
+.pmf-grid {
+  display: grid;
+  grid-template-columns: 38px repeat(24, 1fr);
+  gap: 2px;
+  align-items: stretch;
+}
+.pmf-corner, .pmf-hour {
+  font-family: var(--mono);
+  font-size: 9.5px;
+  color: var(--muted);
+  text-align: left;
+  line-height: 1.4;
+}
+.pmf-band {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--ink);
+  align-self: center;
+}
+.pmf-cell { display: block; min-height: 13px; border-radius: 1px; }
+/* The ramp reads MUF distance, not merit: shut, marginal, prime, and a
+   deliberate "no opinion" for bands far below the MUF, where daytime
+   absorption -- which MINIMUF does not model -- decides instead. */
+.pmf-above { background: color-mix(in srgb, var(--poor) 30%, var(--panel-2)); }
+.pmf-near { background: var(--fair); }
+.pmf-prime { background: var(--good); }
+.pmf-low { background: var(--panel-2); }
+.pmf-cell.pmf-now { outline: 1px solid var(--ink); outline-offset: -1px; }
+.pmf-hour.pmf-now { color: var(--ink); }
+.pmf-legend {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+  font-size: 10.5px;
+  color: var(--muted);
+}
+.pmf-key { display: inline-flex; align-items: center; gap: 4px; }
+.pmf-key .pmf-cell { width: 12px; min-height: 10px; }
