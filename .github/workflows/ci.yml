@@ -122,17 +122,17 @@ jobs:
           cd "$GITHUB_WORKSPACE"
           cp config.example.toml ci-config.toml
           hamhill check --offline --config ci-config.toml
-      - name: a missing web directory fails loudly
-        # The wheel carries the CLI and not web/. Someone who pip installs
-        # instead of cloning must be told that, not served 404s in silence.
+      - name: a missing web directory falls back to the packaged copy
+        # This step used to demand the opposite: that check FAIL with no web/
+        # beside the config, because the wheel did not carry the dashboard and
+        # silence meant 404s. The wheel carries web/ now, so the honest
+        # behaviour inverted -- with no checkout, check must succeed and must
+        # say it is serving the packaged copy, not the missing local one.
         run: |
           mkdir -p /tmp/nodashboard && cd /tmp/nodashboard
           cp "$GITHUB_WORKSPACE/config.example.toml" config.toml
-          if hamhill check --offline --config config.toml; then
-            echo "::error::check passed with no web directory present"
-            exit 1
-          fi
-          echo "correctly refused"
+          hamhill check --offline --config config.toml | tee /tmp/check.out
+          grep -q "hammunition_hill/web" /tmp/check.out
       - name: hamhill --version and --help
         run: |
           hamhill --version
