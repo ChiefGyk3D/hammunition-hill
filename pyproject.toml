@@ -64,7 +64,13 @@ build-backend = "setuptools.build_meta"
 where = ["src"]
 
 [tool.setuptools.package-data]
-hammunition_hill = ["py.typed", "data/exam/*.json"]
+# web/** is the dashboard itself, reached through a symlink at
+# src/hammunition_hill/web -> ../../web. The repository keeps web/ at the
+# root where contributors, the Makefile and the render harness expect it;
+# the build follows the symlink and the wheel carries real files, which is
+# what makes `pip install hammunition-hill` alone a working install instead
+# of a CLI that serves 404s.
+hammunition_hill = ["py.typed", "data/exam/*.json", "data/part97.json", "web/**/*"]
 
 [tool.ruff]
 line-length = 100

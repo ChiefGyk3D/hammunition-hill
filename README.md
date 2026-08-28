@@ -75,8 +75,8 @@ finished, so here is exactly where things stand:
 | Metrics — InfluxDB push | ❌ **not written** |
 | Licence exam practice — all three US pools included | ✅ working |
 | Part 97 quoted beside a rules answer | ✅ working |
-| CI — 9 jobs plus CodeQL, 3 Python versions, x86 + ARM + macOS | ✅ working |
-| Docker image, distro packages, `pip install` without a clone | ❌ **not written** |
+| CI — 10 jobs plus CodeQL, 3 Python versions, x86 + ARM + macOS | ✅ working |
+| Docker image and `pip install` without a clone | ✅ working — distro packages still ❌ |
 
 **Full inventory, every subsystem: [docs/STATUS.md](docs/STATUS.md).** That page
 is the one kept current; anything here is a summary of it. It also carries the

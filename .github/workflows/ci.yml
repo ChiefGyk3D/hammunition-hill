@@ -244,11 +244,59 @@ jobs:
           python -m venv /tmp/wheeltest
           /tmp/wheeltest/bin/pip install --disable-pip-version-check dist/*.whl
           /tmp/wheeltest/bin/hamhill --version
+      - name: a bare install serves the dashboard
+        # No checkout in sight: the wheel must carry web/ and the config must
+        # fall back to the packaged copy. This was a documented limitation
+        # ("the wheel carries the CLI and not web/") until the wheel started
+        # carrying it; this step is what keeps that true.
+        run: |
+          mkdir /tmp/bare && cd /tmp/bare
+          printf '[server]\nhost = "127.0.0.1"\nport = 8199\n[station]\ncallsign = "N0CALL"\ngrid = "FN31pr"\n' > config.toml
+          /tmp/wheeltest/bin/hamhill check --offline --config config.toml | grep -q "site-packages/hammunition_hill/web"
+          /tmp/wheeltest/bin/hamhill serve --config config.toml & SERVER=$!
+          sleep 3
+          curl -fsS -o /dev/null http://127.0.0.1:8199/
+          curl -fsS -o /dev/null http://127.0.0.1:8199/app.js
+          curl -fsS -o /dev/null http://127.0.0.1:8199/panels/index.json
+          kill $SERVER
       - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: dist
           path: dist/
           retention-days: 7
+
+  docker:
+    name: container builds and serves
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: build the image
+        run: docker build -t hammunition-hill:ci .
+      - name: the container serves the dashboard
+        # The same bare-install property the build job proves for the wheel,
+        # proven for the artifact people actually deploy: a config mount, a
+        # data volume, and the dashboard answering on the published port.
+        run: |
+          mkdir -p /tmp/hh-docker
+          printf '[server]\nhost = "0.0.0.0"\nport = 8073\n[station]\ncallsign = "N0CALL"\ngrid = "FN31pr"\n' > /tmp/hh-docker/config.toml
+          docker run -d --name hamhill -p 127.0.0.1:8073:8073 \
+            -v /tmp/hh-docker/config.toml:/config/config.toml:ro hammunition-hill:ci
+          for i in $(seq 1 20); do
+            curl -fsS -o /dev/null http://127.0.0.1:8073/ && break
+            sleep 1
+          done
+          curl -fsS -o /dev/null http://127.0.0.1:8073/
+          curl -fsS -o /dev/null http://127.0.0.1:8073/app.js
+          curl -fsS -o /dev/null http://127.0.0.1:8073/panels/index.json
+          curl -fsS http://127.0.0.1:8073/data/morse.json | grep -q q_codes
+      - name: the container stops cleanly and logs something sane
+        run: |
+          docker logs hamhill 2>&1 | grep -qi "dashboard on"
+          timeout 15 docker stop hamhill
+          docker rm hamhill
 
   upstreams:
     name: upstream hosts still resolve
@@ -278,7 +326,7 @@ jobs:
   all-green:
     name: all checks passed
     if: always()
-    needs: [lint, test, example-config, smoke, frontend, audit, build]
+    needs: [lint, test, example-config, smoke, frontend, audit, build, docker]
     # `upstreams` is deliberately absent: it is schedule-only and talks to
     # the real internet, so it must never gate a merge.
     runs-on: ubuntu-24.04
