@@ -41,6 +41,7 @@
       "panels": [
         "beacons",
         "gps",
+        "reference",
         "cw",
         "logbook",
         "callsign",

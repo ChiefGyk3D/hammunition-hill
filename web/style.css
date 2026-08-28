@@ -972,3 +972,24 @@ ul.wx-alerts { list-style: none; margin: 0; padding: 0; }
 }
 .edit-btn:disabled { opacity: .35; cursor: default; }
 .edit-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
+/* --- pocket reference -------------------------------------------------- */
+.ref-rst { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+.ref-rst-head {
+  margin: 0 0 6px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+/* Reference rows carry sentences, not codes: the shared .cw-code style says
+   nowrap and letter-spacing for Morse, and a nowrapped sentence walks out of
+   its column and into the next -- "difficu3ty" was readable in the RST view,
+   once, briefly. Scope the exception to this panel. */
+[data-panel="reference"] .cw-code { white-space: normal; letter-spacing: normal; }
+[data-panel="reference"] .cw-row { grid-template-columns: minmax(4.5ch, auto) 1fr; }
+
+.ref-links { display: flex; flex-direction: column; gap: 6px; }
+.ref-link-row { display: grid; grid-template-columns: minmax(150px, auto) 1fr; gap: 10px; align-items: baseline; }
+.ref-link { color: var(--accent); text-decoration: none; }
+.ref-link:hover, .ref-link:focus-visible { text-decoration: underline; }

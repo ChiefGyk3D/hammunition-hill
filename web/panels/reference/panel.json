@@ -1,0 +1,9 @@
+{
+  "id": "reference",
+  "name": "Pocket Reference",
+  "tier": 0,
+  "sources": ["reference"],
+  "embed_hosts": [],
+  "span": 2,
+  "description": "The lookups: Q signals, CW abbreviations, the number codes, phonetic alphabet, RST, calling frequencies, and the sites worth a bookmark. Tier 0 — as useful with the WAN unplugged as with it up."
+}
