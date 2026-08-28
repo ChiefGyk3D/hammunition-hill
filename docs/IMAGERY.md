@@ -116,32 +116,47 @@ sees:
 With the WAN down, tiles go blank while every tier 0 and tier 1 panel keeps
 working from its last snapshot.
 
-### Why not proxy them through the collector
+### Opaque mode: the collector fetches it instead
 
-We should, and it is planned. It is called **opaque mode** in the roadmap, and
-it is not built yet — that is the honest reason tiles are browser-side today,
-not an argument that browser-side is better.
+```toml
+[[imagery]]
+id = "goes-east"
+name = "GOES East full disc"
+url = "https://cdn.star.nesdis.noaa.gov/GOES16/ABI/FD/GEOCOLOR/678x678.jpg"
+mode = "opaque"
+refresh = 600
+credit = "NOAA/NESDIS"
+```
 
-It is worth being clear that opaque mode is not a departure from the
-architecture, it *is* the architecture: the collector fetches on a timer, writes
-a file, and the static server serves it. Exactly what every other source does,
-with a binary payload instead of JSON. One collector polling a tile every five
-minutes is also strictly *fewer* upstream requests than five wall displays
-fetching it themselves, so it is better for the upstream as well as for you.
+`mode = "opaque"` folds a tile back into the architecture: the collector
+fetches it on `refresh`, writes it atomically under `data/tiles/`, and the
+browser loads it same-origin. The upstream sees one machine on a timer instead
+of every viewer on every dashboard load — no viewer IPs, no cookies, no
+User-Agents — and the host leaves the CSP entirely, joining the collector's
+egress allowlist instead. One collector polling a tile every ten minutes is
+also strictly *fewer* upstream requests than five wall displays fetching it
+themselves, so it is kinder to the upstream too.
 
-Two things it needs before it ships, which is why it has not been rushed:
+The discipline that let this ship, per the concern that kept it unshipped:
 
-- **Content-type discipline.** An upstream that serves SVG instead of PNG would
-  be handing us a document that can run script, now on our own origin where the
-  CSP trusts `'self'`. The proxy has to allowlist raster types on the way in and
-  pin the `Content-Type` on the way out. Getting that wrong is worse than the
-  IP exposure it fixes.
-- **Bandwidth with nobody watching.** A collector on a metered link would fetch
-  every tile on every interval whether or not a dashboard is open. That wants an
-  opt-out, or fetch-on-first-view with a floor.
+- **The payload is identified by its own bytes.** PNG, JPEG, GIF and WebP magic
+  numbers — never the upstream's `Content-Type` header, which is exactly the
+  thing an evil or broken upstream controls. An upstream that serves SVG — a
+  document that can run script, which on our origin the CSP would trust — is
+  refused by name, and the last good raster stays on disk with an honest error
+  beside it.
+- **A 10 MB cap, enforced while the body streams in** — a cap checked after
+  the download is a description, not a limit.
+- **A failure keeps the last good image.** A stale radar frame with an honest
+  timestamp beats a broken-image icon; the same trade every JSON snapshot makes.
 
-Until then the trade is left where an operator can see it: opt in one line at a
-time, and the panel labels it on the face of every tile.
+Which mode for which tile: a fast-moving radar loop that updates every two
+minutes is a reasonable tier 2 tile — the collector cannot usefully cache it
+faster than you watch it. A satellite disc that updates every ten minutes has
+no business being fetched by every viewer. Opaque tiles cost collector
+bandwidth whether or not a dashboard is open, which is why the mode is chosen
+per tile rather than globally: a metered field link can leave the heavy tiles
+direct, or absent.
 
 ### Configuring tiles
 

@@ -228,6 +228,7 @@ product. None of these fetch anything.
 | Module | Responsibility |
 |---|---|
 | `metrics.py` | A Prometheus endpoint, so Grafana can do history. |
+| `tiles.py` | Opaque imagery: raster-only, sniffed by magic bytes, served same-origin. |
 
 ### Snapshot format
 

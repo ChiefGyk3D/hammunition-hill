@@ -129,6 +129,13 @@ Three things to know:
 `refresh` has a higher floor than a source `interval` because a tile is
 re-requested by *every open dashboard*, not once by one collector.
 
+`mode = "opaque"` hands a tile to the collector instead: fetched on `refresh`,
+checked against raster magic bytes (an upstream serving SVG is refused), capped
+at 10 MB, and served same-origin — the host leaves the CSP and joins the
+collector's egress allowlist. Per tile, because the trade is per tile — see
+[IMAGERY.md](IMAGERY.md).
+
+
 ---
 
 ## `[[sources]]`

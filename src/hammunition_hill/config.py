@@ -87,10 +87,20 @@ class ImageryTile:
     credit: str = ""
     link: str = ""
     cache_bust: bool = True
+    # "direct": the browser fetches the tile itself -- tier 2, host in the CSP.
+    # "opaque": the collector fetches it on `refresh` and serves it same-origin
+    # -- the host leaves the CSP and joins the collector's egress allowlist
+    # instead. Per tile, because the trade is per tile: a fast-moving radar
+    # loop may be worth tier 2, a slow satellite disc almost never is.
+    mode: str = "direct"
 
     @property
     def host(self) -> str:
         return (urlsplit(self.url).hostname or "").lower()
+
+    @property
+    def opaque(self) -> bool:
+        return self.mode == "opaque"
 
 
 @dataclass(frozen=True)
@@ -209,15 +219,18 @@ class Config:
     def allowlist(self) -> tuple[set[str], set[str]]:
         """(all hosts the collector may contact, hosts explicitly marked local).
 
-        Imagery hosts are deliberately absent. They are browser-side only, so
-        granting the collector reach to them would widen what this process can
-        originate for no gain. Two lists that are *almost* the same is not an
-        oversight -- it is the smaller one being smaller on purpose.
+        Direct imagery hosts are deliberately absent: the browser fetches
+        those, so granting the collector reach to them would widen what this
+        process can originate for no gain. Opaque tiles are the collector's to
+        fetch, so their hosts are here and NOT in the CSP -- the two lists
+        being almost-but-not-quite the same is each being exactly what its
+        reader needs, on purpose.
         """
         from .lookup import provider_hosts
 
         allowed = {s.host for s in self.sources if s.host}
         allowed |= {h.lower() for h in self.embed_hosts}
+        allowed |= {tile.host for tile in self.imagery if tile.opaque and tile.host}
         # A lookup provider declares its own hosts; nothing else grants it reach.
         for name in self.lookup.providers:
             allowed |= set(provider_hosts(name))
@@ -233,7 +246,9 @@ class Config:
         the single declaration and the policy follows from it.
         """
         hosts = {h.lower() for h in self.embed_hosts if h}
-        hosts |= {tile.host for tile in self.imagery if tile.host}
+        # Opaque tiles are served same-origin, which is their whole point: the
+        # browser never contacts the host, so the policy must not name it.
+        hosts |= {tile.host for tile in self.imagery if tile.host and not tile.opaque}
         return tuple(sorted(hosts))
 
 
@@ -420,6 +435,13 @@ def parse_config(raw: dict[str, Any], *, base_dir: Path) -> Config:
         if link and urlsplit(link).scheme.lower() not in ("http", "https"):
             raise ConfigError(f"{where}: link must be http or https")
 
+        mode = str(entry.get("mode", "direct"))
+        if mode not in ("direct", "opaque"):
+            raise ConfigError(
+                f'{where}: mode must be "direct" or "opaque" (got {mode!r}). '
+                f"direct = the browser fetches it (tier 2); opaque = the collector "
+                f"fetches and serves it same-origin."
+            )
         tiles.append(
             ImageryTile(
                 id=tile_id,
@@ -430,6 +452,7 @@ def parse_config(raw: dict[str, Any], *, base_dir: Path) -> Config:
                 credit=str(entry.get("credit") or ""),
                 link=link,
                 cache_bust=bool(entry.get("cache_bust", True)),
+                mode=mode,
             )
         )
 

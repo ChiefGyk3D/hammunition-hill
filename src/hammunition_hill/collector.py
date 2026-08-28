@@ -125,6 +125,55 @@ async def _polled_loop(
         await asyncio.sleep(cfg.interval)
 
 
+# --- opaque imagery -------------------------------------------------------
+async def _tile_loop(
+    client: httpx.AsyncClient, guard: EgressGuard, tile: Any, config: Config
+) -> None:
+    """Fetch one opaque tile on its refresh interval.
+
+    The same shape as a polled source with a binary payload: egress-checked,
+    scheduled, atomic write, and a failure leaves the last good image in place
+    with an honest error in the sidecar. The size cap is enforced while the
+    body streams in, not after -- a cap checked after the download is a
+    description, not a limit.
+    """
+    await asyncio.sleep(random.uniform(0, min(5.0, tile.refresh / 4)))  # noqa: S311
+    while True:
+        await run_tile_once(client, guard, tile, config)
+        await asyncio.sleep(tile.refresh)
+
+
+async def run_tile_once(
+    client: httpx.AsyncClient, guard: EgressGuard, tile: Any, config: Config
+) -> bool:
+    """One fetch-sniff-write cycle; True when a fresh image was written."""
+    from .tiles import MAX_TILE_BYTES, TileError, sniff, write_tile, write_tile_failure
+
+    try:
+        guard.check(tile.url)
+        chunks: list[bytes] = []
+        received = 0
+        async with client.stream("GET", tile.url) as response:
+            response.raise_for_status()
+            async for chunk in response.aiter_bytes():
+                received += len(chunk)
+                if received > MAX_TILE_BYTES:
+                    raise TileError(
+                        f"payload exceeds {MAX_TILE_BYTES} bytes -- not a dashboard tile"
+                    )
+                chunks.append(chunk)
+        payload = b"".join(chunks)
+        extension = sniff(payload)
+        meta = write_tile(config.data_dir, tile.id, payload, extension)
+        log.info("tile %s updated (%s, %d bytes)", tile.id, extension, meta["bytes"])
+        return True
+    except (EgressDenied, TileError, httpx.HTTPError) as exc:
+        reason = f"{type(exc).__name__}: {exc}"
+        log.warning("tile %s failed: %s", tile.id, reason)
+        write_tile_failure(config.data_dir, tile.id, reason)
+        return False
+
+
 # --- file sources ---------------------------------------------------------
 async def _file_loop(cfg: SourceConfig, config: Config, enricher: Enricher) -> None:
     """Re-read a local file on an interval.
@@ -595,7 +644,7 @@ async def run_collector(config: Config, guard: EgressGuard, enricher: Enricher) 
     Before this, `hamhill serve` with no sources warned and exited immediately,
     which made the offline case the one case that did not work.
     """
-    if not config.sources:
+    if not config.sources and not any(tile.opaque for tile in config.imagery):
         log.info(
             "no sources configured: serving tier 0 panels only "
             "(clock, band plan, CW reference, callsign lookup, beacons)"
@@ -627,6 +676,12 @@ async def run_collector(config: Config, guard: EgressGuard, enricher: Enricher) 
 
             if config.logbooks:
                 group.create_task(_logbook_loop(config), name="logbooks")
+
+            for tile in config.imagery:
+                if tile.opaque:
+                    group.create_task(
+                        _tile_loop(client, guard, tile, config), name=f"tile:{tile.id}"
+                    )
 
             group.create_task(_propagation_loop(config, enricher), name="propagation")
             group.create_task(_satellites_loop(config, enricher), name="satellites")

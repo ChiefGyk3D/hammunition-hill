@@ -38,7 +38,7 @@ have. Where the two disagree, this page is the one kept current.
 | CW / Morse tools | ✅ working |
 | Licence exam practice | ✅ all three US pools, five study modes |
 | Prometheus metrics endpoint | ✅ working, off by default |
-| Opaque image mode | ❌ **not written** |
+| Opaque image mode | ✅ per-tile: the collector fetches, the browser never does |
 | Packaging (Docker, distro packages) | ❌ **not written** |
 | CI, CodeQL, dependency audit | ✅ working |
 
@@ -172,7 +172,7 @@ Sixteen are tier 1. One is tier 2 (`imagery`).
 | EU alerts (MeteoAlarm) | 🟡 | Atom feeds and their map work; structured CAP severity needs a `meteoalarm` source |
 | Met Office warnings | 🟡 | Warning map as a tile; no structured feed parsed |
 | Field weather conditions | ❌ | Needs the `/points` → gridpoint chain done properly rather than letting a source build URLs from a response |
-| Opaque image mode | ❌ | Collector-cached tiles, so the browser never contacts a third party. Needs content-type discipline first — see [IMAGERY.md](IMAGERY.md) |
+| Opaque image mode | ✅ | `mode = "opaque"` per tile: collector-fetched on `refresh`, raster-only by magic bytes (SVG refused by name), 10 MB streaming cap, served same-origin — the host leaves the CSP. See [IMAGERY.md](IMAGERY.md) |
 
 ## Data and reference
 
@@ -214,7 +214,8 @@ What is actually being worked on, in order:
 1. **The callsign query endpoint**, which is the one place a config flag still
    parses and does nothing.
 2. **Packaging**, meaning a container and a `pip install` that carries `web/`.
-3. **Opaque image mode**, so a tier 2 tile stops being tier 2.
+3. ~~Opaque image mode.~~ Shipped: a tile marked opaque is fetched by the
+   collector rather than by every viewer, and its host leaves the CSP.
 
 Part 97 alongside the exam questions was the previous first item and has
 shipped: 192 of the 1431 questions cite a rule, and the rule is now quoted.
