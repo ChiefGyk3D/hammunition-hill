@@ -21,8 +21,8 @@ have. Where the two disagree, this page is the one kept current.
 |---|---|
 | Collector, snapshot architecture, static server | ✅ working |
 | Egress allowlist, CSP, path handling | ✅ working |
-| Panels | ✅ 28 across 6 dashboards |
-| Source kinds | ✅ 11 polled, 6 stream, 1 file |
+| Panels | ✅ 29 across 6 dashboards |
+| Source kinds | ✅ 13 polled, 6 stream, 1 file |
 | Space weather dials | ✅ 8 scales |
 | Your log driving spot colouring | ✅ working |
 | Rig and WSJT-X integration | ✅ working |
@@ -71,8 +71,8 @@ The parts everything else sits on.
 
 ## Sources
 
-**Polled** (11 kinds): `swpc`, `hamqsl`, `rss`, `pota`, `sota`, `ics`, `aurora`,
-`noaa_scales`, `swpc_alerts`, `nws_alerts`, `tle`.
+**Polled** (13 kinds): `swpc`, `hamqsl`, `rss`, `pota`, `sota`, `ics`, `aurora`,
+`noaa_scales`, `swpc_alerts`, `nws_alerts`, `tle`, `pskreporter`, `wspr`.
 **Stream** (6): `dxcluster`, `rbn`, `wsjtx`, `rigctl`, `gpsd`, `nmea`.
 **File** (1): `adif`.
 
@@ -91,7 +91,8 @@ The parts everything else sits on.
 | `rigctld` | ✅ | Live frequency and mode |
 | ADIF log ingest | ✅ | Drives needed-slot colouring |
 | RBN | ✅ | Its own line parser, aggregated by band and mode. Bounded so a busy night cannot grow memory without limit |
-| PSK Reporter | ❌ | |
+| PSK Reporter | ✅ | Reception reports of *you*, polled from the retrieval API. Your callsign is the query and the config says so |
+| WSPR (wspr.live) | ✅ | Who decoded your beacon, with SNR, power and distance. Same honesty note as PSK Reporter |
 | Satellite passes | ✅ | Cached TLEs, SGP4 when the optional extra is installed, look angles and Doppler. Passes found by bisection, not by scanning |
 | WWFF / WWBOTA | ❌ | Same shape as POTA/SOTA |
 | Repeater directory | ❌ | RepeaterBook has a public API |
@@ -99,13 +100,13 @@ The parts everything else sits on.
 
 ## Panels
 
-28 panels, 6 dashboards: **Home**, **Map**, **Space Weather**, **Operating**,
+29 panels, 6 dashboards: **Home**, **Map**, **Space Weather**, **Operating**,
 **Activity**, **Field & Weather**. Regroup them by editing
 `web/panels/index.json`.
 
 Ten are **tier 0** — they work with the internet unplugged: `bandplan`,
 `beacons`, `callsign`, `clock`, `cw`, `exam`, `gps`, `logbook`, `reference`,
-`tools`. Seventeen are tier 1. One is tier 2 (`imagery`).
+`tools`. Eighteen are tier 1. One is tier 2 (`imagery`).
 
 | Feature | Status | Notes |
 |---|---|---|
@@ -161,7 +162,7 @@ Ten are **tier 0** — they work with the internet unplugged: `bandplan`,
 | MUF predictor | ✅ | Derived from SFI, K and the sun's height over *your* station. An indicator, not a prediction — see [PROPAGATION.md](PROPAGATION.md) |
 | D-layer absorption | ✅ | Real solar zenith at your grid square, not a UTC-hour proxy |
 | VOACAP point-to-point | ❌ | The genuinely hard one, and still open: this indicator is not it. Either bundle the public-domain ITSHFBC binaries and shell out, or accept that a path-free estimate is where this stops. |
-| FT8 propagation globes | ❌ | Needs PSK Reporter |
+| FT8 propagation globes | ✅ | One sphere per active band, lit by cluster spots, WSJT-X decodes, and PSK Reporter / WSPR reception reports |
 
 ## Weather
 
@@ -266,8 +267,6 @@ shape, a tier 0 computation, or the log we already read.
 
 | Idea | Fit | Notes |
 |---|---|---|
-| **PSK Reporter paths** | strong | Same globe and arc drawing the spots use. Shows where *you* are actually being heard, which is the question the MUF indicator only approximates. |
-| **WSPR spots** | strong | Same shape as PSK Reporter. |
 | **Grayline DX prediction** | strong | We compute the terminator already; the useful version is "which entities are on the greyline with me right now", which is the terminator crossed with the prefix table. |
 | **VOACAP point-to-point** | hard | The genuinely hard one, and still open. Either bundle the public-domain ITSHFBC binaries and shell out, or accept that a path-free indicator is where this stops. |
 | **Sporadic-E and aurora alerting** | medium | We have the aurora oval and the band data. "Tell me when 6m opens" is a threshold and a notification, and notification is a whole capability this project does not have yet. |

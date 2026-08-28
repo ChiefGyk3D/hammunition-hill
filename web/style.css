@@ -862,6 +862,10 @@ ul.wx-alerts { list-style: none; margin: 0; padding: 0; }
   padding: 3px 6px;
 }
 .rbn-activity { grid-template-columns: 48px 46px 52px minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.2fr); }
+/* Reception reports live in a span-1 panel, so the row is five columns and the
+   callsign gets first claim on the width -- an ellipsised call is a useless row. */
+.rcp-row { grid-template-columns: minmax(64px, 1.2fr) 52px 34px 44px minmax(0, 0.9fr); }
+.rcp-km { color: var(--muted); text-align: right; }
 .rbn-row:nth-child(odd) { background: var(--panel-2); }
 .rbn-spotter { color: var(--ink); font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
 .rbn-snr { font-weight: 600; text-align: right; }

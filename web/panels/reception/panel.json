@@ -1,0 +1,13 @@
+{
+  "id": "reception",
+  "name": "Heard You",
+  "tier": 1,
+  "sources": [
+    "station",
+    "pskreporter",
+    "wspr"
+  ],
+  "embed_hosts": [],
+  "span": 1,
+  "description": "Reception reports from PSK Reporter and WSPR: every station that decoded your signal, with band, SNR, and distance. The digital-mode answer to \"is my signal getting out\", beside the RBN's CW answer."
+}

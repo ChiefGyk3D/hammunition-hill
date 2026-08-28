@@ -51,8 +51,8 @@ finished, so here is exactly where things stand:
 |---|---|
 | Collector, snapshot architecture, static server | ✅ working |
 | Egress allowlist, CSP, path handling | ✅ working |
-| Panels | ✅ 28 across 6 dashboards |
-| Source kinds | ✅ 11 polled, 6 stream, 1 file |
+| Panels | ✅ 29 across 6 dashboards |
+| Source kinds | ✅ 13 polled, 6 stream, 1 file |
 | Space weather dials | ✅ 8 scales |
 | Map — rotatable globe, greyline, spots, aurora | ✅ working |
 | Band globes — one sphere per active band, hamdash style | ✅ working |
@@ -74,6 +74,7 @@ finished, so here is exactly where things stand:
 | Shack tools — antenna, feedline, SWR, Ohm's law, dB, wire, battery | ✅ working |
 | Satellites — cached TLEs, SGP4 passes, Doppler | ✅ working, optional extra |
 | RBN — who is hearing you, and band activity | ✅ working, off by default |
+| PSK Reporter + WSPR — who decoded your digital signal, with distance | ✅ working, off by default |
 | Metrics — Prometheus endpoint | ✅ working, off by default |
 | Metrics — InfluxDB push | ❌ **not written** |
 | Licence exam practice — all three US pools included | ✅ working |

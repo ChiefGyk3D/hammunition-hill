@@ -194,6 +194,35 @@ enabled = false
 # url = "telnet://telnet.reversebeacon.net:7000"
 # options = { callsign = "N0CALL", watch = ["N0CALL"], window_seconds = 600 }
 
+# PSK Reporter: the RBN's answer for the digital modes. Every WSJT-X and
+# fldigi station with reporting on uploads its decodes, and this asks the
+# retrieval API "who heard ME lately". Feeds the Heard You panel and lights
+# the band globes with the places your signal actually reached.
+#
+# Plain talk about what this sends: your callsign goes to pskreporter.info in
+# the query, because "reports where the sender is me" IS the query. That is
+# why `callsign` is set here and not inherited from [station] -- enabling
+# this line is you choosing to send it. Their operator asks for five-minute
+# spacing between queries; intervals under 300 are refused.
+# [[sources]]
+# id = "pskreporter"
+# kind = "pskreporter"
+# url = "https://retrieve.pskreporter.info/query"
+# interval = 600
+# options = { callsign = "N0CALL", window_minutes = 15 }
+
+# WSPR reception reports from wspr.live, which mirrors the wsprnet database.
+# If you run a WSPR beacon this is its return channel: who decoded your
+# milliwatts, where, and how far down in the noise. Same deal as pskreporter:
+# your callsign is the query and goes to wspr.live, and the 300-second
+# interval floor respects their fair-use quotas.
+# [[sources]]
+# id = "wspr"
+# kind = "wspr"
+# url = "https://db1.wspr.live/"
+# interval = 600
+# options = { callsign = "N0CALL", window_minutes = 30 }
+
 # A DX cluster needs a real callsign to log in -- clusters do not accept
 # anonymous connections, and node operators can and do ban abusive clients.
 # [[sources]]

@@ -12,6 +12,7 @@
         "bandconditions",
         "geomag",
         "rbn",
+        "reception",
         "spots",
         "wsjtx"
       ]

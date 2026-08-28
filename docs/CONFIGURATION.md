@@ -330,6 +330,58 @@ old costs a pass prediction very little. This is the only source the satellite
 panel needs — the passes themselves are computed here, not fetched. See
 [SATELLITES.md](SATELLITES.md).
 
+### `pskreporter` — who heard you, digital modes
+
+| Option | Default | Meaning |
+|---|---|---|
+| `callsign` | **required** | Whose reception reports to ask for. Sent to pskreporter.info — see below. |
+| `window_minutes` | `15` | How far back to ask. Clamped 5–60. |
+
+```toml
+[[sources]]
+id = "pskreporter"
+kind = "pskreporter"
+url = "https://retrieve.pskreporter.info/query"
+interval = 600
+options = { callsign = "N0CALL" }
+```
+
+Every WSJT-X, JS8Call and fldigi station with reporting enabled uploads its
+decodes to PSK Reporter; this asks the retrieval API for the stations that
+decoded *you*. It is the digital-mode counterpart of the `rbn` source, and it
+feeds the **Heard You** panel and the band globes.
+
+Plain talk about what this sends: your callsign goes to pskreporter.info in
+the query string, because "reports where the sender is me" *is* the query.
+That is why `callsign` lives here in `options` and is never inherited from
+`[station]` — enabling this source is you choosing to send it, and the
+`[station]` promise (used on this machine and nowhere else) stays true. The
+interval floor for this kind is 300 seconds: the operator asks retrievers
+for five-minute spacing, and the aggregate only settles that fast anyway.
+
+### `wspr` — who heard your beacon
+
+| Option | Default | Meaning |
+|---|---|---|
+| `callsign` | **required** | Whose transmissions to look up. Sent to wspr.live — same note as above. |
+| `window_minutes` | `30` | How far back to ask. Clamped 5–240. |
+
+```toml
+[[sources]]
+id = "wspr"
+kind = "wspr"
+url = "https://db1.wspr.live/"
+interval = 600
+options = { callsign = "N0CALL" }
+```
+
+wspr.live mirrors the wsprnet database and answers read-only SQL over HTTP;
+the collector sends one fixed SELECT with your callsign as the only variable
+(validated to callsign characters before it goes anywhere near the query).
+Reports carry receiver grid, SNR, transmit power and distance — the return
+channel for a WSPR beacon. Free for non-commercial use with fair-use quotas,
+hence the same 300-second interval floor.
+
 ---
 
 ## Stream sources

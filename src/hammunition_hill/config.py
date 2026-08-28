@@ -24,6 +24,15 @@ from urllib.parse import urlsplit
 DEFAULT_INTERVAL = 300
 MIN_INTERVAL = 30  # Be a good neighbour to free upstream APIs.
 
+# Some kinds owe their upstream a gentler floor than the global one. The
+# reception-report aggregators pool decodes from thousands of stations:
+# PSK Reporter's developer page asks retrievers to space queries about five
+# minutes apart (the aggregate settles that fast anyway), and wspr.live
+# enforces per-request cooldowns and daily row quotas. Listed here rather
+# than in the source modules so a bad interval is refused at config load,
+# not discovered as a failure snapshot after the collector already polled.
+KIND_INTERVAL_FLOORS = {"pskreporter": 300, "wspr": 300}
+
 # Imagery is re-requested by every open dashboard, not once by the collector, so
 # the floor is higher than for a polled source. A radar mosaic updates every two
 # to ten minutes upstream; asking more often than that just costs them bandwidth.
@@ -290,11 +299,13 @@ def parse_config(raw: dict[str, Any], *, base_dir: Path) -> Config:
             raise ConfigError(f"{where}: duplicate id {sid!r}; ids map 1:1 to snapshot files")
         seen.add(sid)
 
+        kind = str(_require(entry, "kind", where))
         interval = int(entry.get("interval", DEFAULT_INTERVAL))
-        if interval < MIN_INTERVAL:
+        floor = max(MIN_INTERVAL, KIND_INTERVAL_FLOORS.get(kind, MIN_INTERVAL))
+        if interval < floor:
             raise ConfigError(
-                f"{where}: interval {interval}s is below the {MIN_INTERVAL}s floor. "
-                f"These are free upstream services; do not hammer them."
+                f"{where}: interval {interval}s is below the {floor}s floor for "
+                f"kind {kind!r}. These are free upstream services; do not hammer them."
             )
 
         options = entry.get("options", {})
@@ -312,7 +323,7 @@ def parse_config(raw: dict[str, Any], *, base_dir: Path) -> Config:
         sources.append(
             SourceConfig(
                 id=sid,
-                kind=str(_require(entry, "kind", where)),
+                kind=kind,
                 url=str(url) if url else "",
                 path=str(source_path) if source_path else None,
                 interval=interval,

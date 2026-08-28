@@ -110,9 +110,53 @@ class ThreadedTCP(socketserver.ThreadingTCPServer):
     allow_reuse_address = True
 
 
+def psk_reports() -> str:
+    """Reception reports of N0CALL, stamped fresh so ages read sanely.
+
+    Bands and locators are spread on purpose: the globes panel draws one
+    sphere per band with activity, and a run where these reports are the only
+    spot supply proves the reception wiring end to end -- if the panel stopped
+    reading the pskreporter/wspr snapshots, the Map dashboard would render the
+    globes' empty state and the driver's check below would say so.
+    """
+    now = int(time.time())
+    rows = [
+        ("JA1NUT", "PM95vp", 14074100, "FT8", -12, now - 90),
+        ("VK4CT", "QG62lp", 14074300, "FT8", -18, now - 150),
+        ("G4HZV", "IO91wm", 7074000, "FT8", -7, now - 200),
+        ("PY2GN", "GG66rg", 21074500, "FT8", -15, now - 260),
+        ("W6BB", "CM87xe", 7074200, "FT8", 2, now - 320),
+    ]
+    reports = "".join(
+        f'<receptionReport receiverCallsign="{call}" receiverLocator="{grid}" '
+        f'senderCallsign="N0CALL" frequency="{hz}" mode="{mode}" sNR="{snr}" '
+        f'flowStartSeconds="{at}"/>'
+        for call, grid, hz, mode, snr, at in rows
+    )
+    return f'<?xml version="1.0"?><receptionReports currentSeconds="{now}">{reports}</receptionReports>'
+
+
+def wspr_reports() -> str:
+    """wspr.live's ClickHouse JSON shape, 64-bit ints quoted as it emits them."""
+    stamp = time.strftime("%Y-%m-%d %H:%M:00", time.gmtime(time.time() - 120))
+    rows = [
+        {"time": stamp, "rx_sign": "OE9GHV", "rx_lat": 47.3, "rx_lon": 9.6,
+         "rx_loc": "JN47tm", "distance": "6423", "snr": -21, "power": 37,
+         "frequency": "10140200"},
+        {"time": stamp, "rx_sign": "ZL2005SWL", "rx_lat": -41.2, "rx_lon": 174.9,
+         "rx_loc": "RE78js", "distance": "13102", "snr": -26, "power": 37,
+         "frequency": "10140150"},
+    ]
+    return json.dumps({"meta": [], "data": rows, "rows": len(rows)})
+
+
 class Upstream(BaseHTTPRequestHandler):
     def do_GET(self) -> None:  # noqa: N802
-        if self.path.endswith(".txt"):
+        if self.path.startswith("/psk"):
+            body, content_type = psk_reports().encode(), "text/xml"
+        elif self.path.startswith("/wspr"):
+            body, content_type = wspr_reports().encode(), "application/json"
+        elif self.path.endswith(".txt"):
             body, content_type = TLES.encode(), "text/plain"
         else:
             body, content_type = KINDEX.encode(), "application/json"
@@ -303,6 +347,29 @@ const BASE = `http://127.0.0.1:${PORT}/`;
     console.log(`  ${tab}: ${panels.length} panels ok`);
   }
 
+  // --- reception reports actually feed the displays -----------------------
+  // The harness seeds five PSK Reporter reports (20/40/15 m) and two WSPR
+  // reports (30 m), and configures no cluster or WSJT-X -- so reception
+  // reports are the ONLY spot supply. If either panel stops reading the
+  // pskreporter/wspr snapshots it renders its empty state, and a screenshot
+  // of an empty state looks exactly like a quiet band unless something counts.
+  await page.click('#tabs button:text-is("Home")');
+  await page.waitForTimeout(600);
+  const receptionRows = await page.$$eval(
+    '#grid .panel[data-panel="reception"] .rbn-row', (els) => els.length);
+  if (receptionRows !== 7) {
+    problems.push(`reception: 7 seeded reports should render 7 rows, got ${receptionRows}`);
+  }
+  await page.click('#tabs button:text-is("Map")');
+  await page.waitForTimeout(600);
+  const globeCells = await page.$$eval(
+    '#grid .panel[data-panel="globes"] .globe-cell', (els) => els.length);
+  if (globeCells !== 4) {
+    problems.push(
+      `globes: seeded reports span 4 bands (20/40/30/15 m) but ${globeCells} spheres rendered`);
+  }
+  console.log(`  reception: ${receptionRows} rows, ${globeCells} band globes lit`);
+
   // --- customization survives a reload -----------------------------------
   // Hide a panel, move another, reload the page cold, and demand both stuck.
   // The property being tested is persistence, so the reload is the test: an
@@ -430,6 +497,22 @@ kind = "rbn"
 url = "telnet://127.0.0.1:{rbn_port}"
 local = true
 options = {{ callsign = "N0CALL", flush_seconds = 1 }}
+
+[[sources]]
+id = "pskreporter"
+kind = "pskreporter"
+url = "http://127.0.0.1:{upstream_port}/psk"
+local = true
+interval = 300
+options = {{ callsign = "N0CALL" }}
+
+[[sources]]
+id = "wspr"
+kind = "wspr"
+url = "http://127.0.0.1:{upstream_port}/wspr"
+local = true
+interval = 300
+options = {{ callsign = "N0CALL" }}
 """,
             encoding="utf-8",
         )
@@ -478,6 +561,8 @@ options = {{ callsign = "N0CALL", flush_seconds = 1 }}
                 "satellites.json",
                 "propagation.json",
                 "rbn.json",
+                "pskreporter.json",
+                "wspr.json",
             ]
             deadline = time.monotonic() + 60
             while time.monotonic() < deadline:

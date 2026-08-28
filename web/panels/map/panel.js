@@ -29,14 +29,7 @@ import {
   strokePath,
   unproject,
 } from "../../lib/globe.js";
-
-const BAND_COLORS = {
-  "160m": "#e05c5c", "80m": "#e08a3c", "60m": "#e0c23c", "40m": "#5cc45c",
-  "30m": "#3cc4a8", "20m": "#3ca0e0", "17m": "#8a7ce0", "15m": "#e07cc4",
-  "12m": "#e05c9c", "10m": "#e0603c", "6m": "#e0a83c", "2m": "#9aa4b0",
-  "70cm": "#7a8490",
-};
-const DEFAULT_COLOR = "#8f98a4";
+import { bandColor } from "../../lib/bandcolors.js";
 
 const state = {
   lat0: null,
@@ -58,10 +51,6 @@ const state = {
 function css(name, fallback) {
   const value = getComputedStyle(document.body).getPropertyValue(name).trim();
   return value || fallback;
-}
-
-function bandColor(band) {
-  return BAND_COLORS[band] ?? DEFAULT_COLOR;
 }
 
 /** Where a spot is, preferring anything better than an entity centroid. */
