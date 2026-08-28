@@ -21,7 +21,7 @@ have. Where the two disagree, this page is the one kept current.
 |---|---|
 | Collector, snapshot architecture, static server | ✅ working |
 | Egress allowlist, CSP, path handling | ✅ working |
-| Panels | ✅ 26 across 6 dashboards |
+| Panels | ✅ 27 across 6 dashboards |
 | Source kinds | ✅ 11 polled, 6 stream, 1 file |
 | Space weather dials | ✅ 8 scales |
 | Your log driving spot colouring | ✅ working |
@@ -31,7 +31,7 @@ have. Where the two disagree, this page is the one kept current.
 | Band plans | 🟡 US only |
 | Propagation | 🟡 MUF/LUF/absorption indicator; **no VOACAP** |
 | Weather outside the US | 🟡 feeds and images, no structured severity |
-| Callsign query endpoint | ❌ **not written** — config flag exists and does nothing |
+| Callsign query endpoint | ✅ `GET /lookup/<callsign>`, local index only, off by default |
 | GPS / portable auto-grid | ✅ working |
 | Satellites | ✅ passes, look angles, Doppler |
 | RBN | ✅ working |
@@ -99,13 +99,13 @@ The parts everything else sits on.
 
 ## Panels
 
-26 panels, 6 dashboards: **Home**, **Map**, **Space Weather**, **Operating**,
+27 panels, 6 dashboards: **Home**, **Map**, **Space Weather**, **Operating**,
 **Activity**, **Field & Weather**. Regroup them by editing
 `web/panels/index.json`.
 
-Nine are **tier 0** — they work with the internet unplugged: `bandplan`,
-`beacons`, `callsign`, `clock`, `cw`, `exam`, `gps`, `logbook`, `tools`.
-Sixteen are tier 1. One is tier 2 (`imagery`).
+Ten are **tier 0** — they work with the internet unplugged: `bandplan`,
+`beacons`, `callsign`, `clock`, `cw`, `exam`, `gps`, `logbook`, `reference`,
+`tools`. Sixteen are tier 1. One is tier 2 (`imagery`).
 
 | Feature | Status | Notes |
 |---|---|---|
@@ -148,7 +148,7 @@ Sixteen are tier 1. One is tier 2 (`imagery`).
 | Offline-aware resolution | ✅ | Network providers skipped when the WAN is gone |
 | Stale cache served, flagged | ✅ | An old record beats a blank panel in a field |
 | Automatic ULS refresh | ❌ | `fcc-import` is manual on purpose; a scheduled option is not built |
-| Query endpoint (`/lookup/<callsign>`) | ❌ | **`query_endpoint = true` parses and does nothing.** The endpoint is designed in [CALLSIGN-LOOKUP.md](CALLSIGN-LOOKUP.md) and not implemented. |
+| Query endpoint (`/lookup/<callsign>`) | ✅ | Off by default. Local index only — no code path from the route to a socket, so a request still cannot cause a fetch. Rate limited, strictly validated, 404 when off. See [CALLSIGN-LOOKUP.md](CALLSIGN-LOOKUP.md) |
 
 ## Propagation
 
@@ -211,10 +211,11 @@ Sixteen are tier 1. One is tier 2 (`imagery`).
 
 What is actually being worked on, in order:
 
-1. **The callsign query endpoint**, which is the one place a config flag still
-   parses and does nothing.
-2. **Packaging**, meaning a container and a `pip install` that carries `web/`.
-3. **Opaque image mode**, so a tier 2 tile stops being tier 2.
+1. **Packaging**, meaning a container and a `pip install` that carries `web/`.
+2. **Opaque image mode**, so a tier 2 tile stops being tier 2.
+
+The callsign query endpoint was the previous first item and has shipped: the
+last config flag that parsed and did nothing now does what it says.
 
 Part 97 alongside the exam questions was the previous first item and has
 shipped: 192 of the 1431 questions cite a rule, and the rule is now quoted.

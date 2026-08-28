@@ -4,6 +4,13 @@
 
 // Callsign lookup, resolved locally.
 //
+// When the server's query endpoint is switched on (query_endpoint = true), the
+// panel also asks it -- GET /lookup/<call> against the local index, same
+// machine, still nothing leaving it. The endpoint is off by default and probed
+// once: a 404 means "not there", and the panel stays purely client-side
+// exactly as before. Debounced, because the endpoint is rate limited and a
+// keystroke is not a question.
+//
 // Every lookup runs against the prefix table the collector published, in this
 // browser, with no request. That is what keeps it instant and what keeps the
 // collector free of request-driven work -- the property the whole architecture
@@ -18,7 +25,7 @@
 import { distance, recall, remember } from "../../lib/format.js";
 import { gridToLatLon, latLonToGrid, pathTo, prefixTable } from "../../lib/callsign.js";
 
-const state = { query: recall("callsign.last", ""), table: null };
+const state = { query: recall("callsign.last", ""), table: null , endpoint: undefined, endpointResult: null, timer: 0 };
 
 function field(el, label, value, extra) {
   const row = el("div", "detail-row");
@@ -119,6 +126,34 @@ function result(el, call, table, station, worked, lookups) {
   return parts;
 }
 
+
+// Ask the query endpoint, if this server has one. Probed lazily: the first
+// query discovers whether it exists (404 = no, remembered), and every later
+// keystroke is debounced 300 ms so typing a call does not spend the server's
+// rate budget one letter at a time.
+function queryEndpoint(query, redraw) {
+  if (state.endpoint === false) return;
+  const call = query.toUpperCase();
+  if (state.endpointResult?.for === call) return;
+  clearTimeout(state.timer);
+  state.timer = setTimeout(async () => {
+    try {
+      const response = await fetch(`./lookup/${encodeURIComponent(call)}`, { cache: "no-store" });
+      if (response.status === 404) {
+        state.endpoint = false;
+        return;
+      }
+      state.endpoint = true;
+      if (!response.ok) return;
+      const payload = await response.json();
+      state.endpointResult = { ...payload, for: call };
+      redraw();
+    } catch {
+      /* endpoint unreachable: the panel already works without it */
+    }
+  }, 300);
+}
+
 export function render(root, { data, el }) {
   const prefixes = data.prefixes?.data;
   if (!prefixes) {
@@ -158,6 +193,20 @@ export function render(root, { data, el }) {
   const query = state.query.trim();
   if (query.length >= 2) {
     parts.push(...result(el, query, state.table, station, worked, lookups));
+    queryEndpoint(query, () => render(root, { data, el }));
+    const hit = state.endpointResult;
+    if (hit && hit.for === query.toUpperCase() && hit.found && hit.record) {
+      const rows = el("div", "cs-rows");
+      const record = hit.record;
+      if (record.name) rows.append(field(el, "Licensee", record.name));
+      if (record.operator_class) rows.append(field(el, "Class", record.operator_class));
+      if (record.city || record.state) {
+        rows.append(field(el, "QTH", [record.city, record.state].filter(Boolean).join(", ")));
+      }
+      if (record.expires) rows.append(field(el, "Expires", record.expires));
+      rows.append(field(el, "Source", `${hit.source} · query endpoint`));
+      parts.push(rows);
+    }
   } else {
     parts.push(el("p", "empty", "type a callsign — resolved locally, nothing is sent anywhere"));
   }

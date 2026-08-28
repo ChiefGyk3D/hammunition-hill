@@ -151,7 +151,6 @@ if it passes.
 
 `docs/STATUS.md` is authoritative. The ones most likely to bite:
 
-- `query_endpoint` parses and does nothing. Designed, not built.
 - Upstream endpoint URLs rot and several could not be verified from the build
   environment. `hamhill check` on real hardware is how that gets found.
 

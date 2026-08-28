@@ -61,6 +61,44 @@ function buildTabs(dashboards, active, onPick) {
   return bar;
 }
 
+// Panels pack like masonry: the grid's rows are a fine 8px lattice, each
+// panel spans as many as its natural height needs, and dense flow fills the
+// holes. CSS grid alone cannot do this -- a row is as tall as the tallest
+// panel in it, so a short panel beside a tall one strands the whole
+// difference as dead space. On the Operating dashboard that was ~1300px of
+// nothing under the logbook, beside the band plan.
+//
+// One observer for every panel. Observing the panel itself cannot loop,
+// because align-items: start means a panel never stretches to its grid area:
+// its measured height is always its content's natural height, whatever span
+// that height is then translated into. The callback runs after layout and
+// before paint, so the span is settled before anything is shown.
+//
+// The lattice is measured from the grid, not assumed: the row unit and the
+// gap are the stylesheet's to change per breakpoint, and the first version of
+// this hardcoded a 12px gap while the phone breakpoint used 8 -- every span
+// came out short by the difference, and each panel was painted over by the
+// next. N spanned tracks cover N*row + (N-1)*gap, so N must satisfy
+// N >= (height + gap) / (row + gap).
+const sizer = new ResizeObserver((entries) => {
+  const style = getComputedStyle(GRID);
+  const row = parseFloat(style.gridAutoRows) || 8;
+  const gap = parseFloat(style.rowGap) || 12;
+  for (const entry of entries) {
+    const height = entry.target.getBoundingClientRect().height;
+    const rows = Math.max(1, Math.ceil((height + gap) / (row + gap)));
+    entry.target.style.setProperty("--rows", String(rows));
+  }
+});
+
+// A breakpoint change alters the lattice without resizing any panel whose
+// content happens to reflow to the same height, so re-measure everything when
+// the window changes rather than trusting the observer to have a reason to.
+window.addEventListener("resize", () => {
+  for (const panel of GRID.querySelectorAll(".panel")) sizer.unobserve(panel);
+  for (const panel of GRID.querySelectorAll(".panel")) sizer.observe(panel);
+});
+
 function buildFrame(manifest) {
   const panel = el("section", "panel");
   panel.dataset.panel = manifest.id;
@@ -77,6 +115,7 @@ function buildFrame(manifest) {
 
   const body = el("div", "panel-body");
   panel.append(head, body);
+  sizer.observe(panel);
   GRID.append(panel);
   return { body, age };
 }

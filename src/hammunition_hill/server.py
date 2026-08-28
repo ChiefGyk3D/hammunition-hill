@@ -21,6 +21,10 @@ from __future__ import annotations
 import ipaddress
 import json
 import logging
+import re
+import threading
+import time
+from collections import deque
 from functools import partial
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -36,6 +40,38 @@ log = logging.getLogger(__name__)
 DATA_PREFIX = "/data/"
 QSO_PATH = "/api/qso"
 METRICS_PATH = "/metrics"
+LOOKUP_PREFIX = "/lookup/"
+
+# The query endpoint's callsign gate. Charset and length, nothing cleverer: a
+# format regex tight enough to be interesting rejects real calls, and the first
+# draft of this one did -- it allowed only a short suffix after the slash, and
+# prefix-first portable forms like VP8/G4ABC put the LONG part there. Both
+# orders are real (W1AW/P and VP8/G4ABC), so both sides accept up to a full
+# call. Everything past this line only ever reaches a parameterised SQLite
+# query or a dict lookup. Uppercased first, so the pattern has one case to say.
+_CALLSIGN = re.compile(r"^(?=[A-Z0-9/]{3,14}$)[A-Z0-9]+(?:/[A-Z0-9]+)?$")
+
+# One bucket for the whole server, deliberately: the design constraint is
+# "cannot be used to hammer anything", which is a property of the process, not
+# of one client. Per-IP buckets behind a home router all see the same address
+# anyway. Sixty in any rolling minute is far beyond a human typing callsigns
+# and far below anything that could hurt SQLite.
+_LOOKUP_WINDOW_SECONDS = 60.0
+_LOOKUP_WINDOW_LIMIT = 60
+_lookup_times: deque[float] = deque()
+_lookup_lock = threading.Lock()
+
+
+def _lookup_rate_ok(now: float | None = None) -> bool:
+    stamp = time.monotonic() if now is None else now
+    with _lookup_lock:
+        while _lookup_times and stamp - _lookup_times[0] > _LOOKUP_WINDOW_SECONDS:
+            _lookup_times.popleft()
+        if len(_lookup_times) >= _LOOKUP_WINDOW_LIMIT:
+            return False
+        _lookup_times.append(stamp)
+        return True
+
 
 # Snapshots the collector writes that are not [[sources]] entries: the startup
 # reference tables and the two derived models. Listed here rather than globbed
@@ -164,8 +200,12 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         file called "metrics", and gated on config so a repository that ships
         the code does not ship the endpoint.
         """
-        if self.path.split("?")[0] == METRICS_PATH:
+        clean = self.path.split("?")[0]
+        if clean == METRICS_PATH:
             self._serve_metrics()
+            return
+        if clean.startswith(LOOKUP_PREFIX):
+            self._serve_lookup(clean[len(LOOKUP_PREFIX) :])
             return
         super().do_GET()
 
@@ -176,8 +216,12 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         path where GET returns 200 -- which is the sort of inconsistency a proxy
         or a health check trips over long after anyone remembers why.
         """
-        if self.path.split("?")[0] == METRICS_PATH:
+        clean = self.path.split("?")[0]
+        if clean == METRICS_PATH:
             self._serve_metrics(body=False)
+            return
+        if clean.startswith(LOOKUP_PREFIX):
+            self._serve_lookup(clean[len(LOOKUP_PREFIX) :], body=False)
             return
         super().do_HEAD()
 
@@ -206,6 +250,76 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         self.end_headers()
         if body:
             self.wfile.write(payload)
+
+    def _serve_lookup(self, raw: str, *, body: bool = True) -> None:
+        """GET /lookup/<callsign>: the local index, and nothing else.
+
+        The property that makes this endpoint acceptable is that it CANNOT
+        cause an outbound request. It reads two things, both already on disk:
+        the offline FCC ULS index, and the collector's own lookup cache --
+        results a provider already returned for callsigns the collector already
+        saw. There is no code path from here to a socket, so "a request cannot
+        make the collector fetch anything" survives the first route that takes
+        a parameter.
+
+        Off by default. It is still an endpoint that accepts input, which is a
+        real change to the attack surface, so it is a choice -- see
+        docs/CALLSIGN-LOOKUP.md for the design and the argument.
+        """
+        if not self._config.lookup.query_endpoint:
+            # 404 rather than 403, same as /metrics: an endpoint that is
+            # switched off should not announce that it exists.
+            self.send_error(HTTPStatus.NOT_FOUND, "Not Found")
+            return
+
+        if not _lookup_rate_ok():
+            self.send_response(HTTPStatus.TOO_MANY_REQUESTS)
+            self.send_header("Retry-After", "10")
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
+
+        callsign = unquote(raw).strip().upper()
+        if not _CALLSIGN.match(callsign):
+            self._send_json(HTTPStatus.BAD_REQUEST, {"error": "not a callsign"}, body=body)
+            return
+
+        # The portable suffix is the operator's, not the licence's: /P is not
+        # in anybody's database, so the base call is what gets looked up and
+        # the response echoes what was asked.
+        base = callsign.split("/", 1)[0]
+
+        record, source = self._lookup_local(base)
+        payload: dict[str, Any] = {"callsign": callsign, "found": record is not None}
+        if record is not None:
+            payload["source"] = source
+            payload["record"] = record
+        self._send_json(HTTPStatus.OK, payload, body=body)
+
+    def _lookup_local(self, callsign: str) -> tuple[dict[str, Any] | None, str]:
+        """The ULS index first, then the collector's cache. Disk only."""
+        from .lookup.cache import CACHE_FILE
+        from .lookup.uls import DEFAULT_DB_NAME, UlsIndex
+
+        db_path = self._config.lookup.uls_db or (self._config.data_dir / DEFAULT_DB_NAME)
+        index = UlsIndex(db_path)
+        try:
+            if index.available and (row := index.lookup(callsign)) is not None:
+                return row, "fcc_uls"
+        finally:
+            index.close()
+
+        cache_path = self._config.data_dir / CACHE_FILE
+        try:
+            entries = json.loads(cache_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            return None, ""
+        entry = entries.get(callsign) if isinstance(entries, dict) else None
+        if isinstance(entry, dict) and isinstance(entry.get("result"), dict):
+            result = dict(entry["result"])
+            result.setdefault("cached_at", entry.get("cached_at"))
+            return result, str(result.get("source") or "cache")
+        return None, ""
 
     # --- policy ------------------------------------------------------------
     def end_headers(self) -> None:
@@ -272,13 +386,15 @@ class DashboardHandler(SimpleHTTPRequestHandler):
 
         return None
 
-    def _send_json(self, status: HTTPStatus, payload: dict[str, Any]) -> None:
-        body = json.dumps(payload).encode("utf-8")
+    def _send_json(self, status: HTTPStatus, payload: dict[str, Any], *, body: bool = True) -> None:
+        encoded = json.dumps(payload).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(body)))
+        self.send_header("Content-Length", str(len(encoded)))
+        self.send_header("Cache-Control", "no-store")
         self.end_headers()
-        self.wfile.write(body)
+        if body:
+            self.wfile.write(encoded)
 
     def do_POST(self) -> None:  # noqa: N802
         if self.path.split("?")[0] != QSO_PATH:

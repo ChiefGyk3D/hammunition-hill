@@ -78,7 +78,52 @@ body {
   gap: 12px;
   padding: 12px;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  /* dense: let a later panel slot into a hole an earlier wide one left, so a
+     dashboard with mixed spans does not strand half a row of empty space.
+     Visual order can then differ from DOM order -- acceptable here because
+     every panel is an independent readout, nothing reads as a sequence, and
+     assistive tech follows the DOM, which is unchanged. */
+  grid-auto-flow: dense;
+  /* The 8px lattice the masonry packs into: app.js measures each panel and
+     spans it across as many of these as its content needs. align-items:
+     start is load-bearing twice over -- it keeps a panel its natural height,
+     and that is also what makes measuring the panel safe for the observer
+     that sets the span. */
+  grid-auto-rows: 8px;
   align-items: start;
+}
+
+/* --- one sheet, three rooms -------------------------------------------
+   The same dashboard is a phone in a field (over ZTNA back to the shack), a
+   laptop, and a TV on a shack wall. Nothing here changes what is shown --
+   only how much room it gets and how far away it is readable from.
+
+   The TV tiers scale with zoom rather than per-element font sizes: the sheet
+   is written in px throughout, and zoom scales layout and type together, so
+   the 320px column minimum becomes an effective 400px at 1.25 -- which is
+   what a 10-foot read needs anyway. Standardised in CSS Viewport and
+   supported by every browser a wall display plausibly runs; anything old
+   enough to lack it simply renders the laptop view. */
+@media (max-width: 680px) {
+  /* A phone: one column already (the 320px minimum sees to it); reclaim the
+     chrome. Padding and gaps shrink, tab targets grow to finger size, and the
+     header wraps deliberately -- brand on its own line, station and status
+     sharing the next -- instead of three flex items colliding mid-word. */
+  .grid { gap: 8px; padding: 8px; }
+  .topbar { padding: 8px 10px; gap: 4px 10px; flex-wrap: wrap; }
+  .topbar .brand { flex: 1 0 100%; }
+  .topbar .status { margin-left: auto; text-align: right; }
+  .tabs-bar { padding: 0 4px; }
+  .tab { padding: 12px 10px; font-size: 12px; }
+}
+@media (min-width: 1920px) {
+  body { zoom: 1.15; }
+}
+@media (min-width: 2560px) {
+  body { zoom: 1.4; }
+}
+@media (min-width: 3800px) {
+  body { zoom: 1.9; }
 }
 
 /* --- panel chrome ---------------------------------------------------- */
@@ -178,8 +223,22 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outlin
   * { animation: none !important; transition: none !important; }
 }
 
-/* --- wide panels ------------------------------------------------------ */
-.panel { grid-column: span min(var(--span, 1), 3); }
+/* --- wide panels ------------------------------------------------------
+   A span wider than the grid has columns does not clamp -- it forces implicit
+   tracks, and the whole page scrolls sideways. On a phone the grid is one
+   column, so every span must collapse to 1 there; in between, cap at what
+   actually fits. This shipped as an unconditional span min(--span, 3), which
+   made a span-3 panel overflow any viewport under ~1000px. */
+.panel {
+  grid-column: span min(var(--span, 1), 3);
+  grid-row: span var(--rows, 30);
+}
+@media (max-width: 1023px) {
+  .panel { grid-column: span min(var(--span, 1), 2); }
+}
+@media (max-width: 680px) {
+  .panel { grid-column: auto; }
+}
 
 /* --- filter chips ----------------------------------------------------- */
 .filters { display: flex; flex-wrap: wrap; gap: 10px 14px; margin-bottom: 10px; }
@@ -883,3 +942,25 @@ ul.wx-alerts { list-style: none; margin: 0; padding: 0; }
   line-height: 1.5;
   color: var(--ink);
 }
+
+/* --- pocket reference -------------------------------------------------- */
+.ref-rst { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; }
+.ref-rst-head {
+  margin: 0 0 6px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+/* Reference rows carry sentences, not codes: the shared .cw-code style says
+   nowrap and letter-spacing for Morse, and a nowrapped sentence walks out of
+   its column and into the next -- "difficu3ty" was readable in the RST view,
+   once, briefly. Scope the exception to this panel. */
+[data-panel="reference"] .cw-code { white-space: normal; letter-spacing: normal; }
+[data-panel="reference"] .cw-row { grid-template-columns: minmax(4.5ch, auto) 1fr; }
+
+.ref-links { display: flex; flex-direction: column; gap: 6px; }
+.ref-link-row { display: grid; grid-template-columns: minmax(150px, auto) 1fr; gap: 10px; align-items: baseline; }
+.ref-link { color: var(--accent); text-decoration: none; }
+.ref-link:hover, .ref-link:focus-visible { text-decoration: underline; }

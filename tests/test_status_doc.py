@@ -122,15 +122,35 @@ def test_unbuilt_features_are_not_described_as_working():
     from hammunition_hill import server
 
     source = Path(server.__file__).read_text(encoding="utf-8")
-    implemented = "/lookup/" in source
+    implemented = "LOOKUP_PREFIX" in source and "_serve_lookup" in source
+
+    cli = (ROOT / "src/hammunition_hill/cli.py").read_text(encoding="utf-8")
+    lookup_doc = (ROOT / "docs" / "CALLSIGN-LOOKUP.md").read_text(encoding="utf-8")
 
     if not implemented:
-        assert "not written" in STATUS or "NOT built" in STATUS or "not built" in STATUS, (
+        assert "not written" in STATUS or "not built" in STATUS.lower(), (
             "STATUS.md must say the query endpoint is not built while it is not built"
         )
-        assert "NOT IMPLEMENTED" in (ROOT / "src/hammunition_hill/cli.py").read_text(), (
-            "hamhill check must not report query_endpoint as ENABLED"
-        )
+        assert "NOT IMPLEMENTED" in cli, "hamhill check must not report query_endpoint as ENABLED"
+    else:
+        # The mirror direction, which became reachable when the endpoint
+        # shipped: the docs must stop calling it unbuilt. Six separate files
+        # said so, and one of them -- the example config -- also still called
+        # fcc_uls "designed but not built" years after it shipped.
+        for name, text in {
+            "docs/STATUS.md": STATUS,
+            "docs/CALLSIGN-LOOKUP.md": lookup_doc,
+            "README.md": README,
+            "cli.py": cli,
+            "config.example.toml": (ROOT / "config.example.toml").read_text(encoding="utf-8"),
+        }.items():
+            for phrase in ("NOT IMPLEMENTED", "designed but not built", "designed, NOT built"):
+                near = [
+                    line
+                    for line in text.splitlines()
+                    if phrase.lower() in line.lower() and "endpoint" in line.lower()
+                ]
+                assert not near, f"{name} still calls the query endpoint unbuilt: {near}"
 
 
 def test_every_documentation_page_is_linked_from_the_readme():
@@ -251,7 +271,11 @@ def test_the_tier_breakdown_adds_up_to_the_panel_count():
         manifest = json.loads((directory / "panel.json").read_text(encoding="utf-8"))
         counts[manifest["tier"]] += 1
 
-    words = {9: "Nine", 16: "Sixteen", 1: "One"}
+    words = {
+        1: "One", 2: "Two", 3: "Three", 4: "Four", 5: "Five", 6: "Six", 7: "Seven",
+        8: "Eight", 9: "Nine", 10: "Ten", 11: "Eleven", 12: "Twelve", 13: "Thirteen",
+        14: "Fourteen", 15: "Fifteen", 16: "Sixteen", 17: "Seventeen", 18: "Eighteen",
+    }  # fmt: skip
     assert f"{sum(counts.values())} panels, {len(dashboards())} dashboards" in STATUS, (
         f"STATUS.md prose disagrees: there are {sum(counts.values())} panels"
     )
