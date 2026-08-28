@@ -129,8 +129,44 @@ at 09:00 and 14:00.
 If it cannot run it says which input is missing rather than rendering zeroes
 that look like a reading.
 
+## The DX Path panel: MINIMUF 3.5
+
+The indicator above has no path: it describes the sky over *your* station.
+The **DX Path** panel answers the planning question — *when does 20 m open to
+Japan from here* — with a real point-to-point model: **MINIMUF 3.5**, the
+algorithm R. B. Rose and J. N. Martin published at the Naval Ocean Systems
+Center in 1978-79 (NOSC TR 201 and its 3.5 revision; QST wrote it up in
+December 1982). It is a United States Government work, public domain, and
+`src/hammunition_hill/minimuf.py` is an original implementation of it —
+mirrored in `web/lib/muf.js` so the panel can redraw the chart the moment you
+type a grid square, with a drift test holding the two copies to the same
+milli-MHz.
+
+How it works: the great-circle path is sampled at its midpoint (short paths)
+or at a control point near each end (long ones, where the rays actually
+refract). Each control point gets an effective solar illumination that rises
+after local sunrise and decays exponentially after sunset — that lag is why
+20 m stays open into the evening — which maps to a critical frequency, gets
+an obliquity factor for the hop geometry, and the *worst* control point sets
+the path MUF.
+
+What it is honestly worth:
+
+- The report validated it against oblique-sounder measurements over 23 real
+  circuits and claims an **RMS error of about 3.8 MHz**. It will call the
+  right band nearly always and the right hour usually; it will sometimes be
+  a band off.
+- **F2 layer only.** No sporadic-E (so the panel draws no 6 m row — an Es
+  opening will beat the chart, and that is normal), no D-layer absorption
+  (bands far below the MUF render as "no opinion", not green), no antennas,
+  no power, no signal-to-noise.
+- Fitted for paths of roughly **250 to 12 000 km**. Outside that the panel
+  refuses and says why, rather than extrapolating: closer is NVIS or ground
+  wave, farther is long-path work that needs a real ray tracer.
+
 ## If you want a real prediction
 
-Use VOACAP. It is the right tool, it is free, and it models the thing this
-deliberately does not. This indicator is for the glance at the wall on the way
-past the radio; VOACAP is for planning a schedule.
+Use VOACAP. It is the right tool, it is free, and it models what both of
+these deliberately do not: reliability, signal level, antennas, power. The
+indicator is for the glance at the wall on the way past the radio; MINIMUF
+is for picking the hour to try a path; VOACAP is for engineering a circuit.

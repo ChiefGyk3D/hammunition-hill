@@ -51,7 +51,7 @@ finished, so here is exactly where things stand:
 |---|---|
 | Collector, snapshot architecture, static server | ✅ working |
 | Egress allowlist, CSP, path handling | ✅ working |
-| Panels | ✅ 29 across 6 dashboards |
+| Panels | ✅ 30 across 6 dashboards |
 | Source kinds | ✅ 13 polled, 6 stream, 1 file |
 | Space weather dials | ✅ 8 scales |
 | Map — rotatable globe, greyline, spots, aurora | ✅ working |
@@ -75,6 +75,7 @@ finished, so here is exactly where things stand:
 | Satellites — cached TLEs, SGP4 passes, Doppler | ✅ working, optional extra |
 | RBN — who is hearing you, and band activity | ✅ working, off by default |
 | PSK Reporter + WSPR — who decoded your digital signal, with distance | ✅ working, off by default |
+| DX Path — 24-hour point-to-point MUF chart (MINIMUF 3.5) | ✅ working |
 | Metrics — Prometheus endpoint | ✅ working, off by default |
 | Metrics — InfluxDB push | ❌ **not written** |
 | Licence exam practice — all three US pools included | ✅ working |

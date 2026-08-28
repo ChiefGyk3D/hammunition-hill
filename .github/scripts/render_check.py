@@ -110,6 +110,18 @@ class ThreadedTCP(socketserver.ThreadingTCPServer):
     allow_reuse_address = True
 
 
+# F10.7 flux rows as SWPC's JSON serves them. With flux present the MUF
+# indicator and the DX Path panel render their populated paths -- before this
+# both sat on "waiting for solar flux" in every screenshot and a broken chart
+# would have shipped invisibly.
+F107 = json.dumps(
+    [
+        {"time_tag": "2026-08-27T00:00:00", "flux": 148.2},
+        {"time_tag": "2026-08-28T00:00:00", "flux": 152.4},
+    ]
+)
+
+
 def psk_reports() -> str:
     """Reception reports of N0CALL, stamped fresh so ages read sanely.
 
@@ -171,7 +183,9 @@ def wspr_reports() -> str:
 
 class Upstream(BaseHTTPRequestHandler):
     def do_GET(self) -> None:  # noqa: N802
-        if self.path.startswith("/psk"):
+        if self.path.startswith("/f107"):
+            body, content_type = F107.encode(), "application/json"
+        elif self.path.startswith("/psk"):
             body, content_type = psk_reports().encode(), "text/xml"
         elif self.path.startswith("/wspr"):
             body, content_type = wspr_reports().encode(), "application/json"
@@ -389,6 +403,27 @@ const BASE = `http://127.0.0.1:${PORT}/`;
   }
   console.log(`  reception: ${receptionRows} rows, ${globeCells} band globes lit`);
 
+  // --- the DX path chart is drawn, not an empty state ----------------------
+  // Still on the Map tab from the loop above. The harness supplies flux and a
+  // station grid, so the panel must render the full band-by-hour lattice; a
+  // wiring break (snapshot renamed, lib import broken) renders the empty
+  // state, which no screenshot reviewer would reliably notice.
+  await page.click('#tabs button:text-is("Map")');
+  await page.waitForTimeout(600);
+  const pmfCells = await page.$$eval(
+    '#grid .panel[data-panel="pathmuf"] .pmf-grid > .pmf-cell:not(.pmf-corner)',
+    (els) => els.length);
+  if (pmfCells !== 9 * 24) {
+    problems.push(`pathmuf: expected ${9 * 24} chart cells (9 bands x 24 hours), got ${pmfCells}`);
+  }
+  const pmfOpen = await page.$$eval(
+    '#grid .panel[data-panel="pathmuf"] .pmf-grid .pmf-prime', (els) => els.length);
+  if (pmfOpen === 0) {
+    problems.push(
+      'pathmuf: at SFI 152 no hour on any band rendered as open, which is not a real sky');
+  }
+  console.log(`  pathmuf: ${pmfCells} cells, ${pmfOpen} open`);
+
   // --- customization survives a reload -----------------------------------
   // Hide a panel, move another, reload the page cold, and demand both stuck.
   // The property being tested is persistence, so the reload is the test: an
@@ -518,6 +553,14 @@ local = true
 options = {{ callsign = "N0CALL", flush_seconds = 1 }}
 
 [[sources]]
+id = "solarflux"
+kind = "swpc"
+url = "http://127.0.0.1:{upstream_port}/f107.json"
+local = true
+interval = 300
+options = {{ product = "f107_flux" }}
+
+[[sources]]
 id = "pskreporter"
 kind = "pskreporter"
 url = "http://127.0.0.1:{upstream_port}/psk"
@@ -576,6 +619,7 @@ options = {{ callsign = "N0CALL" }}
             # also fails loudly if one never arrives, which a sleep cannot.
             expected = [
                 "kindex.json",
+                "solarflux.json",
                 "tle.json",
                 "satellites.json",
                 "propagation.json",

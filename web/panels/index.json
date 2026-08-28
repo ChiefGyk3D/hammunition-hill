@@ -23,7 +23,8 @@
       "panels": [
         "map",
         "spots",
-        "globes"
+        "globes",
+        "pathmuf"
       ]
     },
     {

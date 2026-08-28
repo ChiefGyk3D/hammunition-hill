@@ -1,0 +1,12 @@
+{
+  "id": "pathmuf",
+  "name": "DX Path",
+  "tier": 1,
+  "sources": [
+    "station",
+    "propagation"
+  ],
+  "embed_hosts": [],
+  "span": 2,
+  "description": "Point-to-point MUF over 24 hours to a target you choose: when 20 m opens to Japan, from MINIMUF 3.5 computed in your browser. The honest substitute for VOACAP — F2 only, and it says so."
+}
