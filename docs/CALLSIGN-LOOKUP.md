@@ -118,31 +118,50 @@ machine.
 Resolution is capped and cached so a busy cluster cannot turn into thousands of
 requests, and providers with rate limits are respected.
 
-### Mode 3 — the query endpoint (designed, NOT built)
+### Mode 3 — the query endpoint
 
-> **This is not implemented.** `query_endpoint = true` is parsed and has no
-> effect: there is no route. It is described here because the design is settled
-> and the constraints are the interesting part, not because you can switch it
-> on. `hamhill check` says so too. Tracked in [STATUS.md](STATUS.md).
+```toml
+[lookup]
+providers = ["fcc_uls"]
+query_endpoint = true
+```
 
-If you want to type any callsign and get an answer rather than only ones the
-collector has already seen, that needs an endpoint. The intended shape is
-deliberately the narrowest endpoint that can do the job:
+Type any callsign, get an answer — not only the ones the collector has already
+seen. `GET /lookup/W1AW` returns JSON:
+
+```json
+{"callsign": "W1AW", "found": true, "source": "fcc_uls",
+ "record": {"name": "...", "operator_class": "E", "state": "CT", "...": "..."}}
+```
+
+The shape is deliberately the narrowest endpoint that can do the job, and every
+constraint from the original design survived contact with the implementation:
 
 - **`GET /lookup/<callsign>` only.** No other method, no body, no query string.
-- **Reads the local index only.** It cannot cause an outbound request, so a
-  request still cannot make the collector fetch anything. That property survives.
-- **Strict validation.** Callsign charset and length, nothing else accepted.
-- **Rate limited**, so it cannot be used to hammer anything.
-- **Read-only**, like the rest of the server.
+- **Reads the local index only** — the offline ULS database and the collector's
+  own cache of provider results. There is no code path from this route to a
+  socket, so a request *still* cannot cause an outbound fetch. That property is
+  the whole reason the endpoint is acceptable.
+- **Strict validation**: charset and length, uppercased, then straight into a
+  parameterised query. Both portable orders are accepted — `W1AW/P` and
+  `VP8/G4ABC` — and the base call is what gets looked up, because `/P` is the
+  operator's, not the licence's.
+- **Rate limited**: sixty requests in any rolling minute, across the whole
+  server on purpose — "cannot be used to hammer anything" is a property of the
+  process, not of one client, and per-IP buckets behind a home router all see
+  the same address anyway. Past the limit it answers 429 with `Retry-After`.
+- **Read-only**, like the rest of the server, and **off by default**: switched
+  off it answers 404, not 403, because an endpoint that is off should not
+  announce that it exists.
 
-It would still be an endpoint that accepts input, and that is a genuine change
-to the attack surface — which is why it will be a choice you make rather than a
-default. Combined with `fcc_uls` it would be a good one: local data, local
-index, no third party, and no way for the endpoint to reach the network.
+It is still an endpoint that accepts input, which is a genuine change to the
+attack surface — which is why it is a choice rather than a default. Combined
+with `fcc_uls` it is a good one: local data, local index, no third party, and
+no way for the endpoint to reach the network.
 
-Until it exists, mode 2 covers the common case: the collector resolves what your
-spots and decodes surface, and the panel reads that.
+A callsign the local index cannot answer returns `{"found": false}` — the
+endpoint never falls through to a network provider. That is mode 2's job, on
+the collector's schedule, not a request's.
 
 ## Chains, and operating away from the internet
 
@@ -251,7 +270,7 @@ reaches a snapshot is readable by everyone on your LAN.
 | Worldwide, best data, willing to pay | `providers = ["qrz"]` |
 
 Looking up *arbitrary* callsigns rather than only ones you have seen needs the
-query endpoint, which is designed but **not built** — see above.
+query endpoint — `query_endpoint = true`, mode 3 above.
 
 ## Credentials
 

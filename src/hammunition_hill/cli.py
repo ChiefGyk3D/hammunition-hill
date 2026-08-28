@@ -367,12 +367,12 @@ def _check(config: Config, guard: EgressGuard, enricher: Enricher, *, offline: b
         caveat = "  (approximate -- set [log] cty_dat for accuracy)"
     print(f"prefixes     : {enricher.table.source}{caveat}")
     if config.lookup.enabled:
-        # Do not report this as ENABLED. The flag parses, nothing reads it, and
-        # an operator who believes they switched on an endpoint that does not
-        # exist has been told something false by their own tooling.
+        # This line once read "NOT IMPLEMENTED": the flag parsed and nothing
+        # read it, and a test held the docs to saying so. The endpoint exists
+        # now, so the report says what it serves and where from.
         endpoint = (
-            "  + query_endpoint set, but NOT IMPLEMENTED (see docs/STATUS.md)"
-            if config.lookup.query_endpoint
+            "  + GET /lookup/<callsign> (local index only)"
+            if (config.lookup.query_endpoint)
             else ""
         )
         chain = " -> ".join(config.lookup.providers)
