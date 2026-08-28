@@ -45,8 +45,8 @@ Legend: **done** · **partial** · **planned** · **not planned** (with the reas
 | RBN spots | **done** | Its own line parser rather than the cluster's, which turned out to matter: the formats differ |
 | RBN band SNR / path matrix | **done** | Aggregated by band and mode, bounded so a busy night cannot grow memory without limit — see [RBN.md](RBN.md) |
 | HF signals | **partial** | Covered by spots; a dedicated view is not obviously additive |
-| FT8 digimodes | **partial** | We show *your* decodes from WSJT-X, which they cannot. A PSK Reporter view of everyone else's is separate work. |
-| FT8 propagation globes | **partial** | Band globes shipped: one sphere per active band from your own spots and decodes, greyline on each. What is still missing is PSK Reporter — everyone ELSE hearing you — which is a source, not a display |
+| FT8 digimodes | **yes, differently** | We show *your* decodes from WSJT-X (which they cannot) and, via the `pskreporter` source, every station that decoded you. What we do not show is third-party traffic between other stations — their embedded map does, and deliberately nothing here embeds it. |
+| FT8 propagation globes | **yes** | One sphere per active band, greyline on each, lit by your cluster spots, WSJT-X decodes, and PSK Reporter / WSPR reception reports — the stations actually hearing you |
 
 ### Activate
 

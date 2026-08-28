@@ -17,12 +17,14 @@ from .hamqsl import HamQslSource
 from .ics import IcsSource
 from .local import LOCAL_KINDS, get_local, is_local
 from .pota import PotaSource
+from .pskreporter import PskReporterSource
 from .rss import RssSource
 from .sota import SotaSource
 from .swpc import SwpcSource
 from .swpc_text import NoaaScalesSource, SwpcAlertsSource
 from .tle import TleSource
 from .weather import NwsAlertsSource
+from .wspr import WsprSource
 
 REGISTRY: dict[str, Source] = {
     src.kind: src()  # type: ignore[operator]
@@ -38,6 +40,8 @@ REGISTRY: dict[str, Source] = {
         SwpcAlertsSource,
         NwsAlertsSource,
         TleSource,
+        PskReporterSource,
+        WsprSource,
     )
 }
 

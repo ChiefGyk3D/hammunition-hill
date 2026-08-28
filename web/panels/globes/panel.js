@@ -8,8 +8,9 @@
 // are open, and to where" -- the question an operator actually starts with.
 // All the spots on one sphere blend into confetti; the same spots split one
 // band per sphere read as propagation. This is the display hamdash built its
-// front page around, drawn here from your own cluster spots and WSJT-X decodes
-// rather than from anybody's aggregation service.
+// front page around, drawn here from your own data: cluster spots, WSJT-X
+// decodes, and -- with the pskreporter/wspr sources configured -- the
+// stations reporting that they heard you.
 //
 // "However many make sense": a globe appears when its band has activity in the
 // spot window and disappears when the band goes quiet, in wavelength order.
@@ -28,15 +29,7 @@ import {
   project,
 } from "../../lib/globe.js";
 
-// Same ramp as the big map, deliberately: a band must be the same colour on
-// every display or the colours stop meaning anything.
-const BAND_COLORS = {
-  "160m": "#e05c5c", "80m": "#e08a3c", "60m": "#e0c23c", "40m": "#5cc45c",
-  "30m": "#3cc4a8", "20m": "#3ca0e0", "17m": "#8a7ce0", "15m": "#e07cc4",
-  "12m": "#e05c9c", "10m": "#e0603c", "6m": "#e0a83c", "2m": "#9aa4b0",
-  "70cm": "#7a8490",
-};
-const BAND_ORDER = Object.keys(BAND_COLORS);
+import { BAND_COLORS, BAND_ORDER } from "../../lib/bandcolors.js";
 
 const state = { world: null, loading: false, canvases: new Map() };
 
@@ -64,6 +57,11 @@ function byBand(data) {
   };
   for (const spot of data.cluster?.data?.spots ?? []) add(spot);
   for (const decode of data.wsjtx?.data?.spots ?? []) add(decode);
+  // Reception reports point the other way -- stations that heard YOU -- and
+  // that is exactly what belongs on a propagation sphere: a dot for every
+  // place your signal actually reached.
+  for (const report of data.pskreporter?.data?.spots ?? []) add(report);
+  for (const report of data.wspr?.data?.spots ?? []) add(report);
   return [...bands.entries()].sort(
     (a, b) => BAND_ORDER.indexOf(a[0]) - BAND_ORDER.indexOf(b[0]),
   );
@@ -140,7 +138,8 @@ export function render(root, { data, station, el }) {
       el(
         "p",
         "empty",
-        "no band activity yet — globes appear as spots arrive from the cluster or WSJT-X",
+        "no band activity yet — globes appear as spots arrive from the cluster, " +
+          "WSJT-X, PSK Reporter, or WSPR",
       ),
     );
     return;

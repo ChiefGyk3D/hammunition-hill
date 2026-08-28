@@ -58,6 +58,21 @@ def test_interval_floor_protects_upstreams(tmp_path):
         parse_config(raw, base_dir=tmp_path)
 
 
+def test_reception_report_kinds_have_a_five_minute_floor(tmp_path):
+    """PSK Reporter asks for five-minute spacing and wspr.live enforces
+    quotas; an interval legal for an RSS feed is hammering for these."""
+    for kind in ("pskreporter", "wspr"):
+        entry = {"id": kind, "kind": kind, "url": "https://a.example/q", "interval": 60}
+        raw = cfg(sources=[entry])
+        with pytest.raises(ConfigError, match="below the 300s floor"):
+            parse_config(raw, base_dir=tmp_path)
+
+
+def test_reception_report_kinds_accept_the_floor_itself(tmp_path):
+    raw = cfg(sources=[{"id": "w", "kind": "wspr", "url": "https://a.example/q", "interval": 300}])
+    assert parse_config(raw, base_dir=tmp_path).sources[0].interval == 300
+
+
 def test_missing_required_key(tmp_path):
     with pytest.raises(ConfigError, match="missing required key 'kind'"):
         parse_config(cfg(sources=[{"id": "x", "url": "https://a.example/f"}]), base_dir=tmp_path)

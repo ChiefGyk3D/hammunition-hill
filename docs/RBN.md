@@ -107,3 +107,9 @@ timeouts and the flush timer rather than a stand-in for them.
   [STATUS.md](STATUS.md).
 - **No history.** The window is minutes, not days. Trend analysis over weeks is
   what the metrics exporter is for, when it exists.
+
+The RBN answers "is my signal getting out" for CW and RTTY. For the digital
+modes the same question is answered by the `pskreporter` source, and for WSPR
+beacons by the `wspr` source — both documented in
+[CONFIGURATION.md](CONFIGURATION.md), both feeding the **Heard You** panel
+beside this one.
