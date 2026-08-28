@@ -133,19 +133,38 @@ def psk_reports() -> str:
         f'flowStartSeconds="{at}"/>'
         for call, grid, hz, mode, snr, at in rows
     )
-    return f'<?xml version="1.0"?><receptionReports currentSeconds="{now}">{reports}</receptionReports>'
+    return (
+        f'<?xml version="1.0"?>'
+        f'<receptionReports currentSeconds="{now}">{reports}</receptionReports>'
+    )
 
 
 def wspr_reports() -> str:
     """wspr.live's ClickHouse JSON shape, 64-bit ints quoted as it emits them."""
     stamp = time.strftime("%Y-%m-%d %H:%M:00", time.gmtime(time.time() - 120))
     rows = [
-        {"time": stamp, "rx_sign": "OE9GHV", "rx_lat": 47.3, "rx_lon": 9.6,
-         "rx_loc": "JN47tm", "distance": "6423", "snr": -21, "power": 37,
-         "frequency": "10140200"},
-        {"time": stamp, "rx_sign": "ZL2005SWL", "rx_lat": -41.2, "rx_lon": 174.9,
-         "rx_loc": "RE78js", "distance": "13102", "snr": -26, "power": 37,
-         "frequency": "10140150"},
+        {
+            "time": stamp,
+            "rx_sign": "OE9GHV",
+            "rx_lat": 47.3,
+            "rx_lon": 9.6,
+            "rx_loc": "JN47tm",
+            "distance": "6423",
+            "snr": -21,
+            "power": 37,
+            "frequency": "10140200",
+        },
+        {
+            "time": stamp,
+            "rx_sign": "ZL2005SWL",
+            "rx_lat": -41.2,
+            "rx_lon": 174.9,
+            "rx_loc": "RE78js",
+            "distance": "13102",
+            "snr": -26,
+            "power": 37,
+            "frequency": "10140150",
+        },
     ]
     return json.dumps({"meta": [], "data": rows, "rows": len(rows)})
 
