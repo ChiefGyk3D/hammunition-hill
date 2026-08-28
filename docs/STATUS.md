@@ -211,18 +211,16 @@ Ten are **tier 0** — they work with the internet unplugged: `bandplan`,
 
 What is actually being worked on, in order:
 
-1. **Packaging**, meaning a container and a `pip install` that carries `web/`.
+1. **VOACAP or an honest substitute** — the genuinely hard propagation item,
+   and the last ❌ in the summary table that is code rather than data.
+2. **International band plans and exam pools** — data contributions the
+   loaders are already generic for.
+3. **Distro packages**, now that the container and the bare wheel both work.
 
-The callsign query endpoint and opaque image mode were ahead of it and have
-shipped: the last config flag that parsed and did nothing now does what it
-says, and a tile marked opaque is fetched by the collector rather than by
-every viewer, its host leaving the CSP.
-
-Part 97 alongside the exam questions was the previous first item and has
-shipped: 192 of the 1431 questions cite a rule, and the rule is now quoted.
-
-RBN, satellites and the Prometheus exporter were the previous three and have
-shipped; the table above is the record of what they actually do.
+Everything the roadmap listed before this — the query endpoint, packaging,
+opaque image mode, Part 97 beside the exam answers, RBN, satellites, the
+Prometheus exporter — has shipped; the tables above are the record of what
+each actually does.
 
 Smaller items are listed in [PARITY.md](PARITY.md).
 
