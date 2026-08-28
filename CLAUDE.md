@@ -153,7 +153,6 @@ if it passes.
 
 - The wheel carries the CLI and **not** `web/`. A git clone is the supported
   install; `serve` and `check` now say so rather than serving 404s.
-- `query_endpoint` parses and does nothing. Designed, not built.
 - Upstream endpoint URLs rot and several could not be verified from the build
   environment. `hamhill check` on real hardware is how that gets found.
 
