@@ -299,6 +299,17 @@ panels overlap by more than a couple of pixels, on every dashboard, because
 that failure mode is otherwise silent: no console error, every panel renders,
 and each one is underneath the next.
 
+The arrangement is the operator's. `panels/index.json` ships the defaults;
+customize mode (the button at the end of the tab bar) reorders, hides and
+restores panels per dashboard, and the result lives in that browser's
+localStorage — deliberately per display, because the shack TV, the field phone
+and the laptop are different rooms with different jobs, and because keeping it
+client-side leaves the server a static file server with no write path. The
+stored order is reconciled against the shipped list on every read, so a panel
+added by an upgrade appears rather than being lost, and one that no longer
+exists drops out silently. The render harness hides a panel, moves another,
+reloads cold and demands both stuck.
+
 One sheet serves three rooms. Under 680px — a phone in the field, usually over
 ZTNA back to the shack — the grid is one column, chrome shrinks, and tap
 targets grow. From 1920px up — a TV on the shack wall — the page scales up

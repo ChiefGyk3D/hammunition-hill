@@ -60,6 +60,7 @@ finished, so here is exactly where things stand:
 | Logbook | ✅ working, off by default |
 | Callsign lookup — 4 providers, chained, offline-capable | ✅ working |
 | Weather alerts and imagery — tier 2, or opaque via the collector | ✅ working |
+| Custom layout per display | ✅ working — reorder, hide, reset, kept per browser |
 | Band plans | 🟡 US only — international is a data contribution, not code |
 | Propagation — MUF, LUF, D-layer absorption | ✅ working |
 | VOACAP point-to-point | ❌ **not written** |
@@ -76,8 +77,8 @@ finished, so here is exactly where things stand:
 | Metrics — InfluxDB push | ❌ **not written** |
 | Licence exam practice — all three US pools included | ✅ working |
 | Part 97 quoted beside a rules answer | ✅ working |
-| CI — 9 jobs plus CodeQL, 3 Python versions, x86 + ARM + macOS | ✅ working |
-| Docker image, distro packages, `pip install` without a clone | ❌ **not written** |
+| CI — 10 jobs plus CodeQL, 3 Python versions, x86 + ARM + macOS | ✅ working |
+| Docker image and `pip install` without a clone | ✅ working — distro packages still ❌ |
 
 **Full inventory, every subsystem: [docs/STATUS.md](docs/STATUS.md).** That page
 is the one kept current; anything here is a summary of it. It also carries the

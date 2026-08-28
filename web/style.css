@@ -943,6 +943,35 @@ ul.wx-alerts { list-style: none; margin: 0; padding: 0; }
   color: var(--ink);
 }
 
+/* --- customize mode ---------------------------------------------------- */
+.tab-edit { margin-left: auto; color: var(--muted); }
+.tab-edit.on { color: var(--accent); }
+.edit-bar {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--panel);
+  border: 1px dashed var(--rule);
+  border-radius: 3px;
+}
+.edit-hint { font-family: var(--mono); font-size: 10.5px; color: var(--muted); margin-right: auto; }
+.edit-reset { color: var(--poor); }
+.edit-controls { display: flex; gap: 2px; margin-left: 8px; }
+.edit-btn {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 2px 7px;
+  cursor: pointer;
+}
+.edit-btn:disabled { opacity: .35; cursor: default; }
+.edit-btn:hover:not(:disabled) { border-color: var(--accent); color: var(--accent); }
 /* Four inputs on one row for the power wheel, collapsing on a phone. */
 .tool-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; }
 /* --- pocket reference -------------------------------------------------- */

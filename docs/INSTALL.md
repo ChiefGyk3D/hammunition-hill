@@ -19,6 +19,11 @@ You do *not* need a database, a web server, an account, or an API key.
 
 ## Install
 
+Three ways in. A clone is still the best one for anyone who might edit a panel
+or contribute; the other two exist so that nobody has to.
+
+### From a clone
+
 ```bash
 git clone https://github.com/ChiefGyk3D/hammunition-hill
 cd hammunition-hill
@@ -28,6 +33,36 @@ python3 -m venv .venv
 
 cp config.example.toml config.toml
 ```
+
+### Bare pip, no clone
+
+```bash
+python3 -m venv hamhill && hamhill/bin/pip install hammunition-hill
+```
+
+The wheel carries the dashboard files and the question pools; with no checkout
+beside the config, the server serves the packaged copy. Write a `config.toml`
+(start from
+[config.example.toml](https://github.com/ChiefGyk3D/hammunition-hill/blob/main/config.example.toml))
+and `hamhill serve --config config.toml`.
+
+### Docker
+
+```bash
+docker build -t hammunition-hill https://github.com/ChiefGyk3D/hammunition-hill.git
+docker run -d --name hamhill \
+  -p 127.0.0.1:8073:8073 \
+  -v ./config.toml:/config/config.toml:ro \
+  -v hamhill-data:/config/data \
+  hammunition-hill
+```
+
+Inside the container the config's `[server] host` must be `0.0.0.0` — the
+`-p 127.0.0.1:...` binding is what scopes it, and the warning the server
+prints about binding wide is aimed at bare-metal installs. The container
+changes nothing about the threat model: publish the port to localhost or a
+ZTNA/VPN interface, never to an address the internet can reach — see
+[SECURITY.md](SECURITY.md).
 
 The core install has **two dependencies**, deliberately. Three features are
 behind optional extras rather than in that number, because most operators do

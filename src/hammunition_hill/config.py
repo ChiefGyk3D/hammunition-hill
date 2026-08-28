@@ -323,7 +323,9 @@ def parse_config(raw: dict[str, Any], *, base_dir: Path) -> Config:
 
     paths = raw.get("paths", {})
     data_dir = Path(paths.get("data_dir", base_dir / "data")).expanduser()
-    web_dir = Path(paths.get("web_dir", base_dir / "web")).expanduser()
+    web_dir = (
+        Path(paths["web_dir"]).expanduser() if "web_dir" in paths else _default_web_dir(base_dir)
+    )
 
     embed = raw.get("embeds", {}).get("allow_hosts", [])
     if not isinstance(embed, list):
@@ -522,6 +524,30 @@ def parse_config(raw: dict[str, Any], *, base_dir: Path) -> Config:
         logbooks=tuple(books),
         imagery=tuple(tiles),
     )
+
+
+def _default_web_dir(base_dir: Path) -> Path:
+    """The dashboard files: the checkout's copy first, the wheel's second.
+
+    A git clone keeps web/ beside the config, and that copy wins so an operator
+    editing a panel sees the edit. With no checkout -- a bare pip install --
+    the wheel carries the same files as package data, which is what turned
+    "the wheel carries the CLI and not web/" from a documented limitation into
+    a supported install. An explicit [paths] web_dir beats both.
+    """
+    checkout = base_dir / "web"
+    if checkout.is_dir():
+        return checkout
+    try:
+        from importlib import resources
+
+        packaged = resources.files("hammunition_hill") / "web"
+        with resources.as_file(packaged) as concrete:
+            if concrete.is_dir():
+                return Path(concrete)
+    except (ModuleNotFoundError, TypeError, OSError):
+        pass
+    return checkout
 
 
 def load_config(path: Path) -> Config:
