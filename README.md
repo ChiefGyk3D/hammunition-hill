@@ -64,7 +64,7 @@ finished, so here is exactly where things stand:
 | Propagation — MUF, LUF, D-layer absorption | ✅ working |
 | VOACAP point-to-point | ❌ **not written** |
 | Weather outside the US | 🟡 feeds and maps; no structured severity |
-| Callsign query endpoint | ❌ **not written** — the config flag parses and does nothing |
+| Callsign query endpoint | ✅ working — off by default, local index only |
 | GPS — portable auto-grid and clock check | ✅ working |
 | CW / Morse tools — reference, translator, audio | ✅ working |
 | Pocket reference — Q signals, RST, phonetics, calling freqs | ✅ working |
@@ -509,11 +509,11 @@ no request causes a fetch and the architecture holds. That answers "who is this
 station I am seeing", which is what a dashboard is actually asked.
 
 Looking up *arbitrary* callsigns needs an endpoint that accepts input — the one
-thing this design avoids. That endpoint is **designed but not built**: the
-`query_endpoint` flag parses and does nothing today. The intended shape is the
-narrowest thing that can do the job — GET only, local index only, strictly
-validated, rate limited, and unable to cause an outbound request — and it will
-stay opt-in when it lands. See [docs/STATUS.md](docs/STATUS.md).
+thing the rest of this design avoids, which is why it is **opt-in**
+(`query_endpoint = true`) rather than a default. It is the narrowest endpoint
+that can do the job: GET only, local index only, strictly validated, rate
+limited, and structurally unable to cause an outbound request. See
+[docs/CALLSIGN-LOOKUP.md](docs/CALLSIGN-LOOKUP.md).
 
 With a network provider, **the callsigns you are watching go to that provider.**
 That is inherent. `fcc_uls` is the option where nothing leaves the machine — and
