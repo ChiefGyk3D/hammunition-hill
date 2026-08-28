@@ -219,7 +219,10 @@ def test_infinity_survives_the_json_boundary():
     root = Path(__file__).resolve().parents[1]
     script = (
         f'import {{ ohm }} from "{root / "web/lib/electrical.js"}";'
-        "console.log(ohm({volts: 12, amps: 0}).ohms === Infinity);"
+        # A string sentinel, not a boolean: console.log(true) comes out
+        # wrapped in ANSI colour codes wherever node decides the stream
+        # deserves them, which on the CI runners it did.
+        'console.log(ohm({volts: 12, amps: 0}).ohms === Infinity ? "ok" : "broken");'
     )
     result = subprocess.run(  # noqa: S603
         [shutil.which("node"), "--input-type=module", "-e", script],
@@ -227,4 +230,4 @@ def test_infinity_survives_the_json_boundary():
         text=True,
         timeout=60,
     )
-    assert result.stdout.strip() == "true", result.stderr
+    assert result.stdout.strip() == "ok", result.stderr
