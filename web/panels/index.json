@@ -21,7 +21,8 @@
       "name": "Map",
       "panels": [
         "map",
-        "spots"
+        "spots",
+        "globes"
       ]
     },
     {

@@ -15,7 +15,7 @@ monitor above it — the high ground you watch the bands from.
 
 ![The Home dashboard](https://raw.githubusercontent.com/ChiefGyk3D/hammunition-hill/main/docs/images/home.png)
 
-Six dashboards, twenty-seven panels, one machine. Nothing above was fetched by
+Six dashboards, twenty-eight panels, one machine. Nothing above was fetched by
 your browser from anyone else's server — the screenshots are taken by CI, from a
 real Chromium, against a real collector, so they are what the code renders
 rather than what a designer drew.
@@ -51,10 +51,11 @@ finished, so here is exactly where things stand:
 |---|---|
 | Collector, snapshot architecture, static server | ✅ working |
 | Egress allowlist, CSP, path handling | ✅ working |
-| Panels | ✅ 27 across 6 dashboards |
+| Panels | ✅ 28 across 6 dashboards |
 | Source kinds | ✅ 11 polled, 6 stream, 1 file |
 | Space weather dials | ✅ 8 scales |
 | Map — rotatable globe, greyline, spots, aurora | ✅ working |
+| Band globes — one sphere per active band, hamdash style | ✅ working |
 | Your log driving spot colouring | ✅ working |
 | DX cluster, WSJT-X, `rigctld` | ✅ working |
 | Logbook | ✅ working, off by default |

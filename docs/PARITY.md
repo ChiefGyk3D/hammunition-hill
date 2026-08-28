@@ -46,7 +46,7 @@ Legend: **done** · **partial** · **planned** · **not planned** (with the reas
 | RBN band SNR / path matrix | **done** | Aggregated by band and mode, bounded so a busy night cannot grow memory without limit — see [RBN.md](RBN.md) |
 | HF signals | **partial** | Covered by spots; a dedicated view is not obviously additive |
 | FT8 digimodes | **partial** | We show *your* decodes from WSJT-X, which they cannot. A PSK Reporter view of everyone else's is separate work. |
-| FT8 propagation globes | **planned** | PSK Reporter paths on the globe we already have |
+| FT8 propagation globes | **partial** | Band globes shipped: one sphere per active band from your own spots and decodes, greyline on each. What is still missing is PSK Reporter — everyone ELSE hearing you — which is a source, not a display |
 
 ### Activate
 
