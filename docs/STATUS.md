@@ -122,7 +122,7 @@ Sixteen are tier 1. One is tier 2 (`imagery`).
 | Weather alerts | ✅ | |
 | Tier 2 imagery tiles | ✅ | Radar, satellite, lightning, solar — one config line each |
 | Freshness shown, never hidden | ✅ | Stale and blank are different problems and look different |
-| Drag-to-reorder layout | ❌ | Dashboards are configurable in JSON; dragging is not built |
+| Custom layout per display | ✅ | Customize mode: reorder, hide, restore, reset — per browser, so the TV and the phone each keep their own. Dragging specifically is not built; buttons work everywhere dragging does not |
 | "AT YOUR QTH" vs "OPEN ELSEWHERE" band pills | ❌ | Spotted in hamdash; outstanding |
 | CW / Morse tools | ✅ | Reference charts, translator, timing, audio playback — see [CW.md](CW.md) |
 | CW trainer | ✅ | Four drills: Koch lessons, callsign copy from real DXCC prefixes, a two-sided QSO simulator (contest and ragchew), and a phonetics/Q-signal/abbreviation quiz. Generated in the browser from a seeded PRNG the Python side mirrors, so a test proves the two never diverge. |

@@ -202,6 +202,11 @@ const BASE = `http://127.0.0.1:${PORT}/`;
   page.on('pageerror', (err) => problems.push(`uncaught exception: ${err.message}`));
   page.on('requestfailed', (req) => {
     // A blocked external request is itself the finding; report the attempt.
+    // ERR_ABORTED is not a failure: it is what every in-flight fetch reports
+    // when a navigation cancels it, and the customize scenario reloads the
+    // page on purpose. Flagging those made "test reloads the page" and "the
+    // dashboard cannot fetch its data" indistinguishable.
+    if (req.failure()?.errorText === 'net::ERR_ABORTED') return;
     problems.push(`request failed: ${req.url()} (${req.failure()?.errorText})`);
   });
 
@@ -220,7 +225,10 @@ const BASE = `http://127.0.0.1:${PORT}/`;
 
   // Read the dashboards from the page itself rather than hardcoding a list,
   // so adding a dashboard is covered without editing this script.
-  const tabs = await page.$$eval('#tabs button', (els) => els.map((e) => e.textContent.trim()));
+  // .tab-edit is the customize toggle, not a dashboard; clicking it mid-census
+  // put the page into edit mode and the rest of the loop into the weeds.
+  const tabs = await page.$$eval('#tabs button:not(.tab-edit)', (els) =>
+    els.map((e) => e.textContent.trim()));
   if (tabs.length === 0) problems.push('no dashboard tabs rendered');
   console.log(`dashboards: ${tabs.join(', ')}`);
 
@@ -269,6 +277,43 @@ const BASE = `http://127.0.0.1:${PORT}/`;
     await page.screenshot({ path: `${SHOTS}/${slug}.png`, fullPage: true });
     console.log(`  ${tab}: ${panels.length} panels ok`);
   }
+
+  // --- customization survives a reload -----------------------------------
+  // Hide a panel, move another, reload the page cold, and demand both stuck.
+  // The property being tested is persistence, so the reload is the test: an
+  // implementation that keeps layout in a variable passes everything above.
+  await page.click('#tabs button:text-is("Home")');
+  await page.waitForTimeout(400);
+  const before = await page.$$eval('#grid .panel', (els) => els.map((e) => e.dataset.panel));
+  await page.click('#tabs .tab-edit');
+  await page.waitForTimeout(400);
+  await page.click(`#grid .panel[data-panel="${before[0]}"] .edit-btn[title="Hide this panel"]`);
+  await page.waitForTimeout(300);
+  await page.click(`#grid .panel[data-panel="${before[1]}"] .edit-btn[title="Move later"]`);
+  await page.waitForTimeout(300);
+  await page.reload({ waitUntil: 'load' });
+  await page.waitForTimeout(1200);
+  const after = await page.$$eval('#grid .panel', (els) => els.map((e) => e.dataset.panel));
+  if (after.includes(before[0])) {
+    problems.push(`customize: hid ${before[0]}, but it came back after reload`);
+  }
+  if (after.length !== before.length - 1) {
+    const got = `${after.length}`;
+    problems.push(`customize: expected ${before.length - 1} panels after hiding one, got ${got}`);
+  }
+  if (before[1] && after[0] === before[1]) {
+    problems.push(`customize: moved ${before[1]} later, but it still renders first`);
+  }
+  // Reset, so the harness leaves no state behind for the screenshot runs.
+  await page.click('#tabs .tab-edit');
+  await page.waitForTimeout(300);
+  await page.click('#grid .edit-reset');
+  await page.waitForTimeout(300);
+  const restored = await page.$$eval('#grid .panel', (els) => els.length);
+  if (restored !== before.length) {
+    problems.push(`customize: reset restored ${restored} panels, expected ${before.length}`);
+  }
+  console.log('  customize: hide, reorder, reload, reset ok');
 
   await browser.close();
 

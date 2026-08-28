@@ -113,7 +113,7 @@ Legend: **done** · **partial** · **planned** · **not planned** (with the reas
 | Feature | Status | Notes |
 |---|---|---|
 | Callsign / grid settings | **done** | Config file, plus browser geolocation to find your grid |
-| Custom layout, reset layout | **partial** | Dashboards are configurable; drag-to-reorder is not built |
+| Custom layout, reset layout | **done** | Customize mode: reorder, hide, restore and reset per dashboard, kept in the browser so each display -- shack TV, field phone, laptop -- keeps its own. Buttons rather than drag, deliberately: they work on a TV remote-style d-pad and a touchscreen alike |
 | Accounts | **not planned** | There is nothing to have an account with |
 | YouTube / Facebook / about | **not planned** | Not a dashboard feature |
 

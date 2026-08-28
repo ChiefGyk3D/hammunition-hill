@@ -60,6 +60,7 @@ finished, so here is exactly where things stand:
 | Logbook | ✅ working, off by default |
 | Callsign lookup — 4 providers, chained, offline-capable | ✅ working |
 | Weather alerts and tier 2 imagery | ✅ working |
+| Custom layout per display | ✅ working — reorder, hide, reset, kept per browser |
 | Band plans | 🟡 US only — international is a data contribution, not code |
 | Propagation — MUF, LUF, D-layer absorption | ✅ working |
 | VOACAP point-to-point | ❌ **not written** |
