@@ -47,6 +47,43 @@ function relativeAge(iso) {
   return `${Math.round(seconds / 3600)}h ago`;
 }
 
+// --- personal layout ---------------------------------------------------
+// The shipped arrangement lives in panels/index.json; the operator's own
+// lives in this browser. That split is deliberate: the server stays a static
+// file server with no write path, and each display keeps its own layout --
+// the shack TV, the phone in the field and the laptop are different rooms
+// with different jobs, so "per browser" is a feature, not a limitation.
+//
+// The stored order is reconciled against the shipped list on every read:
+// panels added to a dashboard since the layout was saved are appended rather
+// than lost, and panels that no longer exist drop out silently.
+function layoutFor(dash) {
+  const stored = recall(`layout.${dash.id}`, null) || {};
+  const shipped = dash.panels;
+  const order = (Array.isArray(stored.order) ? stored.order : []).filter((id) =>
+    shipped.includes(id),
+  );
+  for (const id of shipped) if (!order.includes(id)) order.push(id);
+  const hidden = (Array.isArray(stored.hidden) ? stored.hidden : []).filter((id) =>
+    shipped.includes(id),
+  );
+  return { order, hidden };
+}
+
+function saveLayout(dash, layout) {
+  remember(`layout.${dash.id}`, { order: layout.order, hidden: layout.hidden });
+}
+
+function resetLayout(dash) {
+  try {
+    localStorage.removeItem(`hh.layout.${dash.id}`);
+  } catch {
+    /* storage unavailable: nothing was saved either */
+  }
+}
+
+let editing = false;
+
 function buildTabs(dashboards, active, onPick) {
   const bar = el("nav", "tabs");
   bar.setAttribute("aria-label", "Dashboards");
@@ -58,6 +95,14 @@ function buildTabs(dashboards, active, onPick) {
     tab.addEventListener("click", () => onPick(dash.id));
     bar.append(tab);
   }
+  const customize = el("button", "tab tab-edit" + (editing ? " on" : ""), editing ? "done" : "customize");
+  customize.type = "button";
+  customize.setAttribute("aria-pressed", String(editing));
+  customize.addEventListener("click", () => {
+    editing = !editing;
+    onPick(active);
+  });
+  bar.append(customize);
   return bar;
 }
 
@@ -256,7 +301,41 @@ async function main() {
     GRID.replaceChildren();
 
     const dash = dashboards.find((d) => d.id === id);
-    for (const panelId of dash?.panels ?? []) {
+    const layout = dash ? layoutFor(dash) : { order: [], hidden: [] };
+
+    if (editing && dash) {
+      const bar = el("div", "edit-bar");
+      bar.append(
+        el(
+          "span",
+          "edit-hint",
+          "Arrange this dashboard. Changes live in this browser only — each display keeps its own.",
+        ),
+      );
+      if (layout.hidden.length) {
+        for (const hiddenId of layout.hidden) {
+          const restore = el("button", "chip", `+ ${loaded.get(hiddenId)?.manifest?.name ?? hiddenId}`);
+          restore.type = "button";
+          restore.addEventListener("click", () => {
+            layout.hidden = layout.hidden.filter((x) => x !== hiddenId);
+            saveLayout(dash, layout);
+            show(id);
+          });
+          bar.append(restore);
+        }
+      }
+      const reset = el("button", "chip edit-reset", "reset layout");
+      reset.type = "button";
+      reset.addEventListener("click", () => {
+        resetLayout(dash);
+        show(id);
+      });
+      bar.append(reset);
+      GRID.append(bar);
+    }
+
+    for (const panelId of layout.order) {
+      if (layout.hidden.includes(panelId)) continue;
       const entry = loaded.get(panelId);
       if (!entry) continue;
       if (entry.error) {
@@ -265,6 +344,42 @@ async function main() {
       }
       const { body, age } = buildFrame(entry.manifest);
       panels.push({ manifest: entry.manifest, module: entry.module, body, age });
+
+      if (editing && dash) {
+        const frame = body.closest(".panel");
+        const controls = el("span", "edit-controls");
+        const visible = layout.order.filter((x) => !layout.hidden.includes(x));
+        const position = visible.indexOf(panelId);
+        const move = (delta) => {
+          const neighbour = visible[position + delta];
+          if (!neighbour) return;
+          const a = layout.order.indexOf(panelId);
+          const b = layout.order.indexOf(neighbour);
+          [layout.order[a], layout.order[b]] = [layout.order[b], layout.order[a]];
+          saveLayout(dash, layout);
+          show(id);
+        };
+        const earlier = el("button", "edit-btn", "◀");
+        earlier.type = "button";
+        earlier.title = "Move earlier";
+        earlier.disabled = position === 0;
+        earlier.addEventListener("click", () => move(-1));
+        const later = el("button", "edit-btn", "▶");
+        later.type = "button";
+        later.title = "Move later";
+        later.disabled = position === visible.length - 1;
+        later.addEventListener("click", () => move(1));
+        const hide = el("button", "edit-btn", "✕");
+        hide.type = "button";
+        hide.title = "Hide this panel";
+        hide.addEventListener("click", () => {
+          layout.hidden.push(panelId);
+          saveLayout(dash, layout);
+          show(id);
+        });
+        controls.append(earlier, later, hide);
+        frame?.querySelector(".panel-head")?.append(controls);
+      }
     }
 
     TABS.replaceChildren(buildTabs(dashboards, active, show));
