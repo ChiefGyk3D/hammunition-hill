@@ -58,6 +58,11 @@ function build(el, tile) {
   const name = el("span", "tile-name", tile.name);
   status.append(name);
   if (tile.credit) status.append(el("span", "tile-credit", tile.credit));
+  if (tile.mode === "opaque") {
+    // The label is the panel's honesty about tiers, per tile: this one is
+    // fetched by the collector, so the upstream never sees the viewer.
+    status.append(el("span", "tile-credit", "via collector"));
+  }
   const state = el("span", "tile-state", "loading…");
   status.append(state);
 
@@ -83,7 +88,30 @@ function build(el, tile) {
   figure.title = `${tile.name} — click to refresh now (auto every ${tile.refresh}s)`;
   const refresh = () => {
     state.textContent = "loading…";
-    img.src = bust(tile.url, tile.cache_bust);
+    if (tile.mode === "opaque") {
+      // The collector fetched this one; the browser reads the sidecar for the
+      // image's current name (the extension follows the bytes, so an upstream
+      // switching PNG to GIF changes it) and loads same-origin. The upstream
+      // never sees this viewer.
+      fetch(`./data/tiles/${tile.id}.json`, { cache: "no-store" })
+        .then((response) => (response.ok ? response.json() : null))
+        .then((meta) => {
+          if (meta?.src) {
+            img.src = `./${meta.src}?_hh=${Date.now()}`;
+            if (meta.error) {
+              state.textContent = `stale — ${meta.error}`;
+              state.className = "tile-state failed";
+            }
+          } else {
+            state.textContent = "waiting for the collector's first fetch…";
+          }
+        })
+        .catch(() => {
+          state.textContent = "waiting for the collector's first fetch…";
+        });
+    } else {
+      img.src = bust(tile.url, tile.cache_bust);
+    }
     const entry = tiles.get(tile.id);
     if (entry) entry.loadedAt = Date.now();
   };

@@ -317,6 +317,21 @@ enabled = false
 # exist. Still an endpoint that accepts input, hence opt-in.
 # query_endpoint = false
 
+# A tile can be handed to the collector instead: mode = "opaque" fetches it on
+# `refresh`, checks it is genuinely a raster (an upstream serving SVG is
+# refused -- a document can run script, an image cannot), caps it at 10 MB, and
+# serves it same-origin. The upstream then sees one machine on a timer instead
+# of every viewer, and the host leaves the CSP. Costs collector bandwidth
+# whether or not a dashboard is open, which is why it is chosen per tile.
+#
+# [[imagery]]
+# id = "goes-east"
+# name = "GOES East full disc"
+# url = "https://cdn.star.nesdis.noaa.gov/GOES16/ABI/FD/GEOCOLOR/678x678.jpg"
+# mode = "opaque"
+# refresh = 600
+# credit = "NOAA/NESDIS"
+
 # --- Tier 2: foreign content the browser loads directly ---------------------
 # Empty by default. Every host listed here is added to the page's CSP, and is a
 # host your browser then contacts on every dashboard load. Prefer images over

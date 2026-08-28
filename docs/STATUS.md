@@ -38,7 +38,7 @@ have. Where the two disagree, this page is the one kept current.
 | CW / Morse tools | ✅ working |
 | Licence exam practice | ✅ all three US pools, five study modes |
 | Prometheus metrics endpoint | ✅ working, off by default |
-| Opaque image mode | ❌ **not written** |
+| Opaque image mode | ✅ per-tile: the collector fetches, the browser never does |
 | Packaging | ✅ Docker image and a bare `pip install` both serve the dashboard; distro packages ❌ |
 | CI, CodeQL, dependency audit | ✅ working |
 
@@ -172,7 +172,7 @@ Ten are **tier 0** — they work with the internet unplugged: `bandplan`,
 | EU alerts (MeteoAlarm) | 🟡 | Atom feeds and their map work; structured CAP severity needs a `meteoalarm` source |
 | Met Office warnings | 🟡 | Warning map as a tile; no structured feed parsed |
 | Field weather conditions | ❌ | Needs the `/points` → gridpoint chain done properly rather than letting a source build URLs from a response |
-| Opaque image mode | ❌ | Collector-cached tiles, so the browser never contacts a third party. Needs content-type discipline first — see [IMAGERY.md](IMAGERY.md) |
+| Opaque image mode | ✅ | `mode = "opaque"` per tile: collector-fetched on `refresh`, raster-only by magic bytes (SVG refused by name), 10 MB streaming cap, served same-origin — the host leaves the CSP. See [IMAGERY.md](IMAGERY.md) |
 
 ## Data and reference
 
@@ -211,17 +211,16 @@ Ten are **tier 0** — they work with the internet unplugged: `bandplan`,
 
 What is actually being worked on, in order:
 
-1. **Packaging**, meaning a container and a `pip install` that carries `web/`.
-2. **Opaque image mode**, so a tier 2 tile stops being tier 2.
+1. **VOACAP or an honest substitute** — the genuinely hard propagation item,
+   and the last ❌ in the summary table that is code rather than data.
+2. **International band plans and exam pools** — data contributions the
+   loaders are already generic for.
+3. **Distro packages**, now that the container and the bare wheel both work.
 
-The callsign query endpoint was the previous first item and has shipped: the
-last config flag that parsed and did nothing now does what it says.
-
-Part 97 alongside the exam questions was the previous first item and has
-shipped: 192 of the 1431 questions cite a rule, and the rule is now quoted.
-
-RBN, satellites and the Prometheus exporter were the previous three and have
-shipped; the table above is the record of what they actually do.
+Everything the roadmap listed before this — the query endpoint, packaging,
+opaque image mode, Part 97 beside the exam answers, RBN, satellites, the
+Prometheus exporter — has shipped; the tables above are the record of what
+each actually does.
 
 Smaller items are listed in [PARITY.md](PARITY.md).
 
