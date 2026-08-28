@@ -275,7 +275,7 @@ enabled = false
 #   callook free, no account, US only
 #   hamqth  free, worldwide, needs a HamQTH account
 #   qrz     best data, worldwide, needs a paid QRZ XML subscription
-#   fcc_uls designed but not built yet — local FCC download, no per-lookup network
+#   fcc_uls offline FCC index — one download, then no per-lookup network at all
 #
 # Providers are an ordered chain, tried left to right. No single source is right
 # for every callsign, so you pick the order:
@@ -310,9 +310,11 @@ enabled = false
 # tells you how many callsigns are indexed and when.
 #
 # Resolution is scheduled, not on demand: the collector works through callsigns
-# that already appear in your spots and decodes. Looking up arbitrary callsigns
-# would need a query endpoint — designed, NOT built. The flag below parses and
-# does nothing today; see docs/STATUS.md.
+# that already appear in your spots and decodes. To also look up ARBITRARY
+# callsigns, switch on the query endpoint: GET /lookup/<callsign> against the
+# local index only (the ULS database and the collector's cache). It cannot
+# cause an outbound request, it is rate limited, and switched off it does not
+# exist. Still an endpoint that accepts input, hence opt-in.
 # query_endpoint = false
 
 # A tile can be handed to the collector instead: mode = "opaque" fetches it on

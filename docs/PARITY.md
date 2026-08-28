@@ -81,7 +81,7 @@ Legend: **done** · **partial** · **planned** · **not planned** (with the reas
 
 | Feature | Status | Notes |
 |---|---|---|
-| Callsign query endpoint | **planned** | Designed in CALLSIGN-LOOKUP.md; the flag parses and does nothing. |
+| Callsign query endpoint | **done** | `GET /lookup/<callsign>` against the local index only; off by default. The last flag that parsed and did nothing |
 | Callsign lookup | **done** | Ordered provider chains, local-first. The offline FCC ULS index resolves US calls with no network at all, and stale cache entries are still served (flagged) when the WAN is gone — a portable station keeps working. |
 | Bearing calculator | **done** | Inside callsign lookup and on every spot |
 | Band plan | **done** | By licence class, which theirs does not do |
