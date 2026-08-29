@@ -58,7 +58,7 @@ The parts everything else sits on.
 | Path traversal handling | ✅ | Components dropped, then containment re-checked. |
 | Graceful staleness | ✅ | Last good snapshot kept, with `fetched_at` and the failure reason. |
 | Stream self-healing | ✅ | Exponential backoff; one dead stream cannot take down the run. |
-| `hamhill serve` / `check` / `fcc-import` | ✅ | |
+| `hamhill serve` / `check` / `setup` / `fcc-import` | ✅ | `setup` is the guided config: every question that would send the callsign says so first |
 | Config validation with actionable errors | ✅ | |
 | Tests | ✅ | Suite green with warnings as errors across 3.11–3.13; ruff clean. No count here on purpose — a hand-edited total rots by design, and this one did. |
 | CI | ✅ | Ten jobs, plus CodeQL in its own workflow: lint, pytest across 3.11–3.13 on x86, ARM and macOS, example-config validation, an end-to-end smoke test, a real-browser render of every dashboard, dependency audit, wheel build, a weekly upstream-liveness check, and a container build that must serve the dashboard. |

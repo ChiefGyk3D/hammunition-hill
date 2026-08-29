@@ -547,7 +547,9 @@ are presentation — panel arrangement via **customize** (top right), filters,
 which licence class you picked — and those live in that browser's localStorage,
 per display. Everything else — sources, callsign, grid, lookups, imagery,
 binding — is `config.toml` on the machine running `hamhill`, edited with a text
-editor and checked with `hamhill check`.
+editor and checked with `hamhill check` — or written for you by
+`hamhill setup`, a guided interview in the terminal that states, before
+each opt-in, exactly what saying yes will send and to whom.
 
 That is a security decision, not a missing feature. No settings API and no write
 endpoint means nothing reachable over HTTP can change what the collector

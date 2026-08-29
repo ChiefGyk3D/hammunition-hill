@@ -34,6 +34,18 @@ python3 -m venv .venv
 cp config.example.toml config.toml
 ```
 
+Or skip the copy and let it interview you instead:
+
+```bash
+.venv/bin/hamhill setup
+```
+
+`hamhill setup` asks about a dozen questions — callsign, grid, which
+feeds to enable — and every question that would send your callsign
+anywhere says so before you answer. It writes the same `config.toml`
+you would have written by hand, backs up any existing one first, and
+never writes anything without a final yes.
+
 ### Bare pip, no clone
 
 ```bash
