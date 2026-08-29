@@ -482,6 +482,28 @@ function toggleAboutSheet() {
   });
 }
 
+// Click anywhere else, the sheets close. Without this an open sheet sat over
+// the tab bar swallowing clicks -- which is exactly how the render census
+// found it: it opened "about" by accident and the next tab click timed out
+// underneath the sheet. A person hits the same wall with a mouse.
+document.addEventListener("click", (event) => {
+  if (
+    statusSheet &&
+    !statusSheet.contains(event.target) &&
+    !STATUS.contains(event.target)
+  ) {
+    toggleStatusSheet();
+  }
+  if (
+    aboutSheet &&
+    !aboutSheet.contains(event.target) &&
+    !event.target.closest(".brand") &&
+    !event.target.closest(".tab-about")
+  ) {
+    toggleAboutSheet();
+  }
+});
+
 async function poll(station) {
   const wanted = new Set(panels.flatMap((p) => p.manifest.sources));
   try {

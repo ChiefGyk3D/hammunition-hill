@@ -303,8 +303,13 @@ const BASE = `http://127.0.0.1:${PORT}/`;
   // Read the dashboards from the page itself rather than hardcoding a list,
   // so adding a dashboard is covered without editing this script.
   // .tab-edit is the customize toggle, not a dashboard; clicking it mid-census
-  // put the page into edit mode and the rest of the loop into the weeds.
-  const tabs = await page.$$eval('#tabs button:not(.tab-edit)', (els) =>
+  // put the page into edit mode and the rest of the loop into the weeds. The
+  // about button repeated the failure the day it shipped: the census clicked
+  // "about", the sheet it opened overlaid the tab bar, and the next tab click
+  // timed out underneath it. Every non-dashboard control added to this bar
+  // must be excluded here -- and covered by its own scenario below, because
+  // "excluded from the census" must never come to mean "never exercised".
+  const tabs = await page.$$eval('#tabs button:not(.tab-edit):not(.tab-about)', (els) =>
     els.map((e) => e.textContent.trim()));
   if (tabs.length === 0) problems.push('no dashboard tabs rendered');
   console.log(`dashboards: ${tabs.join(', ')}`);
@@ -460,6 +465,27 @@ const BASE = `http://127.0.0.1:${PORT}/`;
     problems.push(`customize: reset restored ${restored} panels, expected ${before.length}`);
   }
   console.log('  customize: hide, reorder, reload, reset ok');
+
+  // --- the about card ----------------------------------------------------
+  // Open it from the tab, demand the links that justify its existence, close
+  // it, and prove the tab bar still works afterwards -- the exact sequence
+  // that timed out when the census clicked "about" by accident.
+  await page.click('#tabs .tab-about');
+  await page.waitForTimeout(400);
+  const aboutLinks = await page.$$eval('.about-sheet a', (els) => els.length);
+  if (aboutLinks < 10) {
+    problems.push(`about: expected the full link set, got ${aboutLinks}`);
+  }
+  const badLinks = await page.$$eval('.about-sheet a', (els) =>
+    els.filter((a) => !a.href.startsWith('https://')).map((a) => a.href));
+  if (badLinks.length) problems.push(`about: non-https links: ${badLinks.join(', ')}`);
+  await page.click('#tabs .tab-about');
+  await page.waitForTimeout(200);
+  const sheetGone = await page.$('.about-sheet');
+  if (sheetGone) problems.push('about: sheet did not close on second click');
+  await page.click('#tabs button:text-is("Home")');
+  await page.waitForTimeout(300);
+  console.log(`  about: ${aboutLinks} links, opens and closes`);
 
   // The three rooms the stylesheet promises: phone, laptop, TV. Only the
   // laptop width was ever rendered, and the TV tier shipped broken -- the
