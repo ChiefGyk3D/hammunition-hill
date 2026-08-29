@@ -8,6 +8,8 @@ These are the tests that make the dials trustworthy. A dial is a claim -- "this
 is fine" or "this is a storm" -- and the claim is made here, not in the canvas.
 """
 
+import re
+
 import pytest
 
 from hammunition_hill.severity import (
@@ -115,6 +117,42 @@ def test_k_index_names_the_noaa_g_scale():
 
 
 @pytest.mark.parametrize(
+    "kp,expected",
+    [
+        (3.67, "Quiet"),
+        (4.0, "Unsettled"),
+        (4.33, "Unsettled"),
+        (4.67, "Unsettled"),
+        (5.0, "G1"),
+        (5.67, "G1"),
+        (6.0, "G2"),
+        (6.67, "G2"),
+        (7.0, "G3"),
+        (8.0, "G4"),
+        (9.0, "G5"),
+    ],
+)
+def test_a_fractional_kp_lands_in_the_g_band_noaa_would_give_it(kp, expected):
+    """G numbers are floors. Kp 4.33 is not a storm; Kp 5.67 is still only G1.
+
+    SWPC publishes Kp in thirds. While it published whole numbers this scale's
+    inclusive boundaries happened to agree with NOAA; the first fractional value
+    put Kp 4.33 in the G1 band, so the dial read "G1 storm" in red beside a NOAA
+    Scales panel reading "G0 none" and a storm_level of "quiet" from the very
+    same snapshot. Anything between two integers must round *down* to a G, and
+    below Kp 5 there is no G at all.
+    """
+    assert expected in classify("kindex", kp)["label"]
+
+
+def test_below_kp_five_names_no_storm_at_all():
+    """The G scale does not start until 5, so nothing under it may claim one."""
+    for kp in (0, 1.33, 2.67, 3, 3.67, 4, 4.33, 4.67):
+        label = classify("kindex", kp)["label"]
+        assert not re.search(r"\bG\d", label), f"Kp {kp} claims a storm class: {label!r}"
+
+
+@pytest.mark.parametrize(
     "value,level",
     [
         (0, GOOD),
@@ -170,6 +208,27 @@ def test_proton_severity(value, level):
 def test_proton_display_keeps_small_values():
     """0.40 pfu must not round to 0 -- background flux is a fraction."""
     assert classify("protons", 0.4)["display"] == "0.40"
+
+
+def test_the_proton_dial_never_claims_an_s_number():
+    """It is not measuring the quantity the S scale is defined on.
+
+    NOAA's S scale reads the >=10 MeV integral proton flux. This dial is fed
+    HamQSL's <protonflux>, which runs about two orders of magnitude higher --
+    measured 2026-08-28, HamQSL said 14 pfu while GOES >=10 MeV was 0.28 and
+    NOAA's scale said S0. The dial used to label that band "S1 storm" and sat
+    on the same screen as the NOAA Scales panel saying "S0 none".
+
+    The authoritative S number comes from the `noaa_scales` source and has its
+    own panel. This one reports flux, and must not relabel it as a storm class.
+    """
+    labels = [zone.label for zone in SCALES["protons"].zones]
+
+    assert not [x for x in labels if re.search(r"\bS\d", x)], (
+        f"proton zone labels claim an S number: {labels}. That scale is defined "
+        "on >=10 MeV protons and this dial does not read them -- describe the "
+        "flux instead, and leave the S number to the NOAA Scales panel."
+    )
 
 
 # --- direction -----------------------------------------------------------

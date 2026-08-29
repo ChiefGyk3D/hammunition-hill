@@ -139,9 +139,25 @@ function spotRow(el, spot, onSelect) {
 }
 
 export function render(root, { data, el }) {
-  const payload = data.cluster?.data;
+  // Absent snapshot means no [[sources]] entry: a configured cluster stream
+  // writes one soon after startup, so this state cannot resolve on its own
+  // and must say so instead of promising a connection nobody asked for.
+  if (!data.cluster) {
+    root.replaceChildren(
+      el("p", "empty", "no DX cluster source configured — see config.example.toml"),
+    );
+    return;
+  }
+  const payload = data.cluster.data;
   if (!payload) {
-    root.replaceChildren(el("p", "empty", "waiting for the cluster connection…"));
+    const error = data.cluster.error;
+    root.replaceChildren(
+      el(
+        "p",
+        error ? "error" : "empty",
+        error ? `cluster failed: ${error}` : "waiting for the cluster connection…",
+      ),
+    );
     return;
   }
 

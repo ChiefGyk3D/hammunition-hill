@@ -23,7 +23,14 @@ function when(event) {
 export function render(root, { data, el }) {
   const events = data.contests?.data?.events;
   if (!events) {
-    root.replaceChildren(el("p", "empty", "waiting for the first collector cycle…"));
+    // Not "waiting": the ics source ships commented out because there is no
+    // aggregate contest feed to default to (the one the example once named is
+    // 404, and the well-known calendar only exports per-event files). On a
+    // fresh install this snapshot is never coming until someone supplies a
+    // feed of their own.
+    root.replaceChildren(
+      el("p", "empty", "no contest calendar configured — add an ics source, see config.example.toml"),
+    );
     return;
   }
   if (events.length === 0) {

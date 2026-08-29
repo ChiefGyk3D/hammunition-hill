@@ -4,18 +4,23 @@
 
 """One bad source must never take the collector down.
 
-Regression tests for a real failure: a UDP bind conflict on the WSJT-X port
-propagated out of the stream task, through the TaskGroup, and killed every other
-source *and* the HTTP server. A port conflict is an ordinary operator situation
--- a second instance, or GridTracker already listening -- and the rest of the
-dashboard has no business caring.
+Regression tests for two real failures with the same shape. A UDP bind conflict
+on the WSJT-X port propagated out of the stream task, through the TaskGroup, and
+killed every other source *and* the HTTP server. Later, SWPC changed the
+planetary K product from header-plus-rows to a list of objects; the parser
+raised `KeyError` instead of `FetchError`, `run_once` caught only the errors a
+source was documented to raise, and the same thing happened from the polled
+side. Both are ordinary situations -- a second instance already listening, an
+upstream that reshaped its JSON -- and the rest of the dashboard has no business
+caring.
 """
 
 import asyncio
 
+import httpx
 import pytest
 
-from hammunition_hill.collector import _stream_loop
+from hammunition_hill.collector import _stream_loop, run_once
 from hammunition_hill.config import Config, ServerConfig, SourceConfig
 from hammunition_hill.egress import EgressGuard
 from hammunition_hill.enrich import Enricher, Station
@@ -127,6 +132,109 @@ async def test_sibling_sources_survive_a_failing_stream(config, guard, enricher,
         group.create_task(survivor())
 
     assert survivor_ticks == 3
+
+
+# --- polled sources -----------------------------------------------------
+def polled(kind="swpc", url="https://127.0.0.1/x.json"):
+    # Loopback because the `guard` fixture allows only that. These tests are
+    # about what happens *after* egress is permitted; a denied host never
+    # reaches the parser at all, which is its own test above.
+    return SourceConfig(id="polled", kind=kind, url=url, interval=900, local=True)
+
+
+async def exploding_client():
+    """A client whose transport never runs -- the parser fails, not the fetch."""
+    transport = httpx.MockTransport(lambda request: httpx.Response(200, text="[]"))
+    return httpx.AsyncClient(transport=transport)
+
+
+async def test_a_parser_that_raises_an_undeclared_error_does_not_propagate(
+    config, guard, monkeypatch
+):
+    """The exact shape of the SWPC bug: KeyError, not FetchError, from a parse."""
+
+    class Reshaped:
+        kind = "swpc"
+
+        async def fetch(self, client, cfg):
+            raise KeyError(1)
+
+    monkeypatch.setattr("hammunition_hill.collector.get_source", lambda kind: Reshaped())
+    async with await exploding_client() as client:
+        # Must return a snapshot, not raise.
+        snapshot = await run_once(client, guard, polled(), config)
+
+    assert snapshot.error is not None
+
+
+async def test_the_parse_failure_is_recorded_with_its_reason(config, guard, monkeypatch):
+    """A panel this collector cannot parse says so, rather than vanishing."""
+
+    class Reshaped:
+        kind = "swpc"
+
+        async def fetch(self, client, cfg):
+            raise KeyError(1)
+
+    monkeypatch.setattr("hammunition_hill.collector.get_source", lambda kind: Reshaped())
+    async with await exploding_client() as client:
+        await run_once(client, guard, polled(), config)
+
+    assert "KeyError" in read_snapshot(config.data_dir, "polled")["error"]
+
+
+async def test_a_polled_cancellation_still_propagates(config, guard, monkeypatch):
+    """Shutdown must not be swallowed by the broadened catch."""
+
+    class Hanging:
+        kind = "swpc"
+
+        async def fetch(self, client, cfg):
+            await asyncio.Event().wait()
+
+    monkeypatch.setattr("hammunition_hill.collector.get_source", lambda kind: Hanging())
+    async with await exploding_client() as client:
+        task = asyncio.create_task(run_once(client, guard, polled(), config))
+        await asyncio.sleep(0)
+        task.cancel()
+        with pytest.raises(asyncio.CancelledError):
+            await task
+
+
+async def test_sibling_sources_survive_a_failing_parser(config, guard, monkeypatch):
+    """The property that actually matters, from the polled side this time."""
+    from hammunition_hill.collector import _polled_loop
+
+    class Reshaped:
+        kind = "swpc"
+
+        async def fetch(self, client, cfg):
+            raise KeyError(1)
+
+    survivor_ticks = 0
+
+    async def survivor():
+        nonlocal survivor_ticks
+        for _ in range(3):
+            survivor_ticks += 1
+            await asyncio.sleep(0)
+
+    monkeypatch.setattr("hammunition_hill.collector.get_source", lambda kind: Reshaped())
+    # The loop staggers its first fetch by up to five seconds so a restart does
+    # not fire every source at once. Pin it to zero rather than sleep past it.
+    monkeypatch.setattr("hammunition_hill.collector.random.uniform", lambda a, b: 0)
+
+    async with await exploding_client() as client:
+        async with asyncio.TaskGroup() as group:
+            loop = group.create_task(_polled_loop(client, guard, polled(), config))
+            group.create_task(survivor())
+            # _polled_loop is infinite by design; let it fail once, then stop it.
+            while read_snapshot(config.data_dir, "polled") is None:
+                await asyncio.sleep(0)
+            loop.cancel()
+
+    assert survivor_ticks == 3
+    assert "KeyError" in read_snapshot(config.data_dir, "polled")["error"]
 
 
 # --- station snapshot ---------------------------------------------------

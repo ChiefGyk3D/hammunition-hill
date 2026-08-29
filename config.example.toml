@@ -53,10 +53,13 @@ url = "https://services.swpc.noaa.gov/products/noaa-planetary-k-index.json"
 interval = 900
 options = { product = "planetary_k_index" }
 
+# The 30-day daily F10.7 series. Not the /json/f107_cm_flux.json endpoint, which
+# is also live but serves newest-first -- and this parser takes the last row as
+# current, so that one would report a six-week-old flux as today's.
 [[sources]]
 id = "solarflux"
 kind = "swpc"
-url = "https://services.swpc.noaa.gov/json/f107_cm_radio_flux.json"
+url = "https://services.swpc.noaa.gov/products/10cm-flux-30-day.json"
 interval = 3600
 options = { product = "f107_flux" }
 
@@ -66,6 +69,18 @@ kind = "swpc"
 url = "https://services.swpc.noaa.gov/json/goes/primary/xrays-1-day.json"
 interval = 600
 options = { product = "xray_flux" }
+
+# The proton dial. This reads GOES directly rather than taking HamQSL's
+# <protonflux>, which is not the >=10 MeV integral flux the pfu scale is
+# defined on: it read 14 one afternoon and 568000 that evening while NOAA
+# reported S0 and no GOES channel exceeded 10.4. Without this source the dial
+# is simply absent, which is the intended outcome -- not a wrong number.
+[[sources]]
+id = "protons"
+kind = "swpc"
+url = "https://services.swpc.noaa.gov/json/goes/primary/integral-protons-1-day.json"
+interval = 600
+options = { product = "proton_flux" }
 
 # The OVATION aurora forecast. The raw grid is several megabytes; the collector
 # reduces it to the oval boundary and a coarse cell grid before publishing.
@@ -126,12 +141,15 @@ kind = "sota"
 url = "https://api2.sota.org.uk/api/spots/50/all"
 interval = 120
 
-# Any iCalendar feed. Verify the URL before relying on it -- contest calendars
-# move, and the right one for you may be regional or club-specific.
+# Any iCalendar feed. The URL below is a PLACEHOLDER and known dead: checked
+# 2026-08-28, contestcalendar.com serves no aggregate .ics at any spelling we
+# could find -- its iCal icons are per-event downloads. Point this at a feed
+# you actually have (many clubs and regional calendars publish one), and note
+# a webcal:// link is the same feed spelled https://.
 # [[sources]]
 # id = "contests"
 # kind = "ics"
-# url = "https://www.contestcalendar.com/calendar.ics"
+# url = "https://example.org/your-contest-calendar.ics"
 # interval = 21600
 # options = { label = "Contests", horizon_days = 21 }
 

@@ -112,6 +112,41 @@ def test_status_doc_is_linked_from_the_readme():
     assert "docs/STATUS.md" in README
 
 
+def test_status_never_disagrees_with_itself():
+    """A feature named in two tables must carry one status.
+
+    The packaging work flipped "Docker image" to done in the CI table and in
+    the roadmap prose, and missed the row in the Deployment table -- so the
+    inventory said built and not-built at once, and which one a reader
+    trusted depended on how far they scrolled. Written red against exactly
+    that state.
+    """
+    rows = re.findall(r"^\|\s*([^|]+?)\s*\|\s*(✅|❌|🟡|⛔)", STATUS, re.MULTILINE)
+    seen: dict[str, set[str]] = {}
+    for name, status in rows:
+        seen.setdefault(name, set()).add(status)
+    conflicted = {name: marks for name, marks in seen.items() if len(marks) > 1}
+    assert not conflicted, (
+        f"STATUS.md gives these features conflicting statuses: {conflicted}. "
+        "Update every table the feature appears in, not just the nearest one."
+    )
+
+
+def test_status_carries_no_hand_counted_test_total():
+    """REUSE.md, about exactly this: a number edited by hand rots by design.
+
+    STATUS.md said "1587" while the suite stood at 1858 -- wrong within weeks
+    of being written, and nothing failed, because nothing could. The row may
+    say the suite is green; the count is CI's to report.
+    """
+    match = re.search(r"^\|\s*Tests\s*\|[^|]*\|\s*([^|]*)\|", STATUS, re.MULTILINE)
+    assert match, "STATUS.md should still have a Tests row"
+    assert not re.search(r"\d{3,}", match[1]), (
+        f"the Tests row hand-counts the suite ({match[1].strip()!r}); "
+        "that number rots by design -- describe the property, not the total."
+    )
+
+
 def test_unbuilt_features_are_not_described_as_working():
     """The query endpoint shipped as a config flag with no route behind it.
 

@@ -52,7 +52,15 @@ function alertRow(el, alert) {
 export function render(root, { data, el }) {
   const snapshot = data.wxalerts;
   if (!snapshot) {
-    root.replaceChildren(el("p", "empty", "waiting for the first collector cycle…"));
+    // Not "waiting for the first collector cycle". This source ships commented
+    // out and always will -- an alert feed needs an area filter and there is no
+    // sensible default for one, so a fresh install has no wxalerts.json and
+    // never will until someone edits config. Claiming to be waiting for a cycle
+    // that is not coming is the same lie a blank panel tells, which the comment
+    // below this one is about not telling.
+    root.replaceChildren(
+      el("p", "empty", "no weather alert source configured — see docs/IMAGERY.md"),
+    );
     return;
   }
 

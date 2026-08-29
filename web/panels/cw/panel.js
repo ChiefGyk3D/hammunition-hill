@@ -24,7 +24,10 @@ import {
   seedNow,
 } from "../../lib/cwpractice.js";
 
-const VIEWS = ["translate", "letters", "prosigns", "q codes", "abbrev", "trainer"];
+// No "q codes" or "abbrev" here any more: this panel teaches, the Pocket
+// Reference answers, and for a while both carried the same two tables. The
+// trainer still quizzes on them (BANKS below) -- that is teaching.
+const VIEWS = ["translate", "letters", "prosigns", "trainer"];
 
 // What the trainer can send. Each is a different thing to get better at:
 // discriminating characters, catching a callsign once, following an exchange
@@ -38,6 +41,8 @@ let stopAudio = null;
 function ensureState() {
   if (state) return state;
   state = {
+    // Reconciled against VIEWS below: a browser that stored "q codes" before
+    // that view moved to the Pocket Reference would otherwise render nothing.
     view: recall("cw-view", "translate"),
     text: recall("cw-text", "CQ CQ DE"),
     wpm: Number(recall("cw-wpm", 20)) || 20,
@@ -57,6 +62,7 @@ function ensureState() {
     score: { right: 0, asked: 0 },
     playing: false,
   };
+  if (!VIEWS.includes(state.view)) state.view = "translate";
   return state;
 }
 
@@ -240,18 +246,6 @@ export function render(root, { data, el }) {
               collisions.map((p) => `${p.sign} = ${p.also}`).join(", ") +
               ". Context tells you which is meant.",
           ),
-        );
-      }
-    }
-
-    if (s.view === "q codes") parts.push(chartRows(el, reference.q_codes, "code", "meaning"));
-
-    if (s.view === "abbrev") {
-      parts.push(chartRows(el, reference.abbreviations, "code", "meaning"));
-      if (reference.cut_numbers?.length) {
-        parts.push(
-          el("p", "cw-hint", "Cut numbers — contest shorthand, which is why you hear 5NN:"),
-          chartRows(el, reference.cut_numbers, "digit", "cut", "code"),
         );
       }
     }

@@ -1,7 +1,10 @@
 # Configuration reference
 
-One TOML file. There is no settings API and no write endpoint — presentation
-state (layout, filters, which licence class you picked) lives in your browser's
+One TOML file, edited with a text editor on the machine running `hamhill`.
+**There is no settings page in the web UI** — the browser can only rearrange
+its own panels (the customize button, saved per display in localStorage) —
+and there is no settings API and no write endpoint. Presentation state
+(layout, filters, which licence class you picked) lives in your browser's
 localStorage, and everything that touches the network lives here.
 
 That split is why there is no CSRF surface and nothing to authenticate: no

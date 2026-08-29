@@ -541,11 +541,19 @@ always comparing like with like. Two sources, in order:
 
 ## Configuration
 
-One TOML file. There is no settings API and no write endpoint — presentation
-state (layout, filters, which panels are shown) lives in the browser's
-localStorage, and everything that touches the network lives in the file. Nothing
-reachable over HTTP can change any of it, which is why there is no CSRF surface
-and nothing to authenticate.
+**There is no settings page in the web UI, and there never will be.** This trips
+up everyone once, so plainly: the only things you can change from the browser
+are presentation — panel arrangement via **customize** (top right), filters,
+which licence class you picked — and those live in that browser's localStorage,
+per display. Everything else — sources, callsign, grid, lookups, imagery,
+binding — is `config.toml` on the machine running `hamhill`, edited with a text
+editor and checked with `hamhill check`.
+
+That is a security decision, not a missing feature. No settings API and no write
+endpoint means nothing reachable over HTTP can change what the collector
+contacts — no CSRF surface, nothing to authenticate, and a hostile LAN client
+can rearrange its own panels and nothing more. The moment a settings page
+exists, the network is no longer the access control.
 
 ```toml
 [[sources]]

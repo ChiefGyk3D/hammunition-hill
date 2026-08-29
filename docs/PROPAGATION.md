@@ -118,7 +118,7 @@ grid = "DM79"           # required — without it the model has no sun angle
 [[sources]]
 id = "solarflux"        # or hamqsl, which carries both numbers
 kind = "swpc"
-url = "https://services.swpc.noaa.gov/json/f107_cm_radio_flux.json"
+url = "https://services.swpc.noaa.gov/products/10cm-flux-30-day.json"
 options = { product = "f107_flux" }
 ```
 

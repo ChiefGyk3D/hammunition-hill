@@ -25,23 +25,36 @@ from ..severity import classify
 from .base import FetchError, get_bounded
 
 
-def _latest_kindex(rows: list[list[Any]]) -> dict[str, Any]:
-    """SWPC planetary K is a header row followed by [time, kp, ...] rows."""
-    if len(rows) < 2:
+def _kindex_rows(rows: list[Any]) -> list[dict[str, Any]]:
+    """Normalize either shape SWPC has served this product in.
+
+    It used to be a header row followed by positional rows, CSV rendered as
+    JSON. It is now a list of objects. Both are accepted because the change
+    happened without notice and could happen back, and because the difference
+    is three lines here against a dead panel in the field.
+    """
+    if not rows:
         raise FetchError("planetary K index: no data rows")
+    if isinstance(rows[0], dict):
+        return rows
     header, *data = rows
+    if not data:
+        raise FetchError("planetary K index: no data rows")
     idx = {name: i for i, name in enumerate(header)}
+    time_at, kp_at = idx.get("time_tag", 0), idx.get("Kp", 1)
+    return [{"time_tag": row[time_at], "Kp": row[kp_at]} for row in data]
+
+
+def _latest_kindex(rows: list[Any]) -> dict[str, Any]:
+    data = _kindex_rows(rows)
     latest = data[-1]
-    kp = float(latest[idx.get("Kp", 1)])
+    kp = float(latest["Kp"])
     return {
         "kp": kp,
-        "observed_at": latest[idx.get("time_tag", 0)],
+        "observed_at": latest["time_tag"],
         # G-scale is what tells an operator whether to care.
         "storm_level": _g_scale(kp),
-        "history": [
-            {"at": row[idx.get("time_tag", 0)], "kp": float(row[idx.get("Kp", 1)])}
-            for row in data[-24:]
-        ],
+        "history": [{"at": row["time_tag"], "kp": float(row["Kp"])} for row in data[-24:]],
     }
 
 
@@ -99,10 +112,44 @@ def _xray_class(flux: float | None) -> str:
     return f"A{flux / 1e-8:.1f}"
 
 
+def _latest_protons(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """GOES integral proton flux at >=10 MeV.
+
+    That channel specifically, because it is the one NOAA's S scale is defined
+    on and the one "proton flux" means unqualified. The same feed carries eight
+    energies from >=1 MeV to >=500 MeV, and they differ by orders of magnitude:
+    >=1 MeV read 10.4 pfu while >=10 MeV read 0.25 on the day this was written.
+    Taking the wrong row would not fail, it would just be wrong.
+    """
+    channel = [r for r in rows if r.get("energy") == ">=10 MeV"]
+    if not channel:
+        raise FetchError("GOES protons: no >=10 MeV samples")
+    latest = channel[-1]
+    peak = max(channel, key=lambda r: r.get("flux") or 0.0)
+    return {
+        "flux": latest.get("flux"),
+        "observed_at": latest.get("time_tag"),
+        "peak_today": {"flux": peak.get("flux"), "at": peak.get("time_tag")},
+    }
+
+
 _PRODUCTS = {
     "planetary_k_index": _latest_kindex,
     "f107_flux": _latest_f107,
     "xray_flux": _latest_xray,
+    "proton_flux": _latest_protons,
+}
+
+# Which severity scale a product is drawn on, and the field that feeds it.
+# This was a loop testing `product.startswith(scale_id[:3])` against a list of
+# explicit pairs -- the prefix arm matched by coincidence ("f107_flux" against
+# "sfi" did not, so the pair list carried it), and adding a fourth product was
+# a coin flip on which arm caught it. A dict says the same thing once.
+_GAUGES = {
+    "planetary_k_index": ("kindex", "kp"),
+    "f107_flux": ("sfi", "flux"),
+    "xray_flux": ("xray", "flux"),
+    "proton_flux": ("protons", "flux"),
 }
 
 
@@ -124,15 +171,10 @@ class SwpcSource:
         data = {"product": product, **_PRODUCTS[product](payload)}
 
         # Attach a dial where the product maps onto a known scale.
-        for scale_id, key in (("kindex", "kp"), ("sfi", "flux"), ("xray", "flux")):
-            if product.startswith(scale_id[:3]) or (product, scale_id) in (
-                ("planetary_k_index", "kindex"),
-                ("f107_flux", "sfi"),
-                ("xray_flux", "xray"),
-            ):
-                gauge = classify(scale_id, data.get(key))
-                if gauge is not None:
-                    data["gauge"] = gauge
-                break
+        scale = _GAUGES.get(product)
+        if scale is not None:
+            gauge = classify(scale[0], data.get(scale[1]))
+            if gauge is not None:
+                data["gauge"] = gauge
 
         return data

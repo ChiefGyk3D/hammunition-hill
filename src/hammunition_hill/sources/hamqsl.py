@@ -114,7 +114,14 @@ class HamQslSource:
                 "kindex": result.get("kindex"),
                 "solarwind": result.get("solarwind"),
                 "noise": result.get("signalnoise"),
-                "protons": result.get("protonflux"),
+                # Deliberately no "protons" here. HamQSL's <protonflux> is not
+                # the >=10 MeV integral flux the pfu scale means: it read 14 one
+                # afternoon and 568000 the same evening, with NOAA reporting S0
+                # and every GOES proton channel between 0.18 and 10.4 pfu. On
+                # 568000 the dial pinned to critical and printed two decimal
+                # places of a number nothing could corroborate. The `swpc`
+                # source with product = "proton_flux" reads the real channel;
+                # the dial comes from there or not at all.
             }
         )
         result["gauges"] = gauges

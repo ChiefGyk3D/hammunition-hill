@@ -60,7 +60,7 @@ The parts everything else sits on.
 | Stream self-healing | ✅ | Exponential backoff; one dead stream cannot take down the run. |
 | `hamhill serve` / `check` / `fcc-import` | ✅ | |
 | Config validation with actionable errors | ✅ | |
-| Tests | ✅ | 1587, ruff clean. |
+| Tests | ✅ | Suite green with warnings as errors across 3.11–3.13; ruff clean. No count here on purpose — a hand-edited total rots by design, and this one did. |
 | CI | ✅ | Ten jobs, plus CodeQL in its own workflow: lint, pytest across 3.11–3.13 on x86, ARM and macOS, example-config validation, an end-to-end smoke test, a real-browser render of every dashboard, dependency audit, wheel build, a weekly upstream-liveness check, and a container build that must serve the dashboard. |
 | CodeQL | ✅ | Python and JavaScript, weekly and per-PR. |
 | Dependabot | ✅ | Actions and pip, weekly. |
@@ -204,7 +204,7 @@ Ten are **tier 0** — they work with the internet unplugged: `bandplan`,
 | Loopback by default | ✅ | Binding wider is a deliberate act that prints a warning every time |
 | systemd unit | ✅ | Documented in [INSTALL.md](INSTALL.md) |
 | Kiosk / wall display notes | ✅ | |
-| Docker image | ❌ | |
+| Docker image | ✅ | Built and served in CI before anything merges — see the CI row above. |
 | `pip install` alone | ✅ | The wheel carries `web/` and the question pools; with no checkout the server falls back to the packaged copy. CI installs the bare wheel and curls the dashboard. |
 | Hosted / multi-user mode | ⛔ | Not until there is a real authn/authz model, TLS, rate limiting and a threat model this version deliberately does not have. Reach it over ZTNA or a VPN instead — see [SECURITY.md](SECURITY.md). |
 

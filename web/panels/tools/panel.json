@@ -2,8 +2,10 @@
   "id": "tools",
   "name": "Shack tools",
   "tier": 0,
-  "sources": ["antenna"],
+  "sources": [
+    "antenna"
+  ],
   "embed_hosts": [],
-  "span": 3,
-  "description": "Antenna cut chart, feedline loss, what an SWR reading costs, and the path between any two grid squares. Tier 0 — arithmetic over small tables, as useful with the WAN unplugged as with it up."
+  "span": 2,
+  "description": "Antenna cut chart, feedline loss, what an SWR reading costs, and the path between any two grid squares. Tier 0 \u2014 arithmetic over small tables, as useful with the WAN unplugged as with it up."
 }
