@@ -191,6 +191,7 @@ should be made deliberately.
 | `server.py` | Static files over two directories, with the headers turned up. |
 | `cli.py` | `hamhill serve`, `check`, `fcc-import`, `exam-import`. |
 | `about.py` | The about card: project, author, support and social links, published as a snapshot so `web/` needs no hardcoded URLs. |
+| `wizard.py` | `hamhill setup`: the guided first config. Terminal-only on purpose — config stays unreachable over HTTP. |
 | `sources/` | Polled and file sources, registered statically. |
 | `streams/` | Long-lived connections, registered statically. |
 | `lookup/` | Callsign providers, chained, and the offline FCC ULS index. |

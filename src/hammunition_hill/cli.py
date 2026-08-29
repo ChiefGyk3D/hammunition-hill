@@ -134,6 +134,26 @@ def _publish_sources(config: Config) -> None:
     )
 
 
+def _setup(args: argparse.Namespace) -> int:
+    """`hamhill setup`: the guided config, for the operator who wants a ramp."""
+    from .wizard import run as run_wizard
+
+    if not sys.stdin.isatty():
+        print(
+            "hamhill setup is interactive and needs a terminal. "
+            "Non-interactively: copy config.example.toml and edit it.",
+            file=sys.stderr,
+        )
+        return 2
+
+    def ask(prompt: str, default: str = "") -> str:
+        reply = input(f"{prompt}: ")
+        return reply if reply.strip() else default
+
+    target = Path(args.config) if args.config else Path("config.toml")
+    return run_wizard(target, ask, print)
+
+
 def build_enricher(config: Config) -> Enricher:
     """Prefix table plus station location, shared by every source that needs it."""
     table = PrefixTable(config.cty_dat)
@@ -812,10 +832,15 @@ def main(argv: list[str] | None = None) -> int:
         "command",
         nargs="?",
         default="serve",
-        choices=("serve", "check", "fcc-import", "exam-import", "part97-import"),
+        choices=("serve", "check", "setup", "fcc-import", "exam-import", "part97-import"),
         help="default: serve",
     )
     args = parser.parse_args(argv)
+
+    # Setup runs before load_config on purpose: its whole job is the machine
+    # that has no config yet.
+    if args.command == "setup":
+        return _setup(args)
 
     logging.basicConfig(
         level=logging.DEBUG if args.verbose else logging.INFO,
