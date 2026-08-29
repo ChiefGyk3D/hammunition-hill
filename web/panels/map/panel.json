@@ -11,5 +11,6 @@
   ],
   "embed_hosts": [],
   "span": 2,
-  "description": "Rotatable globe with greyline, DX spots, and great-circle paths from your QTH. Coastlines ship with the dashboard."
+  "description": "Rotatable globe with greyline, DX spots, and great-circle paths from your QTH. Coastlines ship with the dashboard.",
+  "ticks": "minute"
 }

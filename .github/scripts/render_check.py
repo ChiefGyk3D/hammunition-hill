@@ -487,6 +487,110 @@ const BASE = `http://127.0.0.1:${PORT}/`;
   await page.waitForTimeout(300);
   console.log(`  about: ${aboutLinks} links, opens and closes`);
 
+  // --- an idle dashboard holds still --------------------------------------
+  // The operator's report was "sluggish after a while", and the cause was
+  // invisible to every check above: the tier 0 ticker rebuilt the exam
+  // trainer, the CW quiz and the antenna tools from scratch every second,
+  // thousands of nodes made and discarded per second while the page just sat
+  // there. So this is measured structurally, not with a stopwatch: count the
+  // nodes ADDED to the grid over five idle seconds. Only the panels that
+  // declare a tick (the clock, the beacon slots) may rebuild, and they are
+  // small on purpose. A stopwatch assertion would flake on a loaded CI
+  // runner; a node count is the same on every machine.
+  //
+  // Operating, specifically: it carries every heavy tier 0 panel -- exam, CW,
+  // tools, logbook, callsign -- so it is where the churn actually happened.
+  // On Home the only tier 0 panel is the clock, and the bug barely registers.
+  await page.click('#tabs button:text-is("Operating")');
+  await page.waitForTimeout(1500);
+  const idleChurn = await page.evaluate(() => new Promise((resolve) => {
+    let added = 0;
+    // Count the whole subtree of each added node, not just the node itself.
+    // replaceChildren() reports its direct children as addedNodes with their
+    // subtrees already attached, so `addedNodes.length` counts fragments --
+    // the falsification run measured the resurrected bug at 150 against a
+    // bound of 500, a check that passed on the exact thing it watches for.
+    const watcher = new MutationObserver((records) => {
+      for (const r of records) {
+        for (const n of r.addedNodes) {
+          added += 1 + (n.querySelectorAll ? n.querySelectorAll('*').length : 0);
+        }
+      }
+    });
+    watcher.observe(document.querySelector('#grid'), { childList: true, subtree: true });
+    setTimeout(() => { watcher.disconnect(); resolve(added); }, 5000);
+  }));
+  // Measured: the beacon table's once-a-second rebuild puts a healthy
+  // Operating tab at ~310 nodes per 5s; resurrecting the bug measured 2360.
+  // The bound sits between with real margin on both sides.
+  if (idleChurn > 900) {
+    problems.push(
+      `idle churn: ${idleChurn} DOM nodes added in 5 idle seconds -- ` +
+        'something rebuilds panels that have nothing new to say',
+    );
+  }
+  console.log(`  idle churn: ${idleChurn} nodes added in 5s`);
+
+  // --- switching tabs does not accumulate ---------------------------------
+  // Cycle every dashboard five times and demand the document come back to the
+  // size one pass leaves it at. Growth here means a leak a person only meets
+  // "after a while": listeners or nodes surviving the switch, compounding
+  // until the wall display needs a nightly reload.
+  const cycle = async () => {
+    for (const tab of tabs) {
+      await page.click(`#tabs button:text-is("${tab}")`);
+      await page.waitForTimeout(250);
+    }
+    await page.click('#tabs button:text-is("Home")');
+    await page.waitForTimeout(250);
+  };
+  await cycle();
+  const nodesAfterOne = await page.evaluate(() => document.querySelectorAll('*').length);
+  for (let i = 0; i < 4; i++) await cycle();
+  const nodesAfterFive = await page.evaluate(() => document.querySelectorAll('*').length);
+  if (nodesAfterFive > nodesAfterOne * 1.15) {
+    problems.push(
+      `tab cycling grows the DOM: ${nodesAfterOne} nodes after one pass, ` +
+        `${nodesAfterFive} after five -- something survives the switch`,
+    );
+  }
+  console.log(`  tab cycling: ${nodesAfterOne} -> ${nodesAfterFive} nodes over 5 cycles`);
+
+  // --- clicks land --------------------------------------------------------
+  // The sluggishness had a second face: a click that raced a rebuild hit a
+  // button that had just been thrown away, and did nothing. Chips carry their
+  // own state change (the .on class moves), so click each exam element chip
+  // and demand the state actually moved -- a detached-button click fails this
+  // structurally, no timing involved. The wait is one poll interval plus a
+  // tick, long enough for the old bug to fire between mousedown and check.
+  await page.click('#tabs button:text-is("Operating")');
+  await page.waitForTimeout(1100);
+  // Labels first, elements per click: a chip click legitimately rebuilds the
+  // panel, so a handle held across one is detached by design, not by bug.
+  const chipLabels = await page.$$eval(
+    '#grid .panel[data-panel="exam"] .cw-tabs:not(.cw-subtabs) .chip',
+    (els) => els.map((e) => e.textContent.trim()),
+  );
+  const elementRow = '#grid .panel[data-panel="exam"] .cw-tabs:not(.cw-subtabs)';
+  for (const label of chipLabels) {
+    await page.click(`${elementRow} .chip:text-is("${label}")`);
+    await page.waitForTimeout(1100);
+    const lit = await page.$eval(
+      '#grid .panel[data-panel="exam"] .cw-tabs:not(.cw-subtabs) .chip.on',
+      (e) => e.textContent.trim(),
+    ).catch(() => null);
+    if (lit !== label) {
+      problems.push(
+        `exam chip "${label}" clicked but "${lit}" is selected -- the click was lost`,
+      );
+    }
+  }
+  if (chipLabels.length) {
+    console.log(`  clicks land: ${chipLabels.length} exam chips held their selection`);
+  }
+  await page.click('#tabs button:text-is("Home")');
+  await page.waitForTimeout(400);
+
   // The three rooms the stylesheet promises: phone, laptop, TV. Only the
   // laptop width was ever rendered, and the TV tier shipped broken -- the
   // zoom put getBoundingClientRect in a different coordinate space from the

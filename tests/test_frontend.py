@@ -94,6 +94,13 @@ def test_panel_manifest_is_well_formed(directory):
     assert manifest.get("name"), "a panel needs a display name"
     if "span" in manifest:
         assert 1 <= manifest["span"] <= 3, "span is capped at 3 by the grid"
+    if "ticks" in manifest:
+        # "second" is for panels that display seconds; "minute" for panels that
+        # draw the sun. Anything else is a typo the host would silently treat
+        # as "never tick", which is exactly how a clock stops without failing.
+        assert manifest["ticks"] in ("second", "minute"), (
+            f"ticks {manifest['ticks']!r} is not 'second' or 'minute'"
+        )
 
 
 @pytest.mark.parametrize("directory", PANEL_DIRS, ids=lambda d: d.name)
