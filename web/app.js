@@ -154,6 +154,14 @@ function repack() {
   const gap = parseFloat(style.rowGap) || 12;
   const depth = new Array(cols).fill(1);
 
+  // Read every height before writing any placement. Interleaving the two --
+  // measure one panel, place it, measure the next -- forces the browser to
+  // re-run layout once per panel, because each style write invalidates the
+  // layout the next offsetHeight read needs. Twenty panels meant twenty
+  // synchronous reflows per repack. Placement never changes a panel's width
+  // (the span is the input, not the output), so heights measured up front
+  // are the same heights the interleaved version saw, minus the thrash.
+  const items = [];
   for (const item of GRID.children) {
     if (!(item instanceof HTMLElement)) continue;
     const want = item.classList.contains("edit-bar")
@@ -170,7 +178,10 @@ function repack() {
     // panel 1.9x the rows it needed, and the wall display -- the layout's
     // whole reason for the zoom tiers -- rendered each panel trailing a
     // void nearly its own height.
-    const height = item.offsetHeight;
+    items.push({ item, want, height: item.offsetHeight });
+  }
+
+  for (const { item, want, height } of items) {
     const rows = Math.max(1, Math.ceil((height + gap) / (row + gap)));
 
     let bestStart = 0;
@@ -276,9 +287,23 @@ function updateAge(entry) {
     "panel-age" + (failed ? " failed" : isStale ? " stale" : "");
 }
 
+// What a panel's inputs look like right now, cheap enough to compare every
+// poll. fetched_at and error together change exactly when the collector wrote
+// something new; the snapshot *objects* are useless for this, because every
+// poll parses fresh JSON into fresh objects even when the bytes are identical.
+function fingerprint(entry) {
+  return entry.manifest.sources
+    .map((id) => {
+      const s = snapshots.get(id);
+      return s ? `${id}:${s.fetched_at}:${s.error ?? ""}` : `${id}:absent`;
+    })
+    .join("|");
+}
+
 function renderPanel(entry, station) {
   const data = {};
   for (const id of entry.manifest.sources) data[id] = snapshots.get(id) ?? null;
+  entry.lastPrint = fingerprint(entry);
   try {
     entry.module.render(entry.body, { data, station, el });
   } catch (err) {
@@ -528,7 +553,16 @@ async function poll(station) {
     }
   }
 
-  for (const entry of panels) renderPanel(entry, station);
+  // Re-render only what actually changed. A poll where nothing moved used to
+  // rebuild every panel's DOM anyway -- twenty panels' worth of nodes made
+  // and thrown away every ten seconds for byte-identical data -- and a click
+  // that landed during a rebuild hit a button that had just been detached,
+  // and did nothing. The age label still refreshes: "3 min ago" has to keep
+  // counting even when the data behind it does not move.
+  for (const entry of panels) {
+    if (fingerprint(entry) === entry.lastPrint) updateAge(entry);
+    else renderPanel(entry, station);
+  }
   renderStatus(classifySources(wanted));
 }
 
@@ -585,6 +619,11 @@ async function main() {
     active = id;
     remember("dashboard", id);
     panels.length = 0;
+    // Drop the observations along with the panels. The observer keeps a
+    // reference to everything it watches, so without this every tab switch
+    // pinned the whole outgoing dashboard's DOM in memory for as long as the
+    // page lived. buildFrame re-observes each panel as it is built.
+    sizer.disconnect();
     GRID.replaceChildren();
 
     const dash = dashboards.find((d) => d.id === id);
@@ -736,10 +775,24 @@ async function main() {
   await poll(station);
   setInterval(() => poll(station), POLL_MS);
 
-  // Tier 0 panels tick on their own clock, independent of any fetch.
+  // Panels that render the passage of time tick on their own clock,
+  // independent of any fetch -- but only the ones that declare it. The first
+  // version ticked every tier 0 panel, which re-created the exam trainer, the
+  // CW quiz and the antenna tools from scratch every second: thousands of
+  // nodes and listeners made and discarded per second, constant GC pressure
+  // that built into visible sluggishness, and any click that raced a rebuild
+  // landed on a detached button and silently did nothing. "second" is for
+  // panels showing seconds (clock, the NCDXF beacon slots); "minute" is for
+  // panels drawing the sun, whose greyline would otherwise freeze until some
+  // unrelated source happened to update.
+  let ticks = 0;
   setInterval(() => {
+    ticks += 1;
     for (const entry of panels) {
-      if (entry.manifest.tier === 0) renderPanel(entry, station);
+      const cadence = entry.manifest.ticks;
+      if (cadence === "second" || (cadence === "minute" && ticks % 60 === 0)) {
+        renderPanel(entry, station);
+      }
     }
   }, 1000);
 }

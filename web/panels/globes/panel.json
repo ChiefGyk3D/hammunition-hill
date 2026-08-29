@@ -11,5 +11,6 @@
   ],
   "embed_hosts": [],
   "span": 3,
-  "description": "One small globe per active band: where the band is open right now, drawn from your own spots, decodes, and the stations reporting they heard you. Greyline on every sphere, because HF openings follow the dark."
+  "description": "One small globe per active band: where the band is open right now, drawn from your own spots, decodes, and the stations reporting they heard you. Greyline on every sphere, because HF openings follow the dark.",
+  "ticks": "minute"
 }

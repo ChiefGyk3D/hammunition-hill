@@ -5,5 +5,6 @@
   "sources": ["station"],
   "embed_hosts": [],
   "span": 2,
-  "description": "Which of the 18 international beacons is transmitting on each band right now. Computed from the clock — no network at all."
+  "description": "Which of the 18 international beacons is transmitting on each band right now. Computed from the clock — no network at all.",
+  "ticks": "second"
 }

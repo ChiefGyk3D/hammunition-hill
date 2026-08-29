@@ -4,5 +4,6 @@
   "tier": 0,
   "sources": [],
   "embed_hosts": [],
-  "description": "UTC and local time. Pure client-side; works with the WAN down."
+  "description": "UTC and local time. Pure client-side; works with the WAN down.",
+  "ticks": "second"
 }
