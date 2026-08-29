@@ -106,6 +106,13 @@ function buildTabs(dashboards, active, onPick) {
     onPick(active);
   });
   bar.append(customize);
+  // A visible "about", because clicking the logo is a convention people know
+  // from apps they already trust and nobody goes looking for in a new one.
+  // Both routes open the same card.
+  const about = el("button", "tab tab-about", "about");
+  about.type = "button";
+  about.addEventListener("click", toggleAboutSheet);
+  bar.append(about);
   return bar;
 }
 

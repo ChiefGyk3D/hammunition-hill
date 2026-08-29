@@ -748,9 +748,9 @@ those without a reason.
 
 ## Author & support
 
-Built by [ChiefGyk3D](https://github.com/ChiefGyk3D) —
-[chiefgyk3d.com](https://chiefgyk3d.com). If this dashboard earns a place on
-your shack wall, **[support.chiefgyk3d.com](https://support.chiefgyk3d.com)**
+Built by [ChiefGyk3D](https://github.com/ChiefGyk3D). If this dashboard earns
+a place on your shack wall,
+**[support.chiefgyk3d.com](https://support.chiefgyk3d.com)**
 carries every way to support the work: Patreon, Ko-fi, tips, merch, and
 cryptocurrency (BTC, XMR, ETH, SOL). The addresses live on that page and only
 that page, deliberately — an address copied into a README goes stale the day it

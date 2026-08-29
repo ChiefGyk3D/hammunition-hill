@@ -31,10 +31,12 @@ from .snapshot import Snapshot, write_snapshot
 # fmt: off
 # Data, not code: one row per destination, laid out to be proofread against
 # https://support.chiefgyk3d.com/ -- which is where this list was taken from,
-# fetched 2026-08-29, not typed from memory.
+# fetched 2026-08-29, not typed from memory. The personal website is absent
+# on purpose: the author says the blog is stale, and a link that lands on
+# something abandoned costs more trust than no link. Restore it when the
+# site is worth sending people to.
 SOCIALS: tuple[dict[str, str], ...] = (
     {"name": "GitHub",    "url": "https://github.com/ChiefGyk3D"},
-    {"name": "Website",   "url": "https://chiefgyk3d.com"},
     {"name": "Mastodon",  "url": "https://social.chiefgyk3d.com/@chiefgyk3d"},
     {"name": "Bluesky",   "url": "https://bsky.app/profile/chiefgyk3d.com"},
     {"name": "YouTube",   "url": "https://www.youtube.com/channel/UCvFY4KyqVBuYd7JAl3NRyiQ"},
@@ -65,7 +67,6 @@ def about_payload() -> dict[str, Any]:
         },
         "author": {
             "name": "ChiefGyk3D",
-            "website": "https://chiefgyk3d.com",
             "support": {
                 "url": "https://support.chiefgyk3d.com",
                 # What the page offers, so the card can say more than "donate".
