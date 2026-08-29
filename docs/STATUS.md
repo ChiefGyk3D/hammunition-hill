@@ -214,9 +214,16 @@ Ten are **tier 0** — they work with the internet unplugged: `bandplan`,
 
 What is actually being worked on, in order:
 
-1. **International band plans and exam pools** — data contributions the
-   loaders are already generic for.
-2. **Distro packages**, now that the container and the bare wheel both work.
+1. **Distro packages**, now that the container and the bare wheel both work.
+
+**Decided 2026-08-29: 1.0 is US-first.** International band plans and exam
+pools come off the roadmap and into the contributions column: the US plan,
+the three US pools and Part 97 already ship and are the default, the loaders
+are generic, and a maintainer transcribing another regulator's allocations
+he does not operate under is how a wrong band edge ships with a straight
+face. A contributor who transmits under IARU Region 1 or RAC rules is the
+right author for that JSON file, and `tests/test_bandplan.py` will hold the
+schema for them either way.
 
 The honest VOACAP substitute shipped as MINIMUF 3.5 (the DX Path panel);
 VOACAP itself — reliability and signal level, not just the MUF — stays in
