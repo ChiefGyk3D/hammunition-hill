@@ -56,10 +56,16 @@ class Scale:
     upper_exclusive: bool = False
     """Whether a value sitting exactly on a boundary belongs to the zone above.
 
-    The two conventions genuinely differ. K=3 and A=7 are quiet -- the boundary
-    value belongs to the *lower* zone, which is how the indices are published.
-    But X-ray classes are decade floors: 1.0e-5 is M1.0, which is M-class, not
-    the top of C. Getting this wrong misreports a flare by a whole class.
+    The two conventions genuinely differ. A=7 is quiet -- the boundary value
+    belongs to the *lower* zone, which is how that index is published. But
+    X-ray classes are decade floors: 1.0e-5 is M1.0, which is M-class, not the
+    top of C. Getting this wrong misreports a flare by a whole class.
+
+    K used to be cited here as an inclusive scale, and that was the mistake
+    itself. Storm classes are floors like the X-ray decades -- G1 starts at
+    Kp 5 -- so the K scale is exclusive and its zone boundaries are the values
+    each G number begins at. Only the quiet-end wording differs: Kp 3 is still
+    quiet, because the zone above it opens at 4.
     """
 
     def position(self, value: float) -> float:
@@ -162,15 +168,24 @@ SCALES: dict[str, Scale] = {
             _z(50, CRITICAL, "Storm"),
         ),
     ),
+    # G numbers are floors, not ceilings: G1 *begins* at Kp 5 and runs to just
+    # under 6. Written with the inclusive convention it read `_z(5, "G1 storm")`
+    # -- "up to and including 5" -- which put every Kp between 4 and 5 in the G1
+    # band. That was invisible while SWPC published whole numbers and appeared
+    # the moment it started publishing thirds: Kp 4.33 drew a red dial reading
+    # "G1 storm" beside a NOAA Scales panel reading "G0 none", and beside this
+    # same source's own storm_level of "quiet". NOAA was right twice.
     "kindex": Scale(
         id="kindex", name="K-Index", unit="", low=0, high=9, decimals=1,
+        upper_exclusive=True,
         zones=(
-            _z(3, GOOD, "Quiet"),
-            _z(4, WARN, "Unsettled"),
-            _z(5, CRITICAL, "G1 storm"),
-            _z(6, CRITICAL, "G2 storm"),
-            _z(7, CRITICAL, "G3 storm"),
-            _z(9, CRITICAL, "G4–G5 storm"),
+            _z(4, GOOD, "Quiet"),
+            _z(5, WARN, "Unsettled"),
+            _z(6, CRITICAL, "G1 storm"),
+            _z(7, CRITICAL, "G2 storm"),
+            _z(8, CRITICAL, "G3 storm"),
+            _z(9, CRITICAL, "G4 storm"),
+            _z(99, CRITICAL, "G5 storm"),
         ),
     ),
     "solarwind": Scale(
@@ -190,12 +205,21 @@ SCALES: dict[str, Scale] = {
             _z(9, CRITICAL, "High"),
         ),
     ),
+    # These zones deliberately do NOT name an S number, though the 10 and 100
+    # pfu boundaries are where S1 and S2 fall. NOAA's S scale is defined on the
+    # >=10 MeV integral proton flux; this dial is fed HamQSL's <protonflux>,
+    # which is some other integration and reads roughly two orders of magnitude
+    # higher. Measured 2026-08-28: HamQSL 14 pfu while GOES >=10 MeV was 0.28
+    # and NOAA's own scale said S0. The dial claimed "S1 storm" directly beside
+    # the NOAA Scales panel reading "S0 none" -- two panels on one screen
+    # disagreeing, and the dial was the wrong one. The authoritative S number
+    # has its own panel; this one reports flux, so it says so.
     "protons": Scale(
         id="protons", name="Protons", unit="pfu", low=0.1, high=10000, log=True, decimals=2,
         zones=(
             _z(10, GOOD, "Background"),
-            _z(100, WARN, "S1 storm"),
-            _z(10000, CRITICAL, "S2+ storm"),
+            _z(100, WARN, "Elevated"),
+            _z(10000, CRITICAL, "High"),
         ),
     ),
 }

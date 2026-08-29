@@ -140,8 +140,12 @@ const sizer = new ResizeObserver((entries) => {
 // content happens to reflow to the same height, so re-measure everything when
 // the window changes rather than trusting the observer to have a reason to.
 window.addEventListener("resize", () => {
-  for (const panel of GRID.querySelectorAll(".panel")) sizer.unobserve(panel);
-  for (const panel of GRID.querySelectorAll(".panel")) sizer.observe(panel);
+  // .edit-bar included: it is measured on the same lattice, and its height is
+  // exactly the kind that survives a breakpoint change unchanged while the
+  // lattice under it does not.
+  const measured = ".panel, .edit-bar";
+  for (const node of GRID.querySelectorAll(measured)) sizer.unobserve(node);
+  for (const node of GRID.querySelectorAll(measured)) sizer.observe(node);
 });
 
 function buildFrame(manifest) {
@@ -332,6 +336,12 @@ async function main() {
       });
       bar.append(reset);
       GRID.append(bar);
+      // The bar is a grid child, so it needs a row span like any panel. Without
+      // one it takes a single 8px track while standing about four tall, and the
+      // first row of panels is placed 8px down and paints over it -- the hint
+      // and the reset button end up half-hidden behind the first panel. Same
+      // failure the span arithmetic above was written for, one element short.
+      sizer.observe(bar);
     }
 
     for (const panelId of layout.order) {

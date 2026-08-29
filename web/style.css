@@ -952,6 +952,9 @@ ul.wx-alerts { list-style: none; margin: 0; padding: 0; }
 .tab-edit.on { color: var(--accent); }
 .edit-bar {
   grid-column: 1 / -1;
+  /* Spans the 8px lattice like a panel; app.js measures it. The default covers
+     the wrap to two lines on a narrow window, before the observer first runs. */
+  grid-row: span var(--rows, 6);
   display: flex;
   flex-wrap: wrap;
   align-items: center;

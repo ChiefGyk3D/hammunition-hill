@@ -32,7 +32,7 @@ from .lookup.base import LookupError
 from .lookup.cache import LookupCache
 from .lookup.resolver import Resolver
 from .snapshot import Snapshot, read_snapshot, write_snapshot
-from .sources import FetchError, get_local, get_source, is_local
+from .sources import get_local, get_source, is_local
 from .sources.base import USER_AGENT
 from .streams import build_stream, is_stream
 
@@ -106,7 +106,13 @@ async def run_once(
     try:
         guard.check(cfg.url)
         data = await get_source(cfg.kind).fetch(client, cfg)
-    except (EgressDenied, FetchError, httpx.HTTPError) as exc:
+    except Exception as exc:  # noqa: BLE001 - a bad upstream must not stop the collector
+        # Deliberately broader than the errors a source is documented to raise.
+        # Upstream JSON changes shape without warning: SWPC turned the planetary
+        # K product from header-plus-rows into a list of objects, the parser
+        # raised KeyError rather than FetchError, and that escaped the TaskGroup
+        # and killed the HTTP server along with all ten other sources. A panel
+        # this collector cannot parse is one dead panel, not a dead dashboard.
         reason = f"{type(exc).__name__}: {exc}"
         log.warning("source %s failed: %s", cfg.id, reason)
         return _write_failure(config, cfg, reason, stale)

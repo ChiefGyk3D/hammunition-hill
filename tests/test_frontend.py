@@ -20,12 +20,14 @@ import json
 import re
 import shutil
 import subprocess
+import tomllib
 from pathlib import Path
 
 import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 WEB = ROOT / "web"
+EXAMPLE = ROOT / "config.example.toml"
 
 JS_FILES = sorted(p for p in WEB.rglob("*.js"))
 JSON_FILES = sorted(p for p in WEB.rglob("*.json"))
@@ -166,6 +168,51 @@ def test_every_panel_appears_on_a_dashboard():
     used = {p for dash in index["dashboards"] for p in dash["panels"]}
     orphans = {d.name for d in PANEL_DIRS} - used
     assert not orphans, f"panels on no dashboard: {sorted(orphans)}"
+
+
+def test_a_panel_whose_source_ships_disabled_does_not_claim_to_be_waiting():
+    """ "Waiting for the first collector cycle" has to be able to end.
+
+    Some sources ship commented out on purpose -- `wxalerts` needs an area
+    filter and there is no sensible default for one -- so on a fresh install
+    their snapshot is never written and never will be. A panel that says it is
+    waiting for a cycle that is not coming is the same lie a blank panel tells,
+    and it tells it to every new operator on the default config. Say the source
+    is not configured, the way the GPS and logbook panels do.
+    """
+    raw = EXAMPLE.read_text(encoding="utf-8")
+    live = {s["id"] for s in tomllib.loads(raw).get("sources", []) if "id" in s}
+    # Commented-out config looks like "# id = ..." -- prose comments do not,
+    # which is what separates a disabled source from a paragraph about one.
+    disabled = set(re.findall(r'^#\s?id\s*=\s*"([^"]+)"', raw, re.MULTILINE)) - live
+
+    offenders = []
+    for directory in PANEL_DIRS:
+        manifest = json.loads((directory / "panel.json").read_text())
+        sources = manifest.get("sources") or []
+        # Only sources that ship commented out. A panel reading a live source
+        # really is waiting, and a derived one (propagation, station) is written
+        # by the collector without any [[sources]] entry to appear in either.
+        if not any(s in disabled for s in sources):
+            continue
+        # code_only: the fix for this names the phrase in a comment explaining
+        # why it is not used, which the raw text cannot tell apart from a use.
+        # DOTALL is load-bearing: the guard body spans lines, and without it this
+        # matches nothing and passes on every input, including the one it exists
+        # to catch. Verified by breaking the panel and watching it go red.
+        guard = re.search(
+            r"if\s*\(!snapshot\)\s*\{(.*?)\n  \}",
+            code_only(directory / "panel.js"),
+            re.DOTALL,
+        )
+        if guard and "waiting for the first collector" in guard[1]:
+            offenders.append(f"{directory.name} (sources: {sources})")
+
+    assert not offenders, (
+        "these panels claim to be waiting for a collector cycle that the default "
+        f"config never runs: {offenders}. Say the source is not configured and "
+        "name the doc that turns it on."
+    )
 
 
 def test_index_html_loads_only_local_scripts():

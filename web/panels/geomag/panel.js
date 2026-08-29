@@ -15,6 +15,7 @@ const GEOMAG = ["kindex", "solarwind", "noise", "protons"];
 export function render(root, { data, el }) {
   const solar = data.hamqsl?.data ?? {};
   const swpc = data.kindex?.data ?? {};
+  const protons = data.protons?.data ?? {};
 
   if (!data.hamqsl && !data.kindex) {
     root.replaceChildren(el("p", "empty", "waiting for the first collector cycle…"));
@@ -23,6 +24,11 @@ export function render(root, { data, el }) {
 
   const gauges = { ...(solar.gauges ?? {}) };
   if (swpc.gauge) gauges.kindex = swpc.gauge;
+  // Protons come only from SWPC. HamQSL publishes a <protonflux> that is not
+  // the >=10 MeV channel the pfu scale is defined on and swings orders of
+  // magnitude with no storm behind it, so the source stopped classifying it --
+  // there is nothing to prefer over, and an absent dial beats a wrong one.
+  if (protons.gauge) gauges.protons = protons.gauge;
 
   const row = gaugeRow(gauges, GEOMAG, { size: 116 });
   if (!row) {

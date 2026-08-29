@@ -128,22 +128,33 @@ speaks iCalendar.
 - **Everything transport-shaped.** Discord cogs, Mastodon and Bluesky posting,
   embed builders, chart rendering for social images. Different medium, no overlap.
 
-## One thing to check on real hardware
+## One thing to check on real hardware — checked, 2026-08-27
 
-The three codebases use **three different spellings of the NOAA F10.7 endpoint**:
+The three codebases used **three different spellings of the NOAA F10.7
+endpoint**, and this section used to say at most one could be right. That was
+correct, and the winner was not ours:
 
-| Project | Path under `services.swpc.noaa.gov/json/` |
-|---|---|
-| Hammunition Hill | `f107_cm_radio_flux.json` |
-| solarstorm_scout | `f107_cm_flux.json` (commented "CORRECT endpoint") |
-| penguin-overlord | `f10_7cm_flux.json` |
+| Project | Path under `services.swpc.noaa.gov/json/` | Live? |
+|---|---|---|
+| Hammunition Hill | `f107_cm_radio_flux.json` | **404** |
+| solarstorm_scout | `f107_cm_flux.json` (commented "CORRECT endpoint") | 200 |
+| penguin-overlord | `f10_7cm_flux.json` | **404** |
 
-At most one of those is right, so at least two of these projects have a solar
-flux source that is silently failing or falling back. This could not be verified
-from the sandbox this audit was written in — outbound access to SWPC is blocked
-there. Running `hamhill serve` on a machine with real internet answers it
-immediately: a wrong path shows up as a `fetch failed` on the solarflux panel
-within one cycle.
+So solarstorm_scout's comment was right and this project's URL had been dead —
+degrading honestly, as designed, but showing nothing. penguin-overlord's is dead
+too and still needs fixing there.
+
+Hammunition Hill did **not** adopt the surviving spelling. `/json/f107_cm_flux.json`
+serves **newest-first**, and `_latest_f107` reads `rows[-1]` as the current
+value, so adopting it verbatim would have swapped a visibly empty panel for a
+confidently wrong one showing a six-week-old flux as today's. It now reads
+`/products/10cm-flux-30-day.json`, which is oldest-first, is already the daily
+cadence the sparkline wants, and needs no parser change.
+
+The general lesson is the one this file keeps relearning: a shared endpoint is
+not shared knowledge. Two projects had the path wrong for long enough that the
+audit could only guess which, and the guess would have been wrong. Ordering is
+part of the contract, not a detail.
 
 ## Suggested order
 
