@@ -18,11 +18,26 @@
 
 const DEG = Math.PI / 180;
 
+const wrapLon = (lon) => (((lon + 540) % 360) - 180);
+
 /**
- * Orthographic projection.
+ * Orthographic projection -- or equirectangular when the view says `flat`.
+ *
+ * One dispatch point, so every draw function below works on both without
+ * knowing which it is drawing. A flat view carries `halfW`/`halfH` (half the
+ * map's world width and height in pixels, 2:1) alongside the same lat0/lon0
+ * centre; `radius` doubles as the wrap-jump threshold in strokePath.
  * @returns {{x: number, y: number, visible: boolean, cosc: number}}
  */
 export function project(lat, lon, view) {
+  if (view.flat) {
+    return {
+      x: view.cx + (wrapLon(lon - view.lon0) / 180) * view.halfW,
+      y: view.cy - ((lat - view.lat0) / 90) * view.halfH,
+      visible: true,
+      cosc: 1,
+    };
+  }
   const { lat0, lon0, radius, cx, cy } = view;
   const p = lat * DEG;
   const l = (lon - lon0) * DEG;
@@ -45,8 +60,14 @@ export function project(lat, lon, view) {
   };
 }
 
-/** Screen point back to lat/lon, or null if the click missed the globe. */
+/** Screen point back to lat/lon, or null if the click missed the map. */
 export function unproject(x, y, view) {
+  if (view.flat) {
+    const lat = view.lat0 + ((view.cy - y) / view.halfH) * 90;
+    const lon = wrapLon(view.lon0 + ((x - view.cx) / view.halfW) * 180);
+    if (Math.abs(lat) > 90 || Math.abs(x - view.cx) > view.halfW) return null;
+    return { lat, lon };
+  }
   const { lat0, lon0, radius, cx, cy } = view;
   const dx = x - cx;
   const dy = cy - y;
@@ -109,6 +130,7 @@ export function greatCircle(from, to, steps = 64) {
  */
 export function strokePath(ctx, points, view, { close = false } = {}) {
   let drawing = false;
+  let prevX = null;
   ctx.beginPath();
   for (const point of points) {
     const p = project(point.lat, point.lon, view);
@@ -116,6 +138,14 @@ export function strokePath(ctx, points, view, { close = false } = {}) {
       drawing = false;
       continue;
     }
+    // On the flat map nothing is ever behind the sphere, so the antimeridian
+    // is where paths break instead: a segment that wraps jumps more than half
+    // the world's width in one step, and stroking it would slash a straight
+    // line across the entire map.
+    if (view.flat && prevX !== null && Math.abs(p.x - prevX) > view.halfW) {
+      drawing = false;
+    }
+    prevX = p.x;
     if (drawing) {
       ctx.lineTo(p.x, p.y);
     } else {
@@ -127,10 +157,27 @@ export function strokePath(ctx, points, view, { close = false } = {}) {
   ctx.stroke();
 }
 
-/** The globe disc. */
+/** The world's edge in flat mode: left/right at the wrap, top/bottom at the poles. */
+export function mapRect(view) {
+  const top = project(90, view.lon0, view);
+  const bottom = project(-90, view.lon0, view);
+  return {
+    x: view.cx - view.halfW,
+    y: top.y,
+    w: view.halfW * 2,
+    h: bottom.y - top.y,
+  };
+}
+
+/** The globe disc -- or the map rectangle when the view is flat. */
 export function drawSphere(ctx, view, { fill, stroke }) {
   ctx.beginPath();
-  ctx.arc(view.cx, view.cy, view.radius, 0, Math.PI * 2);
+  if (view.flat) {
+    const r = mapRect(view);
+    ctx.rect(r.x, r.y, r.w, r.h);
+  } else {
+    ctx.arc(view.cx, view.cy, view.radius, 0, Math.PI * 2);
+  }
   if (fill) {
     ctx.fillStyle = fill;
     ctx.fill();
@@ -166,8 +213,19 @@ export function drawWorld(ctx, rings, view, { stroke, fill }) {
     if (fill) {
       // Only fill rings entirely on the near side; a clipped ring would fill
       // the wrong shape, and at globe scale the difference is not worth the
-      // machinery to do it properly.
-      if (points.every((p) => project(p.lat, p.lon, view).visible)) {
+      // machinery to do it properly. The flat map has the same problem at the
+      // wrap edge -- a landmass straddling the antimeridian projects onto both
+      // sides of the map, and filling that zigzag paints a band across the
+      // whole world -- so those rings are outline-only too.
+      const wraps =
+        view.flat &&
+        points.some((p, i) => {
+          if (i === 0) return false;
+          const a = project(points[i - 1].lat, points[i - 1].lon, view);
+          const b = project(p.lat, p.lon, view);
+          return Math.abs(b.x - a.x) > view.halfW;
+        });
+      if (!wraps && points.every((p) => project(p.lat, p.lon, view).visible)) {
         ctx.beginPath();
         points.forEach((p, i) => {
           const s = project(p.lat, p.lon, view);
@@ -194,6 +252,39 @@ export function drawWorld(ctx, rings, view, { stroke, fill }) {
  * choosing the rim direction that contains the antisolar point.
  */
 export function drawTerminator(ctx, ring, subsolar, view, { shade, line }) {
+  if (view.flat) {
+    // On the flat map the terminator is one open curve spanning every
+    // longitude. Sort its points by screen x, then close the night polygon
+    // along the top or bottom edge -- whichever pole is in darkness: when the
+    // sun is north of the equator, night wraps the south pole.
+    const sorted = ring
+      .map((p) => project(p.lat, p.lon, view))
+      .sort((a, b) => a.x - b.x);
+    const r = mapRect(view);
+    const poleY = subsolar.lat > 0 ? r.y + r.h : r.y;
+    if (shade && sorted.length) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(r.x, r.y, r.w, r.h);
+      ctx.clip();
+      ctx.beginPath();
+      sorted.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)));
+      ctx.lineTo(r.x + r.w, poleY);
+      ctx.lineTo(r.x, poleY);
+      ctx.closePath();
+      ctx.fillStyle = shade;
+      ctx.fill();
+      ctx.restore();
+    }
+    if (line && sorted.length) {
+      ctx.strokeStyle = line;
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      sorted.forEach((p, i) => (i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y)));
+      ctx.stroke();
+    }
+    return;
+  }
   const projected = ring.map((p) => ({ ...p, s: project(p.lat, p.lon, view) }));
   const visible = projected.filter((p) => p.s.visible);
 

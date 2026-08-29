@@ -22,7 +22,7 @@ rather than what a designer drew.
 
 <table>
 <tr>
-<td width="33%"><a href="https://raw.githubusercontent.com/ChiefGyk3D/hammunition-hill/main/docs/images/map.png"><img src="https://raw.githubusercontent.com/ChiefGyk3D/hammunition-hill/main/docs/images/map.png" alt="Map"></a><br><b>Map</b> — rotatable globe, greyline, spots coloured by your log</td>
+<td width="33%"><a href="https://raw.githubusercontent.com/ChiefGyk3D/hammunition-hill/main/docs/images/map.png"><img src="https://raw.githubusercontent.com/ChiefGyk3D/hammunition-hill/main/docs/images/map.png" alt="Map"></a><br><b>Map</b> — 3D globe or 2D flat map, greyline, path plotting, spots coloured by your log</td>
 <td width="33%"><a href="https://raw.githubusercontent.com/ChiefGyk3D/hammunition-hill/main/docs/images/space-weather.png"><img src="https://raw.githubusercontent.com/ChiefGyk3D/hammunition-hill/main/docs/images/space-weather.png" alt="Space Weather"></a><br><b>Space Weather</b> — eight scales, MUF and D-layer absorption</td>
 <td width="33%"><a href="https://raw.githubusercontent.com/ChiefGyk3D/hammunition-hill/main/docs/images/operating.png"><img src="https://raw.githubusercontent.com/ChiefGyk3D/hammunition-hill/main/docs/images/operating.png" alt="Operating"></a><br><b>Operating</b> — band plan, NCDXF beacons, logbook, CW trainer</td>
 </tr>
@@ -54,7 +54,7 @@ finished, so here is exactly where things stand:
 | Panels | ✅ 30 across 6 dashboards |
 | Source kinds | ✅ 13 polled, 6 stream, 1 file |
 | Space weather dials | ✅ 8 scales |
-| Map — rotatable globe, greyline, spots, aurora | ✅ working |
+| Map — 3D globe / 2D flat, greyline, spots, aurora, path plotting | ✅ working |
 | Band globes — one sphere per active band, hamdash style | ✅ working |
 | Your log driving spot colouring | ✅ working |
 | DX cluster, WSJT-X, `rigctld` | ✅ working |
@@ -274,12 +274,19 @@ right message for a major storm.
 
 ## The map
 
-A globe rather than a flat projection, because the thing operators most want to
-see is a great-circle path, and great circles look wrong on Mercator —
-Connecticut to Japan goes over the pole, and only a sphere shows that honestly.
+A globe first, because the thing operators most want to see is a great-circle
+path, and great circles look wrong on Mercator — Connecticut to Japan goes over
+the pole, and only a sphere shows that honestly. A **2D** chip switches to a
+flat equirectangular world for the wall-display view of everything at once;
+great circles stay honest there too, drawn curved and broken at the
+antimeridian.
 
-Drag to rotate, scroll or the buttons to zoom, **QTH** to recentre on your
-station, and click a station to select it. Layers toggle independently:
+Drag to rotate (or pan, in 2D), scroll or the buttons to zoom, **QTH** to
+recentre on your station, and click a station to select it — the caption then
+answers "how far was that" with distance in km and miles and the short-path
+bearing, measured from your grid or a browser GPS fix. **PLOT PATH** draws your
+own dashed great circle: type a grid square or click the map, and read distance,
+short-path and long-path bearings off the caption. Layers toggle independently:
 greyline, aurora, spots, arcs, parks, graticule, label.
 
 The **aurora** layer is NOAA's OVATION forecast. The raw product is a
@@ -597,7 +604,7 @@ Shipping now:
 | **Geomag & Particles** | 1 | K-index, solar wind, band noise, proton flux as dials |
 | **NOAA Scales & Alerts** | 1 | NOAA's own R/S/G storm scales and the alerts SWPC has issued |
 | **Band Conditions** | 1 | HamQSL HF conditions, day and night |
-| **World Map** | 1 | Rotatable globe: greyline, DX spots, great-circle paths from your QTH |
+| **World Map** | 1 | 3D globe or 2D flat map: greyline, DX spots, great-circle paths, path plotter with distance and bearings from your QTH or GPS |
 | **NCDXF Beacons** | 0 | Which international beacon is on each band right now, from the clock alone |
 | **Logbook** | 0 | Log a QSO pre-filled from your rig and the selected station, straight to ADIF |
 | **Band Plan** | 0 | Which frequencies your licence class may use, by band and mode |
