@@ -86,6 +86,8 @@ DERIVED_SOURCES = frozenset(
         "propagation",
         "satellites",
         "tle",
+        "sources",
+        "about",
     }
 )
 

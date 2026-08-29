@@ -190,6 +190,7 @@ should be made deliberately.
 | `collector.py` | One async task per source: polled, stream, or file. |
 | `server.py` | Static files over two directories, with the headers turned up. |
 | `cli.py` | `hamhill serve`, `check`, `fcc-import`, `exam-import`. |
+| `about.py` | The about card: project, author, support and social links, published as a snapshot so `web/` needs no hardcoded URLs. |
 | `sources/` | Polled and file sources, registered statically. |
 | `streams/` | Long-lived connections, registered statically. |
 | `lookup/` | Callsign providers, chained, and the offline FCC ULS index. |

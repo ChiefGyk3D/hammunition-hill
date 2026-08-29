@@ -17,6 +17,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from . import __version__
+from .about import publish_about
 from .collector import run_collector
 from .config import Config, ConfigError, ServerConfig, load_config
 from .egress import EgressDenied, EgressGuard
@@ -84,6 +85,50 @@ def _publish_station(config: Config, enricher: Enricher) -> None:
                 "license_class": station.license_class,
                 "license_certain": station.license_certain,
                 "license_reason": station.license_reason,
+            },
+        ),
+    )
+
+
+def _publish_sources(config: Config) -> None:
+    """Publish which sources this config actually runs, so the header can be honest.
+
+    Without this the browser can only infer configuration from snapshot 404s,
+    and it counted every source a panel *could* read into one fraction: a stock
+    install showed "5/9 sources · collector may still be starting" forever,
+    because rig, cluster and the rest ship commented out and their snapshots
+    were never coming. The fraction read as breakage; nothing was broken.
+
+    Deliberately id, kind, interval and transport only. Never the URL -- an
+    operator's query string can carry an API key -- and never options, which
+    is where callsigns and file paths live. The LAN can see *that* a source
+    runs; what it talks to stays in config.toml.
+    """
+    from .sources import is_local
+
+    write_snapshot(
+        config.data_dir,
+        Snapshot(
+            source_id="sources",
+            kind="sources",
+            fetched_at=datetime.now(UTC),
+            stale_after_seconds=0,
+            data={
+                "configured": [
+                    {
+                        "id": source.id,
+                        "kind": source.kind,
+                        "interval": source.interval,
+                        "transport": (
+                            "stream"
+                            if is_stream(source.kind)
+                            else "file"
+                            if is_local(source.kind)
+                            else "polled"
+                        ),
+                    }
+                    for source in config.sources
+                ],
             },
         ),
     )
@@ -320,6 +365,8 @@ def _serve(config: Config, guard: EgressGuard, enricher: Enricher) -> int:
         return 1
 
     _publish_station(config, enricher)
+    _publish_sources(config)
+    publish_about(config)
     _publish_prefixes(config, enricher)
     _publish_imagery(config)
     _publish_morse(config)
