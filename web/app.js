@@ -106,47 +106,89 @@ function buildTabs(dashboards, active, onPick) {
   return bar;
 }
 
-// Panels pack like masonry: the grid's rows are a fine 8px lattice, each
-// panel spans as many as its natural height needs, and dense flow fills the
-// holes. CSS grid alone cannot do this -- a row is as tall as the tallest
-// panel in it, so a short panel beside a tall one strands the whole
-// difference as dead space. On the Operating dashboard that was ~1300px of
-// nothing under the logbook, beside the band plan.
+// Panels pack like masonry: the grid's rows are a fine 8px lattice and each
+// panel spans as many as its natural height needs. CSS grid alone cannot do
+// this -- a row is as tall as the tallest panel in it, so a short panel
+// beside a tall one strands the whole difference as dead space. On the
+// Operating dashboard that was ~1300px of nothing under the logbook, beside
+// the band plan.
 //
-// One observer for every panel. Observing the panel itself cannot loop,
-// because align-items: start means a panel never stretches to its grid area:
-// its measured height is always its content's natural height, whatever span
-// that height is then translated into. The callback runs after layout and
-// before paint, so the span is settled before anything is shown.
+// Placement is computed here too, not left to the browser. The first version
+// used `grid-auto-flow: dense` and let auto-placement fill the holes, and
+// that broke the customize mode it shipped alongside: dense placement ignores
+// DOM order, so on the stock Home dashboard the reception panel drew *above*
+// the reverse beacon that preceded it, and the reorder arrows appeared to do
+// nothing -- the browser put the moved panel right back where it had been.
+// An arrangement feature the layout algorithm is free to override is not an
+// arrangement feature.
+//
+// So: each panel, in DOM order, lands in the contiguous run of columns whose
+// occupied depth is shallowest (leftmost on a tie). Depths only grow, and
+// each item takes the global minimum at its turn, so landing rows are
+// monotonic in DOM order -- a later panel can sit *beside* an earlier one
+// but never above it. That is the property the arrows need: "move later"
+// always reads later. It also bottom-balances the columns, which dense flow
+// never promised: dense fills interior holes but happily leaves one column
+// two panels deeper than its neighbour.
 //
 // The lattice is measured from the grid, not assumed: the row unit and the
-// gap are the stylesheet's to change per breakpoint, and the first version of
-// this hardcoded a 12px gap while the phone breakpoint used 8 -- every span
-// came out short by the difference, and each panel was painted over by the
-// next. N spanned tracks cover N*row + (N-1)*gap, so N must satisfy
+// gap are the stylesheet's to change per breakpoint, and an earlier version
+// hardcoded a 12px gap while the phone breakpoint used 8 -- every span came
+// out short by the difference, and each panel was painted over by the next.
+// N spanned tracks cover N*row + (N-1)*gap, so N must satisfy
 // N >= (height + gap) / (row + gap).
-const sizer = new ResizeObserver((entries) => {
+function repack() {
   const style = getComputedStyle(GRID);
+  const cols = style.gridTemplateColumns.split(" ").length;
   const row = parseFloat(style.gridAutoRows) || 8;
   const gap = parseFloat(style.rowGap) || 12;
-  for (const entry of entries) {
-    const height = entry.target.getBoundingClientRect().height;
+  const depth = new Array(cols).fill(1);
+
+  for (const item of GRID.children) {
+    if (!(item instanceof HTMLElement)) continue;
+    const want = item.classList.contains("edit-bar")
+      ? cols
+      : Math.min(Number(item.style.getPropertyValue("--span")) || 1, cols);
+    // Natural content height: align-items: start means placement never
+    // stretches an item, so measuring here cannot feed back into itself.
+    const height = item.getBoundingClientRect().height;
     const rows = Math.max(1, Math.ceil((height + gap) / (row + gap)));
-    entry.target.style.setProperty("--rows", String(rows));
+
+    let bestStart = 0;
+    let bestRow = Infinity;
+    for (let start = 0; start + want <= cols; start++) {
+      let landing = 0;
+      for (let c = start; c < start + want; c++) landing = Math.max(landing, depth[c]);
+      if (landing < bestRow) {
+        bestRow = landing;
+        bestStart = start;
+      }
+    }
+    item.style.gridColumn = `${bestStart + 1} / span ${want}`;
+    item.style.gridRow = `${bestRow} / span ${rows}`;
+    for (let c = bestStart; c < bestStart + want; c++) depth[c] = bestRow + rows;
   }
+}
+
+// One observer for every panel, but one repack per burst of changes: content
+// resizing anywhere can shift every landing row below it, so the whole grid
+// is recomputed, coalesced through rAF so a dashboard full of first renders
+// costs one pass. The callback runs after layout and before paint, so the
+// placement is settled before anything is shown.
+let repackQueued = false;
+const sizer = new ResizeObserver(() => {
+  if (repackQueued) return;
+  repackQueued = true;
+  requestAnimationFrame(() => {
+    repackQueued = false;
+    repack();
+  });
 });
 
-// A breakpoint change alters the lattice without resizing any panel whose
-// content happens to reflow to the same height, so re-measure everything when
-// the window changes rather than trusting the observer to have a reason to.
-window.addEventListener("resize", () => {
-  // .edit-bar included: it is measured on the same lattice, and its height is
-  // exactly the kind that survives a breakpoint change unchanged while the
-  // lattice under it does not.
-  const measured = ".panel, .edit-bar";
-  for (const node of GRID.querySelectorAll(measured)) sizer.unobserve(node);
-  for (const node of GRID.querySelectorAll(measured)) sizer.observe(node);
-});
+// A breakpoint change alters the lattice and the column count without
+// resizing any panel whose content happens to reflow to the same height, so
+// repack directly rather than trusting the observer to have a reason to fire.
+window.addEventListener("resize", repack);
 
 function buildFrame(manifest) {
   const panel = el("section", "panel");

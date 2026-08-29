@@ -190,22 +190,21 @@ def test_a_panel_whose_source_ships_disabled_does_not_claim_to_be_waiting():
     for directory in PANEL_DIRS:
         manifest = json.loads((directory / "panel.json").read_text())
         sources = manifest.get("sources") or []
-        # Only sources that ship commented out. A panel reading a live source
-        # really is waiting, and a derived one (propagation, station) is written
-        # by the collector without any [[sources]] entry to appear in either.
+        # A panel reading any live source really is waiting, briefly. A panel
+        # whose sources are all derived (propagation, station -- published by
+        # the collector with no [[sources]] entry to appear in either list) is
+        # waiting for something that arrives at startup. The forever-wait is a
+        # panel with no live source and at least one that ships commented out.
+        if any(s in live for s in sources):
+            continue
         if not any(s in disabled for s in sources):
             continue
-        # code_only: the fix for this names the phrase in a comment explaining
-        # why it is not used, which the raw text cannot tell apart from a use.
-        # DOTALL is load-bearing: the guard body spans lines, and without it this
-        # matches nothing and passes on every input, including the one it exists
-        # to catch. Verified by breaking the panel and watching it go red.
-        guard = re.search(
-            r"if\s*\(!snapshot\)\s*\{(.*?)\n  \}",
-            code_only(directory / "panel.js"),
-            re.DOTALL,
-        )
-        if guard and "waiting for the first collector" in guard[1]:
+        # The whole file, not a `!snapshot` guard: the first version of this
+        # test anchored on that variable name, and the contests panel spelled
+        # its guard `if (!events)` -- the message this test exists to catch,
+        # invisible to it. code_only because the fix for an offender names the
+        # phrase in a comment explaining why it is not used.
+        if "waiting for the first collector" in code_only(directory / "panel.js"):
             offenders.append(f"{directory.name} (sources: {sources})")
 
     assert not offenders, (

@@ -35,9 +35,12 @@ catches a 4% change to the dit length.
 | **translate** | Text ↔ Morse, direction detected from what you typed. Play at any speed. |
 | **letters** | Letters, digits and punctuation. |
 | **prosigns** | The ten that matter, with what they mean. |
-| **q codes** | The 21 you actually meet on the air, not the full ITU list. |
-| **abbrev** | Operating shorthand, plus cut numbers. |
 | **practice** | Koch-order groups, sent as audio, revealed when you are ready. |
+
+Q codes, operating abbreviations and cut numbers used to be views here too.
+They moved to the **Pocket Reference** panel, which is where lookups belong —
+this panel teaches, that one answers, and for a while both carried the same
+two tables. The trainer still quizzes on all of them.
 
 ## The prosign collision, which is not a bug
 

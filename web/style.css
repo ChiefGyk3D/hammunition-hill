@@ -78,17 +78,17 @@ body {
   gap: 12px;
   padding: 12px;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  /* dense: let a later panel slot into a hole an earlier wide one left, so a
-     dashboard with mixed spans does not strand half a row of empty space.
-     Visual order can then differ from DOM order -- acceptable here because
-     every panel is an independent readout, nothing reads as a sequence, and
-     assistive tech follows the DOM, which is unchanged. */
-  grid-auto-flow: dense;
+  /* No grid-auto-flow: dense here any more, and its absence is load-bearing.
+     Dense placement ignores DOM order, which put panels visually above
+     neighbours that preceded them -- and made the customize arrows look
+     broken, because the browser was free to put a moved panel straight back.
+     app.js places every panel explicitly instead (repack()), in DOM order,
+     into the shallowest column. */
   /* The 8px lattice the masonry packs into: app.js measures each panel and
      spans it across as many of these as its content needs. align-items:
      start is load-bearing twice over -- it keeps a panel its natural height,
      and that is also what makes measuring the panel safe for the observer
-     that sets the span. */
+     that triggers the repack. */
   grid-auto-rows: 8px;
   align-items: start;
 }
@@ -228,7 +228,12 @@ a:focus-visible, button:focus-visible { outline: 2px solid var(--accent); outlin
    tracks, and the whole page scrolls sideways. On a phone the grid is one
    column, so every span must collapse to 1 there; in between, cap at what
    actually fits. This shipped as an unconditional span min(--span, 3), which
-   made a span-3 panel overflow any viewport under ~1000px. */
+   made a span-3 panel overflow any viewport under ~1000px.
+
+   These rules are the pre-JS fallback only: repack() in app.js assigns every
+   panel an explicit grid-column and grid-row inline (capped at the real
+   column count), which overrides all of this the moment the first
+   measurement lands. What follows just keeps the first paint sane. */
 .panel {
   grid-column: span min(var(--span, 1), 3);
   grid-row: span var(--rows, 30);

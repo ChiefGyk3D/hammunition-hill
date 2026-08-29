@@ -24,7 +24,7 @@ from __future__ import annotations
 from typing import Any
 
 from .cwpractice import PHONETICS
-from .morse import ABBREVIATIONS, PROSIGNS, Q_CODES
+from .morse import ABBREVIATIONS, CUT_NUMBERS, PROSIGNS, Q_CODES
 
 # fmt: off
 # The RST system, as given: three digits sent, each ordinal. Worth carrying
@@ -181,6 +181,9 @@ def snapshot_payload() -> dict[str, Any]:
     return {
         "q_codes": list(Q_CODES),
         "abbreviations": list(ABBREVIATIONS),
+        # With the lookup views deduplicated out of the CW panel, this is where
+        # someone hearing 5NN goes to decode it, so the cut numbers come along.
+        "cut_numbers": list(CUT_NUMBERS),
         "prosigns": list(PROSIGNS),
         "number_codes": list(NUMBER_CODES),
         "phonetics": list(PHONETICS),

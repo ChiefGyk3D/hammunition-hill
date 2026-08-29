@@ -141,12 +141,15 @@ kind = "sota"
 url = "https://api2.sota.org.uk/api/spots/50/all"
 interval = 120
 
-# Any iCalendar feed. Verify the URL before relying on it -- contest calendars
-# move, and the right one for you may be regional or club-specific.
+# Any iCalendar feed. The URL below is a PLACEHOLDER and known dead: checked
+# 2026-08-28, contestcalendar.com serves no aggregate .ics at any spelling we
+# could find -- its iCal icons are per-event downloads. Point this at a feed
+# you actually have (many clubs and regional calendars publish one), and note
+# a webcal:// link is the same feed spelled https://.
 # [[sources]]
 # id = "contests"
 # kind = "ics"
-# url = "https://www.contestcalendar.com/calendar.ics"
+# url = "https://example.org/your-contest-calendar.ics"
 # interval = 21600
 # options = { label = "Contests", horizon_days = 21 }
 

@@ -106,13 +106,18 @@ products this project does not:
 The two images are the easy kind of tier 2: images, not iframes, so they cannot
 run script — and the opaque-mode proxy would keep even those same-origin.
 
-### 4. The contest calendar URL
+### 4. The contest calendar URL — checked, 2026-08-28
 
 penguin-overlord fetches `contestcalendar.com/weeklycont.php`, a URL that is
-demonstrably in use. `config.example.toml` currently suggests a `.ics` URL that
-was inferred rather than verified, with a note to check it. Worth reconciling —
-though note the two need different parsers, and the existing `ics` source only
-speaks iCalendar.
+demonstrably in use — it is HTML, which the `ics` source does not speak.
+`config.example.toml` used to suggest `contestcalendar.com/calendar.ics`,
+inferred rather than verified, with a note to check it. Checked: **404**, along
+with every other spelling tried, and the site's iCal icons turn out to be
+per-event downloads rather than a subscribable aggregate feed. The example now
+ships an explicit placeholder telling the operator to supply a feed they
+actually have, which is what the "verify before relying on it" note should have
+said the first time. Parsing the HTML weekly page would be a new source kind,
+not a config change, and is not obviously worth owning a scraper for.
 
 ## Not worth taking
 

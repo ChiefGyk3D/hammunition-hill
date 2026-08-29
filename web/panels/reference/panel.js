@@ -99,6 +99,17 @@ export function render(root, { data, el }) {
   } else if (state.view === "abbrev") {
     const merged = [...reference.prosigns, ...reference.abbreviations];
     parts.push(rows(el, merged, "code", "meaning"));
+    // Moved here from the CW panel with the rest of the lookup material: the
+    // person decoding 5NN mid-contest wants an answer, not a lesson. Folded
+    // to the two-column shape so the filter box covers these rows too.
+    if (reference.cut_numbers?.length) {
+      parts.push(el("p", "cw-hint", "Cut numbers — contest shorthand, which is why you hear 5NN:"));
+      const cuts = reference.cut_numbers.map((c) => ({
+        code: `${c.digit} → ${c.cut}`,
+        meaning: c.code,
+      }));
+      parts.push(rows(el, cuts, "code", "meaning"));
+    }
   } else if (state.view === "numbers") {
     parts.push(rows(el, reference.number_codes, "code", "meaning"));
     parts.push(
