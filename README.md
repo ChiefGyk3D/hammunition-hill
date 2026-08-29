@@ -746,6 +746,30 @@ These are free services run by volunteers and public agencies. The collector
 polls on conservative intervals and caps how often it asks; please do not lower
 those without a reason.
 
+## Author & support
+
+Built by [ChiefGyk3D](https://github.com/ChiefGyk3D) —
+[chiefgyk3d.com](https://chiefgyk3d.com). If this dashboard earns a place on
+your shack wall, **[support.chiefgyk3d.com](https://support.chiefgyk3d.com)**
+carries every way to support the work: Patreon, Ko-fi, tips, merch, and
+cryptocurrency (BTC, XMR, ETH, SOL). The addresses live on that page and only
+that page, deliberately — an address copied into a README goes stale the day it
+rotates, and a page the author controls is the only copy worth trusting.
+
+Find him: [Mastodon](https://social.chiefgyk3d.com/@chiefgyk3d) ·
+[Bluesky](https://bsky.app/profile/chiefgyk3d.com) ·
+[YouTube](https://www.youtube.com/channel/UCvFY4KyqVBuYd7JAl3NRyiQ) ·
+[Twitch](https://twitch.tv/chiefgyk3d) · [Kick](https://kick.com/chiefgyk3d) ·
+[TikTok](https://www.tiktok.com/@chiefgyk3d) ·
+[Instagram](https://www.instagram.com/chiefgyk3d/) ·
+[Pixelfed](https://pics.chiefgyk3d.com/ChiefGyk3D) ·
+[Discord](https://discord.chiefgyk3d.com) ·
+[Matrix](https://matrix-invite.chiefgyk3d.com)
+
+The same card lives in the app: click the **Hammunition Hill** name in the top
+bar. It is published as a snapshot like everything else, so the frontend's
+no-hardcoded-URLs rule holds even for the author's own links.
+
 ## License
 
 **MPL-2.0.** See [LICENSE](LICENSE).

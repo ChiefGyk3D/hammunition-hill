@@ -280,27 +280,227 @@ function renderPanel(entry, station) {
   updateAge(entry);
 }
 
+// data/sources.json, published by the collector at startup: which sources this
+// config actually runs. Without it the browser can only infer configuration
+// from 404s, and the header counted every source a panel could read into one
+// fraction -- a stock install said "5/9 sources · collector may still be
+// starting" forever, on every tab, because rig and cluster and the rest ship
+// commented out and their snapshots were never coming. Partial forever reads
+// as broken; nothing was broken.
+let sourceMeta = null; // Map id -> {kind, transport}, or null if not published
+
+function classifySources(wanted) {
+  const states = [];
+  const now = Date.now();
+  for (const id of wanted) {
+    const snapshot = snapshots.get(id);
+    const meta = sourceMeta?.get(id);
+    if (snapshot) {
+      const age = (now - Date.parse(snapshot.fetched_at)) / 1000;
+      const stale = snapshot.stale_after_seconds > 0 && age > snapshot.stale_after_seconds;
+      states.push({
+        id,
+        kind: snapshot.kind,
+        state: snapshot.error ? "failing" : stale ? "stale" : "ok",
+        detail: snapshot.error
+          ? `last good ${relativeAge(snapshot.fetched_at)} — ${snapshot.error}`
+          : relativeAge(snapshot.fetched_at),
+      });
+    } else if (!sourceMeta || meta) {
+      // Configured (or unknowable, on a collector that predates the
+      // manifest): the data genuinely is still coming.
+      states.push({
+        id,
+        kind: meta?.kind ?? "",
+        state: "waiting",
+        detail:
+          meta?.transport === "stream"
+            ? "stream configured — writes on first traffic or failure"
+            : "configured — waiting for the first collector cycle",
+      });
+    } else {
+      states.push({
+        id,
+        kind: "",
+        state: "off",
+        detail: "ships disabled — enable it in config.toml on the server",
+      });
+    }
+  }
+  const rank = { failing: 0, waiting: 1, stale: 2, ok: 3, off: 4 };
+  states.sort((a, b) => rank[a.state] - rank[b.state] || a.id.localeCompare(b.id));
+  return states;
+}
+
+// The header line, and the disclosure behind it. The count covers only what
+// is configured: "12 sources · 3 off" is a healthy stock install, where
+// "5/9 · may still be starting" was the same install described as a fault.
+function renderStatus(states) {
+  const present = states.filter((s) => s.state === "ok" || s.state === "stale").length;
+  const failing = states.filter((s) => s.state === "failing").length;
+  const waiting = states.filter((s) => s.state === "waiting").length;
+  const off = states.filter((s) => s.state === "off").length;
+
+  const configured = present + failing + waiting;
+  const parts = [
+    waiting ? `${present + failing}/${configured} sources` : `${configured} sources`,
+  ];
+  if (failing) parts.push(`${failing} failing`);
+  if (waiting) parts.push("waiting for first data");
+  if (off) parts.push(`${off} off`);
+  if (!failing && !waiting) parts.push(`updated ${new Date().toLocaleTimeString()}`);
+  STATUS.textContent = parts.join(" · ");
+  if (statusSheet) renderStatusSheet(states);
+}
+
+// Click the count, get the ledger: every source this dashboard reads, what
+// state it is in, and -- for the off ones -- that config.toml is where they
+// are turned on. Read-only on purpose. There is no settings endpoint to wire
+// this to, and that absence is the security model, not a gap: nothing
+// reachable over HTTP can change what the collector contacts.
+let statusSheet = null;
+
+function renderStatusSheet(states) {
+  const rows = [
+    el(
+      "p",
+      "source-note",
+      "Sources live in config.toml on the machine running hamhill — " +
+        "config.example.toml carries a ready stanza for every one of these.",
+    ),
+  ];
+  for (const s of states) {
+    const row = el("div", `source-row source-${s.state}`);
+    row.append(
+      el("span", "source-state", s.state),
+      el("span", "source-id", s.kind && s.kind !== s.id ? `${s.id} · ${s.kind}` : s.id),
+      el("span", "source-detail", s.detail),
+    );
+    rows.push(row);
+  }
+  statusSheet.replaceChildren(...rows);
+}
+
+function toggleStatusSheet() {
+  if (statusSheet) {
+    statusSheet.remove();
+    statusSheet = null;
+    STATUS.setAttribute("aria-expanded", "false");
+    return;
+  }
+  statusSheet = el("div", "source-sheet");
+  STATUS.after(statusSheet);
+  STATUS.setAttribute("aria-expanded", "true");
+  renderStatusSheet(classifySources(new Set(panels.flatMap((p) => p.manifest.sources))));
+}
+
+STATUS.setAttribute("role", "button");
+STATUS.setAttribute("tabindex", "0");
+STATUS.setAttribute("aria-expanded", "false");
+STATUS.title = "Show every source this dashboard reads, and why any are quiet";
+STATUS.addEventListener("click", toggleStatusSheet);
+STATUS.addEventListener("keydown", (event) => {
+  if (event.key === "Enter" || event.key === " ") {
+    event.preventDefault();
+    toggleStatusSheet();
+  }
+});
+
+// --- about ----------------------------------------------------------------
+// Click the brand, meet the author. Every URL comes from data/about.json,
+// published on the Python side, because web/ bans hardcoded external URLs
+// and an about card is exactly how that rule would erode. Plain anchors
+// only: they cost nothing under the CSP and navigate away deliberately.
+let aboutSheet = null;
+
+function linkRow(name, url) {
+  const anchor = el("a", "ref-link", name);
+  anchor.href = url;
+  anchor.rel = "noopener";
+  return anchor;
+}
+
+function toggleAboutSheet() {
+  const brand = document.querySelector(".brand");
+  if (aboutSheet) {
+    aboutSheet.remove();
+    aboutSheet = null;
+    brand.setAttribute("aria-expanded", "false");
+    return;
+  }
+  const about = snapshots.get("about")?.data;
+  aboutSheet = el("div", "source-sheet about-sheet");
+  if (!about) {
+    aboutSheet.append(el("p", "empty", "about not published yet — one page load behind"));
+  } else {
+    const project = about.project ?? {};
+    const author = about.author ?? {};
+    aboutSheet.append(
+      el("p", "about-title", `${project.name} ${project.version} · ${project.license}`),
+      el("p", "source-note", project.tagline ?? ""),
+    );
+    const projectRow = el("div", "about-links");
+    projectRow.append(
+      linkRow("Source on GitHub", project.repo),
+      linkRow("Hammunition (companion)", project.companion),
+    );
+    aboutSheet.append(projectRow);
+    if (author.support?.url) {
+      aboutSheet.append(el("p", "about-title", `Support ${author.name}`));
+      const supportRow = el("div", "about-links");
+      supportRow.append(linkRow(author.support.url.replace(/^https:\/\//, ""), author.support.url));
+      aboutSheet.append(supportRow);
+      aboutSheet.append(el("p", "source-note", author.support.offers ?? ""));
+    }
+    const socials = el("div", "about-links");
+    for (const s of author.socials ?? []) socials.append(linkRow(s.name, s.url));
+    aboutSheet.append(el("p", "about-title", "Find him"), socials);
+  }
+  brand.after(aboutSheet);
+  brand.setAttribute("aria-expanded", "true");
+}
+
+{
+  const brand = document.querySelector(".brand");
+  brand.setAttribute("role", "button");
+  brand.setAttribute("tabindex", "0");
+  brand.setAttribute("aria-expanded", "false");
+  brand.title = "About Hammunition Hill";
+  brand.addEventListener("click", toggleAboutSheet);
+  brand.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      toggleAboutSheet();
+    }
+  });
+}
+
 async function poll(station) {
   const wanted = new Set(panels.flatMap((p) => p.manifest.sources));
+  try {
+    const manifest = await getJSON("./data/sources.json");
+    sourceMeta = new Map((manifest.data?.configured ?? []).map((s) => [s.id, s]));
+  } catch {
+    sourceMeta = null;
+  }
+  // The about card reads a snapshot no panel declares. Fetched alongside but
+  // kept out of `wanted`, so it never shows up in the source ledger as if it
+  // were an upstream; it is written once at startup, so once is enough.
+  const fetches = [...wanted];
+  if (!snapshots.has("about")) fetches.push("about");
   const results = await Promise.allSettled(
-    [...wanted].map(async (id) => [id, await getJSON(`./data/${id}.json`)]),
+    fetches.map(async (id) => [id, await getJSON(`./data/${id}.json`)]),
   );
 
-  let missing = 0;
   for (const result of results) {
     if (result.status === "fulfilled") {
       const [id, snapshot] = result.value;
       snapshots.set(id, snapshot);
-    } else {
-      missing += 1;
     }
   }
 
   for (const entry of panels) renderPanel(entry, station);
-
-  STATUS.textContent = missing
-    ? `${wanted.size - missing}/${wanted.size} sources · collector may still be starting`
-    : `${wanted.size} sources · updated ${new Date().toLocaleTimeString()}`;
+  renderStatus(classifySources(wanted));
 }
 
 async function main() {

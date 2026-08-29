@@ -71,6 +71,46 @@ body {
 .name { font-weight: 600; letter-spacing: -.01em; }
 .station { font-family: var(--mono); font-size: 12px; color: var(--muted); }
 .status { margin-left: auto; font-family: var(--mono); font-size: 11.5px; color: var(--muted); }
+/* The status count and the brand both open disclosure sheets. */
+.status[role="button"], .brand[role="button"] { cursor: pointer; }
+.status[role="button"]:hover { color: var(--ink); }
+
+/* --- topbar disclosure sheets: source ledger, about card ---------------- */
+.source-sheet {
+  position: absolute;
+  top: 100%;
+  right: 12px;
+  z-index: 11; /* above the sticky topbar's 10, and everything under it */
+  max-width: min(560px, calc(100vw - 24px));
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: 12px 14px;
+  background: var(--panel-2);
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .45);
+  font-family: var(--mono);
+  font-size: 12px;
+}
+.about-sheet { left: 12px; right: auto; }
+.source-note { margin: 4px 0 10px; color: var(--muted); font-size: 11px; line-height: 1.5; }
+.source-row {
+  display: grid;
+  grid-template-columns: 7ch minmax(10ch, auto) 1fr;
+  gap: 10px;
+  padding: 4px 0;
+  border-top: 1px solid var(--rule);
+  align-items: baseline;
+}
+.source-state { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; }
+.source-ok .source-state { color: var(--good); }
+.source-stale .source-state, .source-waiting .source-state { color: var(--fair); }
+.source-failing .source-state { color: var(--poor); }
+.source-off .source-state { color: var(--muted); }
+.source-id { font-weight: 600; }
+.source-detail { color: var(--muted); overflow-wrap: anywhere; }
+.about-title { margin: 10px 0 4px; font-weight: 600; letter-spacing: .04em; }
+.about-links { display: flex; flex-wrap: wrap; gap: 6px 14px; }
 
 /* --- grid ------------------------------------------------------------ */
 .grid {
