@@ -14,7 +14,7 @@
 // WAN unplugged -- the greyline is computed from the clock, not fetched.
 
 import { recall, remember } from "../../lib/format.js";
-import { gridToLatLon } from "../../lib/callsign.js";
+import { gridToLatLon, latLonToGrid, pathTo } from "../../lib/callsign.js";
 import { subsolarPoint, terminatorRing } from "../../lib/solar.js";
 import { clearQth, effectiveStation, locate, saveQth, unavailableReason } from "../../lib/geolocate.js";
 import {
@@ -35,10 +35,18 @@ const state = {
   lat0: null,
   lon0: null,
   zoom: recall("map.zoom", 1),
+  // "globe" or "flat". The globe stays the default -- great circles are the
+  // point of this panel -- but a flat map answers "what is everywhere at
+  // once" without rotating, which is what a wall display wants.
+  mode: recall("map.mode", "globe"),
   layers: recall("map.layers", {
     greyline: true, aurora: true, spots: true, arcs: true,
     parks: true, graticule: true, labels: true,
   }),
+  // The plotted path's far end, a Maidenhead grid. Persisted: an operator
+  // planning a sked wants the same target tomorrow.
+  target: recall("map.target", ""),
+  plotting: false,
   world: null,
   loading: false,
   selected: null,
@@ -46,6 +54,8 @@ const state = {
   dragging: null,
   station: {},
   data: null,
+  view: null,
+  rerender: null,
 };
 
 function css(name, fallback) {
@@ -96,13 +106,29 @@ function draw(canvas, data, station) {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, width, height);
 
-  const view = {
-    lat0: state.lat0 ?? 20,
-    lon0: state.lon0 ?? 0,
-    radius: (Math.min(width, height) / 2 - 8) * state.zoom,
-    cx: width / 2,
-    cy: height / 2,
-  };
+  // Flat keeps the 2:1 equirectangular aspect, fitted to whichever canvas
+  // edge binds. halfW doubles as strokePath's wrap-jump threshold.
+  const flatHalfH = Math.min((width / 2 - 8) / 2, height / 2 - 8) * state.zoom;
+  const view =
+    state.mode === "flat"
+      ? {
+          flat: true,
+          lat0: Math.max(-60, Math.min(60, state.lat0 ?? 0)),
+          lon0: state.lon0 ?? 0,
+          halfW: flatHalfH * 2,
+          halfH: flatHalfH,
+          radius: flatHalfH * 2,
+          cx: width / 2,
+          cy: height / 2,
+        }
+      : {
+          lat0: state.lat0 ?? 20,
+          lon0: state.lon0 ?? 0,
+          radius: (Math.min(width, height) / 2 - 8) * state.zoom,
+          cx: width / 2,
+          cy: height / 2,
+        };
+  state.view = view;
 
   const ink = css("--ink", "#e3e7ed");
   const muted = css("--muted", "#8f98a4");
@@ -171,6 +197,19 @@ function draw(canvas, data, station) {
       strokePath(ctx, greatCircle(home, spot.at), view);
     }
     ctx.globalAlpha = 1;
+  }
+
+  // The plotted path: brighter and dashed, so it reads as the operator's own
+  // line of inquiry rather than one more spot arc.
+  const target = state.target ? gridToLatLon(state.target) : null;
+  if (home && target) {
+    const far = { lat: target[0], lon: target[1] };
+    ctx.strokeStyle = accent;
+    ctx.lineWidth = 2;
+    ctx.setLineDash([7, 5]);
+    strokePath(ctx, greatCircle(home, far, 128), view);
+    ctx.setLineDash([]);
+    drawMarker(ctx, far.lat, far.lon, view, { color: accent, radius: 4, ring: ink });
   }
 
   const drawn = [];
@@ -265,7 +304,39 @@ export function render(root, { data, el }) {
   }
 
   const redrawNow = () => draw(state.canvas, data, state.station);
-  const parts = [layerRow(el, redrawNow)];
+  state.rerender = () => render(root, { data, el });
+
+  // One row of view controls, one row of layer toggles, all the same chip the
+  // rest of the dashboard uses. The first version scattered three styles of
+  // control around the panel and the operator noticed.
+  const viewRow = el("div", "chips");
+  for (const [label, mode] of [["3D", "globe"], ["2D", "flat"]]) {
+    const chip = el("button", "chip" + (state.mode === mode ? " on" : ""), label);
+    chip.type = "button";
+    chip.setAttribute("aria-pressed", String(state.mode === mode));
+    chip.addEventListener("click", () => {
+      if (state.mode === mode) return;
+      state.mode = mode;
+      // The globe's rotation latitude means nothing to a flat map -- carrying
+      // it over shoved the whole world down the canvas and left a blank band
+      // where the Arctic should be. Centre the equator; panning still works.
+      if (mode === "flat") state.lat0 = 0;
+      remember("map.mode", mode);
+      state.rerender();
+    });
+    viewRow.append(chip);
+  }
+  const plotChip = el("button", "chip" + (state.plotting ? " on" : ""), "PLOT PATH");
+  plotChip.type = "button";
+  plotChip.title = "Draw a great circle from your station to a grid square";
+  plotChip.setAttribute("aria-pressed", String(state.plotting));
+  plotChip.addEventListener("click", () => {
+    state.plotting = !state.plotting;
+    state.rerender();
+  });
+  viewRow.append(plotChip);
+
+  const parts = [viewRow, layerRow(el, redrawNow)];
 
   const holder = el("div", "globe-holder");
   holder.append(state.canvas);
@@ -286,7 +357,9 @@ export function render(root, { data, el }) {
     home.type = "button";
     home.title = "Centre on your station";
     home.addEventListener("click", () => {
-      state.lat0 = station.lat;
+      // Flat centres your longitude only: latitude-centring a world map on a
+      // mid-latitude QTH just pushes a pole off the canvas.
+      state.lat0 = state.mode === "flat" ? 0 : station.lat;
       state.lon0 = station.lon;
       redrawNow();
     });
@@ -297,7 +370,40 @@ export function render(root, { data, el }) {
 
   if (state.error) parts.push(el("p", "error", `world outline: ${state.error}`));
 
-  const locateRow = el("div", "chips");
+  // The path plotter's input, shown while the tool is armed. Typing a grid
+  // and clicking the map are the same action spelled two ways.
+  if (state.plotting) {
+    const plotRow = el("div", "chips");
+    const input = el("input", "pmf-input");
+    input.value = state.target;
+    input.maxLength = 6;
+    input.placeholder = "grid (PM95)";
+    input.addEventListener("change", () => {
+      const typed = input.value.trim().toUpperCase();
+      if (typed && !gridToLatLon(typed)) {
+        state.locateMessage = { text: `${typed} is not a grid square`, ok: false };
+      } else {
+        state.target = typed;
+        remember("map.target", typed);
+        state.locateMessage = null;
+      }
+      state.rerender();
+    });
+    plotRow.append(input);
+    if (state.target) {
+      const clear = el("button", "chip", "CLEAR");
+      clear.type = "button";
+      clear.addEventListener("click", () => {
+        state.target = "";
+        remember("map.target", "");
+        state.rerender();
+      });
+      plotRow.append(clear);
+    }
+    plotRow.append(el("span", "count", "…or click the map to drop the far end"));
+    parts.push(plotRow);
+  }
+
   const blocked = unavailableReason();
   const findChip = el("button", "chip", "FIND MY GRID");
   findChip.type = "button";
@@ -321,7 +427,7 @@ export function render(root, { data, el }) {
     }
     render(root, { data, el });
   });
-  locateRow.append(findChip);
+  viewRow.append(findChip);
 
   if (station.overridden) {
     const clearChip = el("button", "chip", "USE CONFIG QTH");
@@ -331,9 +437,8 @@ export function render(root, { data, el }) {
       state.locateMessage = null;
       render(root, { data, el });
     });
-    locateRow.append(clearChip);
+    viewRow.append(clearChip);
   }
-  parts.push(locateRow);
 
   if (blocked) {
     parts.push(el("p", "empty", `location unavailable: ${blocked}`));
@@ -343,18 +448,52 @@ export function render(root, { data, el }) {
     );
   }
 
+  const home = station.located ? { lat: station.lat, lon: station.lon } : null;
+
+  // The plotted path's numbers: both units (miles because US-first, km because
+  // every distance record and contest exchange uses them), both bearings
+  // (long path is a real choice on HF, not trivia).
+  const targetAt = state.target ? gridToLatLon(state.target) : null;
+  if (targetAt && home) {
+    const p = pathTo(home, targetAt[0], targetAt[1]);
+    parts.push(
+      el(
+        "p",
+        "count",
+        `${station.grid ? String(station.grid).toUpperCase() : "QTH"} → ${state.target} · ` +
+          `${Math.round(p.km)} km / ${Math.round(p.miles)} mi · ` +
+          `short ${Math.round(p.bearing)}° ${p.compass} · long ${Math.round(p.bearing_long)}°`,
+      ),
+    );
+  } else if (targetAt && !home) {
+    parts.push(
+      el("p", "empty", "path plotted once your station has a grid — set [station] grid or FIND MY GRID"),
+    );
+  }
+
   const count = collectPoints(data).length;
   const aurora = data.aurora?.data;
   const sel = state.selected;
+  // A selected spot answers "how far was that" right where the question is
+  // asked, from wherever the station actually is -- a GPS fix included.
+  const selPath = sel && home ? pathTo(home, sel.at.lat, sel.at.lon) : null;
   parts.push(
     el(
       "p",
       "count",
       sel
-        ? `${sel.call} · ${sel.entity ?? "?"} · ${sel.band ?? ""} ${sel.mode ?? ""}`.trim()
+        ? [
+            `${sel.call} · ${sel.entity ?? "?"} · ${sel.band ?? ""} ${sel.mode ?? ""}`.trim(),
+            selPath
+              ? `${Math.round(selPath.km)} km / ${Math.round(selPath.miles)} mi · ` +
+                `${Math.round(selPath.bearing)}° ${selPath.compass}`
+              : "",
+          ]
+            .filter(Boolean)
+            .join(" · ")
         : `${count} stations plotted${
             aurora?.peak_probability ? ` · aurora peak ${aurora.peak_probability}%` : ""
-          } · drag to rotate`,
+          } · ${state.mode === "flat" ? "drag to pan" : "drag to rotate"}`,
     ),
   );
 
@@ -378,9 +517,14 @@ function attachControls(canvas) {
     const dy = event.offsetY - state.dragging.y;
     if (Math.abs(dx) + Math.abs(dy) > 2) state.dragging.moved = true;
 
-    const scale = 0.35 / state.zoom;
-    state.lon0 = (((state.lon0 ?? 0) - dx * scale + 540) % 360) - 180;
-    state.lat0 = Math.max(-89, Math.min(89, (state.lat0 ?? 0) + dy * scale));
+    // Flat pans at the map's own scale (degrees per pixel comes from the
+    // view), so the world moves with the pointer instead of at globe speed.
+    const view = state.view;
+    const scaleX = view?.flat ? 180 / view.halfW : 0.35 / state.zoom;
+    const scaleY = view?.flat ? 90 / view.halfH : 0.35 / state.zoom;
+    const latCap = view?.flat ? 60 : 89;
+    state.lon0 = (((state.lon0 ?? 0) - dx * scaleX + 540) % 360) - 180;
+    state.lat0 = Math.max(-latCap, Math.min(latCap, (state.lat0 ?? 0) + dy * scaleY));
     state.dragging.x = event.offsetX;
     state.dragging.y = event.offsetY;
     redraw();
@@ -388,6 +532,18 @@ function attachControls(canvas) {
 
   const release = (event) => {
     if (state.dragging && !state.dragging.moved) {
+      if (state.plotting && state.view) {
+        // The plot tool is armed: a click drops the path's far end, at
+        // 4-character precision -- a click is not a 6-character gesture.
+        const at = unproject(event.offsetX, event.offsetY, state.view);
+        if (at) {
+          state.target = latLonToGrid(at.lat, at.lon, 4);
+          remember("map.target", state.target);
+          state.dragging = null;
+          state.rerender?.();
+          return;
+        }
+      }
       // A click, not a drag: select the nearest plotted station.
       const hit = nearest(event.offsetX, event.offsetY);
       state.selected = hit && hit !== state.selected ? hit : null;

@@ -429,6 +429,56 @@ const BASE = `http://127.0.0.1:${PORT}/`;
   }
   console.log(`  pathmuf: ${pmfCells} cells, ${pmfOpen} open`);
 
+  // --- the 2D map draws a world, and the path plotter tells the truth ------
+  // Still on the Map tab. Switching to the flat projection must actually
+  // paint one: a projection bug renders a clean empty rectangle with no
+  // console error, so the check is pixel diversity, not absence of failure.
+  // Then the plotted path's distance is compared against 9408 km -- the
+  // DM79 -> PM95 great circle computed independently in Python when this
+  // check was written, not by the code under test. (The first constant was
+  // 9376, from mis-centring PM95 at 139.5°E instead of 139.0; the check
+  // caught its own author's arithmetic before it caught anything else.)
+  const mapPanel = '#grid .panel[data-panel="map"]';
+  await page.click(`${mapPanel} .chip:text-is("2D")`);
+  await page.waitForTimeout(600);
+  const painted = await page.$eval(`${mapPanel} canvas`, (canvas) => {
+    const ctx = canvas.getContext('2d');
+    const { data } = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    let diff = 0;
+    const [r0, g0, b0] = [data[0], data[1], data[2]];
+    for (let i = 0; i < data.length; i += 40) {
+      const delta =
+        Math.abs(data[i] - r0) + Math.abs(data[i + 1] - g0) + Math.abs(data[i + 2] - b0);
+      if (delta > 30) diff += 1;
+    }
+    return diff;
+  });
+  if (painted < 500) {
+    problems.push(
+      `2D map: only ${painted} sampled pixels differ from the corner -- a blank projection`,
+    );
+  }
+  await page.click(`${mapPanel} .chip:text-is("PLOT PATH")`);
+  await page.waitForTimeout(300);
+  await page.fill(`${mapPanel} .pmf-input`, 'PM95');
+  await page.press(`${mapPanel} .pmf-input`, 'Enter');
+  await page.waitForTimeout(500);
+  const pathText = await page.$$eval(`${mapPanel} p.count`, (els) =>
+    els.map((e) => e.textContent).find((t) => t.includes('km /')) ?? '');
+  const km = Number((pathText.match(/(\d+) km/) || [])[1]);
+  if (!km || Math.abs(km - 9408) > 30) {
+    problems.push(`plot path: DM79 -> PM95 should read ~9408 km, got "${pathText}"`);
+  }
+  if (!/short \d+°/.test(pathText) || !/long \d+°/.test(pathText)) {
+    problems.push(`plot path: caption is missing bearings: "${pathText}"`);
+  }
+  console.log(`  map tools: 2D painted ${painted} samples, path reads ${km} km`);
+  // Put the panel back the way the screenshots expect it.
+  await page.click(`${mapPanel} .chip:text-is("CLEAR")`);
+  await page.click(`${mapPanel} .chip:text-is("PLOT PATH")`);
+  await page.click(`${mapPanel} .chip:text-is("3D")`);
+  await page.waitForTimeout(300);
+
   // --- customization survives a reload -----------------------------------
   // Hide a panel, move another, reload the page cold, and demand both stuck.
   // The property being tested is persistence, so the reload is the test: an

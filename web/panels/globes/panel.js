@@ -20,6 +20,7 @@
 // a cluster of dots hugging the terminator on 40 m IS the story.
 
 import { gridToLatLon } from "../../lib/callsign.js";
+import { effectiveStation } from "../../lib/geolocate.js";
 import { subsolarPoint, terminatorRing } from "../../lib/solar.js";
 import {
   drawMarker,
@@ -121,6 +122,8 @@ function drawBandGlobe(canvas, spots, color, home, sun, terminator) {
 }
 
 export function render(root, { data, station, el }) {
+  // "Open from here" follows a browser-side GPS fix, same as the map.
+  station = effectiveStation(data.station?.data ?? station ?? {});
   if (!state.world && !state.loading) {
     state.loading = true;
     fetch("./world.json")

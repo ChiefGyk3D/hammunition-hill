@@ -24,6 +24,7 @@
 
 import { distance, recall, remember } from "../../lib/format.js";
 import { gridToLatLon, latLonToGrid, pathTo, prefixTable } from "../../lib/callsign.js";
+import { effectiveStation } from "../../lib/geolocate.js";
 
 const state = { query: recall("callsign.last", ""), table: null , endpoint: undefined, endpointResult: null, timer: 0 };
 
@@ -162,7 +163,10 @@ export function render(root, { data, el }) {
   }
   if (!state.table) state.table = prefixTable(prefixes);
 
-  const station = data.station?.data ?? {};
+  // GPS-aware: a browser-side fix (FIND MY GRID on the map) moves the
+  // origin these bearings and distances are measured from. "How far was
+  // that" means from where you are, not from where config says home is.
+  const station = effectiveStation(data.station?.data ?? {});
   const worked = data.log?.data?.worked ?? null;
   const lookups = data.lookups?.data ?? null;
 

@@ -19,6 +19,7 @@
 // that is normal.
 
 import { gridToLatLon, pathTo } from "../../lib/callsign.js";
+import { effectiveStation } from "../../lib/geolocate.js";
 import { recall, remember } from "../../lib/format.js";
 import { MAX_PATH_KM, MIN_PATH_KM, pathMuf } from "../../lib/muf.js";
 
@@ -45,6 +46,9 @@ function cellClass(mhz, muf) {
 }
 
 export function render(root, { data, station, el }) {
+  // The path starts from where the operator actually is: a browser-side
+  // GPS fix overrides the configured QTH, same as the map.
+  station = effectiveStation(data.station?.data ?? station ?? {});
   const payload = data.propagation?.data;
   const sfi = payload?.sfi;
   if (sfi == null) {

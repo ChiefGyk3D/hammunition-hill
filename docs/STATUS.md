@@ -110,7 +110,8 @@ Ten are **tier 0** — they work with the internet unplugged: `bandplan`,
 
 | Feature | Status | Notes |
 |---|---|---|
-| Rotatable globe with greyline | ✅ | Orthographic projection on 2D canvas. No WebGL, no library. |
+| Rotatable globe with greyline | ✅ | Orthographic projection on 2D canvas. No WebGL, no library. A 2D equirectangular mode shares the same projection dispatch |
+| Path plotter with distance and bearings | ✅ | Grid square typed or clicked on the map; km and miles, short and long path, from the configured grid or a browser GPS fix. Selected spots answer "how far was that" the same way |
 | Band globes | ✅ | One small sphere per band with activity, greyline on each, drawn from your own cluster spots and WSJT-X decodes. Appear and disappear with the bands — a fixed six would show dead spheres at 3 AM and hide a 6 m opening at noon |
 | Spots on the map with great-circle arcs | ✅ | |
 | Aurora oval as a globe layer | ✅ | |
