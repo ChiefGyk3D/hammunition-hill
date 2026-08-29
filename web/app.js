@@ -83,6 +83,9 @@ function resetLayout(dash) {
 }
 
 let editing = false;
+// The panel id being dragged in customize mode, module-level because the
+// dragover fires on the panel under the pointer, not the one that started.
+let dragged = null;
 
 function buildTabs(dashboards, active, onPick) {
   const bar = el("nav", "tabs");
@@ -355,7 +358,9 @@ async function main() {
         el(
           "span",
           "edit-hint",
-          "Arrange this dashboard. Changes live in this browser only — each display keeps its own.",
+          "Drag panels where you want them, or use the arrows. Changes live in this " +
+            "browser only — each display keeps its own. Everything else is config.toml " +
+            "on the server; there is no settings page, by design.",
         ),
       );
       if (layout.hidden.length) {
@@ -431,6 +436,49 @@ async function main() {
         });
         controls.append(earlier, later, hide);
         frame?.querySelector(".panel-head")?.append(controls);
+
+        // Drag a panel where you want it. The arrows shipped first and were
+        // technically sufficient, and the operator's actual words were "I
+        // can't move things around" -- twice. Grabbing the thing you want to
+        // move is the gesture people try before they hunt for buttons, so it
+        // has to be the gesture that works. HTML5 DnD, no library: the drop
+        // reorders layout.order and re-shows, exactly what an arrow does.
+        if (frame) {
+          frame.draggable = true;
+          frame.addEventListener("dragstart", (event) => {
+            dragged = panelId;
+            frame.classList.add("dragging");
+            event.dataTransfer.effectAllowed = "move";
+            // Some browsers refuse to start a drag with no payload.
+            event.dataTransfer.setData("text/plain", panelId);
+          });
+          frame.addEventListener("dragend", () => {
+            dragged = null;
+            for (const p of GRID.querySelectorAll(".panel")) {
+              p.classList.remove("dragging", "drop-target");
+            }
+          });
+          frame.addEventListener("dragover", (event) => {
+            if (!dragged || dragged === panelId) return;
+            event.preventDefault();
+            event.dataTransfer.dropEffect = "move";
+            frame.classList.add("drop-target");
+          });
+          frame.addEventListener("dragleave", () => frame.classList.remove("drop-target"));
+          frame.addEventListener("drop", (event) => {
+            if (!dragged || dragged === panelId) return;
+            event.preventDefault();
+            const from = layout.order.indexOf(dragged);
+            layout.order.splice(from, 1);
+            // Dropping on the upper half lands before the target, lower half
+            // after -- the same reading-order the packer lays out.
+            const rect = frame.getBoundingClientRect();
+            const after = event.clientY > rect.top + rect.height / 2 ? 1 : 0;
+            layout.order.splice(layout.order.indexOf(panelId) + after, 0, dragged);
+            saveLayout(dash, layout);
+            show(id);
+          });
+        }
       }
     }
 

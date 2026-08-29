@@ -204,8 +204,17 @@ def test_a_panel_whose_source_ships_disabled_does_not_claim_to_be_waiting():
         # its guard `if (!events)` -- the message this test exists to catch,
         # invisible to it. code_only because the fix for an offender names the
         # phrase in a comment explaining why it is not used.
-        if "waiting for the first collector" in code_only(directory / "panel.js"):
+        source_text = code_only(directory / "panel.js")
+        if "waiting for the first collector" in source_text:
             offenders.append(f"{directory.name} (sources: {sources})")
+        # The phrase varies -- "waiting for the first spots", "waiting for the
+        # cluster connection" -- so the general rule: a panel none of whose
+        # sources ship enabled may only promise a wait if it can also say "not
+        # configured", which is the evidence it distinguishes a quiet source
+        # from an absent one. RBN promised spots from a receiver nobody had
+        # switched on; the wait it described could not end.
+        elif "waiting for" in source_text and "configured" not in source_text:
+            offenders.append(f"{directory.name} (sources: {sources}, waits but cannot say why)")
 
     assert not offenders, (
         "these panels claim to be waiting for a collector cycle that the default "

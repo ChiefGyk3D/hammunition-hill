@@ -38,8 +38,24 @@ function snrClass(db) {
 
 export function render(root, { data, el }) {
   const snapshot = data.rbn;
-  if (!snapshot?.data) {
-    root.replaceChildren(el("p", "empty", "waiting for the first spots…"));
+  // Absent snapshot vs empty snapshot is the honest split: a configured
+  // stream writes one (data or failure) soon after startup, an unconfigured
+  // one never will, and "waiting for the first spots" from a receiver nobody
+  // switched on is a wait that cannot end.
+  if (!snapshot) {
+    root.replaceChildren(
+      el("p", "empty", "no RBN source configured — your callsign turns it on, see docs/RBN.md"),
+    );
+    return;
+  }
+  if (!snapshot.data) {
+    root.replaceChildren(
+      el(
+        "p",
+        snapshot.error ? "error" : "empty",
+        snapshot.error ? `stream failed: ${snapshot.error}` : "waiting for the first spots…",
+      ),
+    );
     return;
   }
   const payload = snapshot.data;

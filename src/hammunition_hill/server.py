@@ -336,6 +336,19 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         if self.path.startswith(DATA_PREFIX):
             # Snapshots change; never let a proxy or the browser pin one.
             self.send_header("Cache-Control", "no-store")
+        else:
+            # The app itself must revalidate too. With no Cache-Control at
+            # all, browsers cache heuristically -- roughly 10% of the file's
+            # age -- and the intended deployment is a wall display that stays
+            # up for weeks. After one upgrade, that browser was running
+            # week-old panel code against new snapshots: the operator saw
+            # tabs that had been removed and a customize mode that had been
+            # fixed, and no amount of reloading helped, because the reload
+            # itself was served from cache. no-cache (unlike no-store) still
+            # allows conditional requests: SimpleHTTPRequestHandler answers
+            # If-Modified-Since with 304, so an unchanged file costs a
+            # round-trip on the LAN, not a re-download.
+            self.send_header("Cache-Control", "no-cache")
         super().end_headers()
 
     def list_directory(self, path: str) -> None:  # type: ignore[override]

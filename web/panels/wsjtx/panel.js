@@ -17,9 +17,17 @@ function snrClass(snr) {
 }
 
 export function render(root, { data, el }) {
-  const payload = data.wsjtx?.data;
+  // "No broadcast heard" implies something is listening. Without a
+  // [[sources]] entry nothing is, and the snapshot's absence is how we know.
+  if (!data.wsjtx) {
+    root.replaceChildren(
+      el("p", "empty", "no WSJT-X source configured — see config.example.toml"),
+    );
+    return;
+  }
+  const payload = data.wsjtx.data;
   if (!payload) {
-    root.replaceChildren(el("p", "empty", "no WSJT-X broadcast heard"));
+    root.replaceChildren(el("p", "empty", "listening — no WSJT-X broadcast heard yet"));
     return;
   }
 

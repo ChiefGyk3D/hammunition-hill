@@ -11,7 +11,15 @@
 import { khz } from "../../lib/format.js";
 
 export function render(root, { data, el }) {
-  const state = data.rig?.data;
+  // "Not connected" implies a connection was attempted. Without a
+  // [[sources]] entry it never was; the missing snapshot is the difference.
+  if (!data.rig) {
+    root.replaceChildren(
+      el("p", "empty", "no rig source configured — rigctld, see config.example.toml"),
+    );
+    return;
+  }
+  const state = data.rig.data;
   if (!state) {
     root.replaceChildren(el("p", "empty", "rigctld not connected"));
     return;

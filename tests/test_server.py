@@ -65,6 +65,41 @@ def test_snapshots_are_never_cached(live):
         assert response.headers["Cache-Control"] == "no-store"
 
 
+def test_the_app_itself_must_revalidate(live):
+    """Static files carry no-cache, because the deployment is a wall display.
+
+    With no Cache-Control at all, browsers cache heuristically -- about 10% of
+    the file's age -- and a kiosk browser that has been up for weeks kept
+    running old panel code after an upgrade, reload included: the reload was
+    served from its own cache. The operator saw tabs that had been removed and
+    a bug that had been fixed. no-cache forces revalidation without forbidding
+    the 304 path that makes revalidation cheap.
+    """
+    base, _ = live
+    with get(f"{base}/") as response:
+        assert response.headers["Cache-Control"] == "no-cache"
+    with get(f"{base}/index.html") as response:
+        assert response.headers["Cache-Control"] == "no-cache"
+
+
+def test_revalidation_is_a_304_not_a_redownload(live):
+    """The cheap half of the no-cache promise: unchanged files answer 304."""
+    base, _ = live
+    with get(f"{base}/index.html") as response:
+        stamp = response.headers["Last-Modified"]
+        assert stamp
+
+    request = urllib.request.Request(  # noqa: S310 - fixed http scheme
+        f"{base}/index.html", headers={"If-Modified-Since": stamp}
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=5) as response:  # noqa: S310
+            status = response.status
+    except urllib.error.HTTPError as err:
+        status = err.code
+    assert status == 304
+
+
 @pytest.mark.parametrize(
     "path",
     [
