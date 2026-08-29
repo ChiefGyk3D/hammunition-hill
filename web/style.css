@@ -995,6 +995,7 @@ ul.wx-alerts { list-style: none; margin: 0; padding: 0; }
 /* --- customize mode ---------------------------------------------------- */
 .tab-edit { margin-left: auto; color: var(--muted); }
 .tab-edit.on { color: var(--accent); }
+.tab-about { color: var(--muted); }
 .edit-bar {
   grid-column: 1 / -1;
   /* Spans the 8px lattice like a panel; app.js measures it. The default covers
