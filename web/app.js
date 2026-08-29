@@ -154,7 +154,16 @@ function repack() {
       : Math.min(Number(item.style.getPropertyValue("--span")) || 1, cols);
     // Natural content height: align-items: start means placement never
     // stretches an item, so measuring here cannot feed back into itself.
-    const height = item.getBoundingClientRect().height;
+    //
+    // offsetHeight, NOT getBoundingClientRect().height. The TV tiers apply
+    // body{zoom}, and the two measure in different spaces: rects come back
+    // zoomed while the lattice values above (8px, 12px) and offsetHeight do
+    // not. Measured on a 3840px viewport at zoom 1.9: offsetHeight 172,
+    // rect 326.7. Dividing a zoomed height by unzoomed tracks handed every
+    // panel 1.9x the rows it needed, and the wall display -- the layout's
+    // whole reason for the zoom tiers -- rendered each panel trailing a
+    // void nearly its own height.
+    const height = item.offsetHeight;
     const rows = Math.max(1, Math.ceil((height + gap) / (row + gap)));
 
     let bestStart = 0;

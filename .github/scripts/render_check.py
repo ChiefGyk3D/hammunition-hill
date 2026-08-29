@@ -461,6 +461,42 @@ const BASE = `http://127.0.0.1:${PORT}/`;
   }
   console.log('  customize: hide, reorder, reload, reset ok');
 
+  // The three rooms the stylesheet promises: phone, laptop, TV. Only the
+  // laptop width was ever rendered, and the TV tier shipped broken -- the
+  // zoom put getBoundingClientRect in a different coordinate space from the
+  // grid lattice, every panel got ~1.9x the rows it needed, and each one
+  // trailed a void nearly its own height. Two checks per size, both of which
+  // that bug fails: no sideways scroll, and every panel's assigned row span
+  // agrees with the height the packer should have derived for it.
+  for (const size of [{ w: 390, h: 844, name: 'phone' }, { w: 3840, h: 2160, name: 'tv-4k' }]) {
+    await page.setViewportSize({ width: size.w, height: size.h });
+    await page.waitForTimeout(700);
+    const layout = await page.evaluate(() => {
+      const doc = document.documentElement;
+      const style = getComputedStyle(document.querySelector('#grid'));
+      const row = parseFloat(style.gridAutoRows) || 8;
+      const gap = parseFloat(style.rowGap) || 12;
+      const wrong = [];
+      for (const panel of document.querySelectorAll('#grid .panel')) {
+        // One backslash: DRIVER is a raw string, so what is written here is
+        // exactly what the JS engine sees. \\d arrived as a regex for a
+        // literal backslash, matched nothing, and flagged every panel.
+        const span = Number((panel.style.gridRow.match(/span (\d+)/) || [])[1]);
+        const need = Math.max(1, Math.ceil((panel.offsetHeight + gap) / (row + gap)));
+        if (!span || Math.abs(span - need) > 1) {
+          wrong.push(`${panel.dataset.panel}: spans ${span || 'auto'} rows, needs ${need}`);
+        }
+      }
+      return { overflow: doc.scrollWidth - doc.clientWidth, wrong };
+    });
+    if (layout.overflow > 0) {
+      problems.push(`${size.name}: page scrolls sideways by ${layout.overflow}px`);
+    }
+    for (const line of layout.wrong) problems.push(`${size.name}: ${line}`);
+    const verdict = layout.wrong.length ? 'span drift' : 'packed sanely';
+    console.log(`  ${size.name}: ${verdict}, overflow ${layout.overflow}px`);
+  }
+
   await browser.close();
 
   if (problems.length) {

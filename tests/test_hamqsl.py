@@ -46,6 +46,27 @@ async def test_scalar_fields():
     assert data["geomagfield"] == "QUIET"
 
 
+@pytest.mark.parametrize(
+    "served,shown",
+    [
+        ("UNSETTLD", "UNSETTLED"),
+        ("VR QUIET", "VERY QUIET"),
+        ("QUIET", "QUIET"),
+        ("MAJSTORM", "MAJSTORM"),  # unrecognised: verbatim beats a guessed word
+    ],
+)
+async def test_geomagfield_expands_hamqsls_eight_character_truncations(served, shown):
+    """HamQSL caps the field at eight characters and the panel prints it.
+
+    "unsettld" on the wall reads as our typo, not their field width. Only
+    forms observed live are expanded; anything else passes through, because a
+    wrong expansion is worse than a truncated one.
+    """
+    body = SAMPLE.replace(">QUIET</geomagfield>", f">{served}</geomagfield>")
+    data = await fetch(body)
+    assert data["geomagfield"] == shown
+
+
 async def test_band_conditions_keep_publication_order():
     """Low band to high, the way an operator reads them.
 

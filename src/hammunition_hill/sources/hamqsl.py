@@ -68,6 +68,18 @@ class HamQslSource:
 
         result: dict[str, Any] = {field: _text(data, field) for field in _FIELDS}
 
+        # HamQSL truncates <geomagfield> to eight characters, and the panel
+        # prints it: "unsettld" and "vr quiet" both reached the screen looking
+        # like our typo rather than their field width. Expanded here, at
+        # ingest, so every consumer sees the word. Only forms observed live
+        # are mapped; anything unrecognised passes through verbatim, because
+        # guessing at expansions is how "MAJSTORM" becomes a wrong word.
+        _GEOMAG = {"VR QUIET": "VERY QUIET", "UNSETTLD": "UNSETTLED"}
+        if result.get("geomagfield"):
+            result["geomagfield"] = _GEOMAG.get(
+                result["geomagfield"].upper(), result["geomagfield"]
+            )
+
         # HF band conditions, as an ordered list rather than a mapping. HamQSL
         # emits these low band to high, which is how operators read them -- and
         # snapshots serialize with sorted keys, so a dict here would come back
