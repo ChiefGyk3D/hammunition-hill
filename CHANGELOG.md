@@ -76,6 +76,23 @@ can steer an outbound one.
 - Debian packaging: `hamhill` installs as a service, with a system user, a
   config in `/etc/hammunition-hill/`, and a hardened systemd unit.
 
+### Fixed
+
+- **`Permissions-Policy: geolocation=()` disabled the dashboard's own
+  geolocation**, not merely embedded content — so **FIND MY GRID** on the map
+  could never work, in any browser, for any operator, and the panel reported a
+  permission denial for a prompt nobody was ever shown. It is `(self)` now;
+  camera, microphone, USB and payment stay fully denied.
+- **The Debian package installed a service it never enabled.** `postinst` used
+  `deb-systemd-helper was-enabled` to tell a first install from an upgrade, and
+  that answered differently on Debian and on Kali. It now uses the argument
+  dpkg already provides, so a first install enables and starts while an upgrade
+  leaves a deliberately stopped service alone.
+- **The packaged config wrote its snapshots under `/etc`**, which the unit
+  makes read-only, so the service crash-looped on its first write. The build
+  rewrites `data_dir` and refuses to produce a package if the line it rewrites
+  is not there.
+
 ### Known limits, stated plainly
 
 - Band plans and exam pools are **US only**. The loaders are generic and the
