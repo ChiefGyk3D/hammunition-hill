@@ -17,6 +17,25 @@ way it does, read [ARCHITECTURE.md](ARCHITECTURE.md) afterwards.
 
 You do *not* need a database, a web server, an account, or an API key.
 
+## Checking it against the real world
+
+`hamhill check` validates the config and the egress policy. `hamhill check
+--fetch` goes further: it fetches every configured source once, through the
+same client, egress guard and parser the collector uses, and prints what came
+back.
+
+```
+  OK        hamqsl             hamqsl     20 field(s): solarflux, aindex, kindex, sunspots
+  OK        pota               pota       104 spots
+  reachable cluster            dxcluster  dxc.nc7j.com:7373
+```
+
+Run it after any config change and before trusting a quiet panel. "The host
+resolves" and "this program still understands the answer" rot separately, and
+only the second shows up as a panel that is silently empty. Imagery tiles are
+deliberately not probed: those are tier 2, fetched by each viewer's browser,
+and absent from the collector's allowlist on purpose.
+
 ## Install
 
 Four ways in. On Debian or a Debian derivative the package is the shortest
