@@ -37,7 +37,19 @@ _EOH = re.compile(r"<EOH>", re.IGNORECASE)
 _EOR = re.compile(r"<EOR>", re.IGNORECASE)
 
 # Fields we keep. An ADIF record can carry a hundred; we need five.
-_WANTED = frozenset({"CALL", "BAND", "MODE", "SUBMODE", "QSO_DATE", "QSL_RCVD", "LOTW_QSL_RCVD"})
+_WANTED = frozenset(
+    {"CALL", "BAND", "MODE", "SUBMODE", "QSO_DATE", "QSL_RCVD", "LOTW_QSL_RCVD", "STATE"}
+)
+
+# The fifty states, and only those: Worked All States is a US award, and the
+# ADIF STATE field also carries VE provinces and JA prefectures. Counting
+# Ontario toward WAS would be flattering and wrong. DC is deliberately
+# absent -- ARRL counts it as Maryland for WAS.
+US_STATES = frozenset(
+    "AL AK AZ AR CA CO CT DE FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS "
+    "MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV "
+    "WI WY".split()
+)
 
 # Modes that count as the same slot for award purposes. An operator chasing
 # DXCC on "digital" does not care whether it was FT8 or RTTY, and one chasing
@@ -129,6 +141,8 @@ class LogIndex:
     entity_mode: set[tuple[str, str]] = field(default_factory=set)
     entity_band_mode: set[tuple[str, str, str]] = field(default_factory=set)
     confirmed_entities: set[str] = field(default_factory=set)
+    states: set[str] = field(default_factory=set)
+    confirmed_states: set[str] = field(default_factory=set)
     qso_count: int = 0
     unresolved: int = 0
 
@@ -194,6 +208,15 @@ def build_index(text: str, table: PrefixTable) -> LogIndex:
         if not call:
             continue
         index.qso_count += 1
+
+        # States are indexed before entity resolution on purpose: a portable
+        # call the prefix table cannot place still worked Colorado if the log
+        # says so, and WAS credit rides on the log, not on the lookup.
+        state = record.get("STATE", "").upper()
+        if state in US_STATES:
+            index.states.add(state)
+            if _is_confirmed(record):
+                index.confirmed_states.add(state)
 
         entity = table.lookup(call)
         if entity is None:

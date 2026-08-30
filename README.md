@@ -61,6 +61,7 @@ finished, so here is exactly where things stand:
 | Space weather dials | ✅ 8 scales |
 | Map — 3D globe / 2D flat, greyline, spots, aurora, path plotting | ✅ working |
 | Watch notifications — watched calls and band openings | ✅ working |
+| DXCC and WAS progress from your ADIF log | ✅ working |
 | Band globes — one sphere per active band, hamdash style | ✅ working |
 | Your log driving spot colouring | ✅ working |
 | DX cluster, WSJT-X, `rigctld` | ✅ working |
