@@ -1,0 +1,53 @@
+#!/bin/sh
+# Create the service account and its state directory, then hand over to
+# systemd. Idempotent throughout: postinst runs again on every upgrade, and a
+# script that only works on a clean machine is a script that breaks upgrades.
+#
+# The systemd calls are written out rather than left to a #DEBHELPER# token,
+# because this package is assembled with dpkg-deb and nothing would ever
+# substitute that token -- it would sit here looking like it did something.
+set -e
+
+USER=hamhill
+STATE=/var/lib/hammunition-hill
+UNIT=hammunition-hill.service
+
+case "$1" in
+  configure)
+    if ! getent passwd "$USER" >/dev/null; then
+      adduser --system --group --no-create-home \
+              --home "$STATE" \
+              --gecos "Hammunition Hill dashboard" \
+              "$USER" >/dev/null
+    fi
+    mkdir -p "$STATE"
+    chown "$USER":"$USER" "$STATE"
+    # The config can carry a lookup API key and always carries a callsign; it
+    # is not for every account on the machine to read.
+    if [ -f /etc/hammunition-hill/config.toml ]; then
+      chown root:"$USER" /etc/hammunition-hill/config.toml
+      chmod 0640 /etc/hammunition-hill/config.toml
+    fi
+
+    if [ -d /run/systemd/system ]; then
+      systemctl daemon-reload >/dev/null 2>&1 || true
+      if [ -x /usr/bin/deb-systemd-helper ]; then
+        deb-systemd-helper unmask "$UNIT" >/dev/null 2>&1 || true
+        # enable, not enable --now, and only on first install: re-enabling on
+        # every upgrade would undo an operator's deliberate `systemctl disable`.
+        if deb-systemd-helper --quiet was-enabled "$UNIT"; then
+          deb-systemd-helper enable "$UNIT" >/dev/null 2>&1 || true
+        else
+          deb-systemd-helper update-state "$UNIT" >/dev/null 2>&1 || true
+        fi
+      fi
+      if [ -x /usr/bin/deb-systemd-invoke ]; then
+        deb-systemd-invoke restart "$UNIT" >/dev/null 2>&1 || true
+      fi
+    fi
+    ;;
+  abort-upgrade|abort-remove|abort-deconfigure)
+    ;;
+esac
+
+exit 0

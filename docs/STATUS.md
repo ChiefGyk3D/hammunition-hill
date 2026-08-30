@@ -42,7 +42,7 @@ have. Where the two disagree, this page is the one kept current.
 | Licence exam practice | ✅ all three US pools, five study modes |
 | Prometheus metrics endpoint | ✅ working, off by default |
 | Opaque image mode | ✅ per-tile: the collector fetches, the browser never does |
-| Packaging | ✅ Docker image and a bare `pip install` both serve the dashboard; distro packages ❌ |
+| Packaging | ✅ Debian `.deb`, Docker image, and a bare `pip install` — all three serve the dashboard |
 | CI, CodeQL, dependency audit | ✅ working |
 
 ---
@@ -64,13 +64,13 @@ The parts everything else sits on.
 | `hamhill serve` / `check` / `setup` / `fcc-import` | ✅ | `setup` is the guided config: every question that would send the callsign says so first |
 | Config validation with actionable errors | ✅ | |
 | Tests | ✅ | Suite green with warnings as errors across 3.11–3.13; ruff clean. No count here on purpose — a hand-edited total rots by design, and this one did. |
-| CI | ✅ | Ten jobs, plus CodeQL in its own workflow: lint, pytest across 3.11–3.13 on x86, ARM and macOS, example-config validation, an end-to-end smoke test, a real-browser render of every dashboard, dependency audit, wheel build, a weekly upstream-liveness check, and a container build that must serve the dashboard. |
+| CI | ✅ | Eleven jobs, plus CodeQL in its own workflow: lint, pytest across 3.11–3.13 on x86, ARM and macOS, example-config validation, an end-to-end smoke test, a real-browser render of every dashboard, dependency audit, wheel build, a weekly upstream-liveness check, a container build that must serve the dashboard, and a Debian package that must install into a trixie container and serve from /usr/bin. |
 | CodeQL | ✅ | Python and JavaScript, weekly and per-PR. |
 | Dependabot | ✅ | Actions and pip, weekly. |
 | Tests cannot reach the network | ✅ | Enforced by a conftest guard, not convention. |
 | `make check` reproduces CI locally | ✅ | |
 | Docker image | ✅ | Built and exercised in CI: the container must serve the dashboard before anything merges. |
-| Distro packages | ❌ | |
+| Distro packages | ✅ | A Debian `.deb`: distro dependencies, a hardened systemd unit, a conffile, and a service account. Built by `packaging/debian/build.sh`, installed and served in CI on trixie, and installed by hand on Debian 13 before 1.0 |
 
 ## Sources
 
@@ -221,9 +221,15 @@ Ten are **tier 0** — they work with the internet unplugged: `bandplan`,
 
 ## Roadmap order
 
-What is actually being worked on, in order:
+1.0 shipped, which empties this list. What went into it, in the order it was
+done: the live endpoint check (`hamhill check --fetch`, run against every
+configured upstream on real hardware), release machinery with a tag that
+refuses to disagree with the tree behind it, and the **Debian package** — the
+last thing this section listed.
 
-1. **Distro packages**, now that the container and the bare wheel both work.
+What comes after 1.0 is not decided. The candidate list below is the pool,
+and an operator running it on real hardware and reporting what breaks is
+worth more to 1.1 than any of it.
 
 **Decided 2026-08-29: 1.0 is US-first.** International band plans and exam
 pools come off the roadmap and into the contributions column: the US plan,
@@ -238,10 +244,10 @@ The honest VOACAP substitute shipped as MINIMUF 3.5 (the DX Path panel);
 VOACAP itself — reliability and signal level, not just the MUF — stays in
 the candidate list below until someone bundles ITSHFBC.
 
-Everything the roadmap listed before this — the query endpoint, packaging,
-opaque image mode, Part 97 beside the exam answers, RBN, satellites, the
-Prometheus exporter — has shipped; the tables above are the record of what
-each actually does.
+Everything the roadmap has ever listed — the query endpoint, packaging in all
+three forms, opaque image mode, Part 97 beside the exam answers, RBN,
+satellites, the Prometheus exporter, distro packages — has shipped; the tables
+above are the record of what each actually does.
 
 Smaller items are listed in [PARITY.md](PARITY.md).
 

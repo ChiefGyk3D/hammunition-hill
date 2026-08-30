@@ -1,0 +1,62 @@
+# Hammunition Hill, as a system service.
+#
+# The hardening below is not decoration. This process makes outbound HTTPS
+# requests to hosts an operator listed, writes JSON into one directory, and
+# serves those files back. Everything else it could theoretically do is
+# something it should be prevented from doing, because the value of a
+# defence-in-depth boundary is precisely that it holds when the code above it
+# is wrong.
+[Unit]
+Description=Hammunition Hill — local-first ham radio dashboard
+Documentation=https://github.com/ChiefGyk3D/hammunition-hill
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=hamhill
+Group=hamhill
+ExecStart=/usr/bin/hamhill --config /etc/hammunition-hill/config.toml serve
+Restart=on-failure
+RestartSec=10
+
+# The dashboard is useless without its snapshots, and snapshots are written
+# atomically, so a restart mid-write loses nothing.
+StateDirectory=hammunition-hill
+
+# It needs to bind one port and write one directory. Nothing else.
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+ProtectProc=invisible
+RestrictSUIDSGID=true
+RestrictRealtime=true
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=true
+RemoveIPC=true
+# INET and INET6 for upstreams and the listener; UNIX because the resolver
+# talks to nscd/systemd-resolved over a unix socket on some systems, and
+# dropping it turns every DNS lookup into a failure that looks like a dead
+# upstream.
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+CapabilityBoundingSet=
+AmbientCapabilities=
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+ReadWritePaths=/var/lib/hammunition-hill
+
+# A dashboard is not worth an OOM kill of something that matters.
+OOMPolicy=stop
+
+[Install]
+WantedBy=multi-user.target

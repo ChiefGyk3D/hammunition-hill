@@ -1,0 +1,34 @@
+#!/bin/sh
+# On purge, take the state directory and the service account with it. On
+# remove, leave both: an operator removing the package to reinstall it should
+# not lose their snapshots, and Debian policy draws that line at purge.
+set -e
+
+USER=hamhill
+STATE=/var/lib/hammunition-hill
+UNIT=hammunition-hill.service
+
+case "$1" in
+  purge)
+    if [ -x /usr/bin/deb-systemd-helper ]; then
+      deb-systemd-helper purge "$UNIT" >/dev/null 2>&1 || true
+      deb-systemd-helper unmask "$UNIT" >/dev/null 2>&1 || true
+    fi
+    rm -rf "$STATE"
+    rm -rf /etc/hammunition-hill
+    if getent passwd "$USER" >/dev/null; then
+      deluser --system "$USER" >/dev/null 2>&1 || true
+    fi
+    ;;
+  remove)
+    if [ -x /usr/bin/deb-systemd-helper ]; then
+      deb-systemd-helper mask "$UNIT" >/dev/null 2>&1 || true
+    fi
+    ;;
+esac
+
+if [ -d /run/systemd/system ]; then
+  systemctl daemon-reload >/dev/null 2>&1 || true
+fi
+
+exit 0

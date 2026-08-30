@@ -265,6 +265,66 @@ jobs:
           path: dist/
           retention-days: 7
 
+  debian:
+    name: debian package installs and serves
+    # A Debian container on the runner, because the package's promises are
+    # about a Debian filesystem: the service account, the conffile, the state
+    # directory, and the dependency names. Testing it on the runner's own
+    # Ubuntu would test a different set of package names.
+    #
+    # This job exists because the first build of this package crash-looped on
+    # a real install -- data_dir resolved under /etc, which the unit makes
+    # read-only -- and nothing in the tree could have caught that.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    container:
+      image: debian:trixie-slim
+      # The service is exercised with hamhill directly rather than systemd,
+      # which does not run in a container. The systemd unit is checked
+      # statically by tests/test_packaging.py and by hand on a real machine.
+      options: --user root
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: build the package
+        run: |
+          set -eux
+          apt-get update -qq
+          apt-get install -y -qq --no-install-recommends python3 dpkg-dev gzip
+          ./packaging/debian/build.sh dist
+          ls -l dist/*.deb
+      - name: install it, dependencies and all
+        run: |
+          set -eux
+          apt-get install -y -qq ./dist/hammunition-hill_*.deb
+          hamhill --version
+      - name: the installed package serves the dashboard
+        # Straight from /usr/bin with the shipped /etc config: this is the
+        # path an operator gets, including the data_dir the package rewrites.
+        run: |
+          set -eux
+          hamhill --config /etc/hammunition-hill/config.toml check --offline
+          hamhill --config /etc/hammunition-hill/config.toml serve &
+          for i in $(seq 1 30); do
+            python3 -c "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8073/',timeout=2)" && break
+            sleep 1
+          done
+          python3 - <<'PY'
+          import urllib.request
+          for path in ("", "app.js", "panels/index.json", "data/morse.json"):
+              url = f"http://127.0.0.1:8073/{path}"
+              body = urllib.request.urlopen(url, timeout=5).read()
+              assert body, f"{url} served nothing"
+              print(f"{url}: {len(body)} bytes")
+          PY
+      - name: the snapshots landed where the package says they do
+        run: |
+          set -eux
+          test -d /var/lib/hammunition-hill
+          ls /var/lib/hammunition-hill | head
+          test -s /var/lib/hammunition-hill/morse.json
+
   docker:
     name: container builds and serves
     runs-on: ubuntu-24.04
@@ -326,7 +386,7 @@ jobs:
   all-green:
     name: all checks passed
     if: always()
-    needs: [lint, test, example-config, smoke, frontend, audit, build, docker]
+    needs: [lint, test, example-config, smoke, frontend, audit, build, docker, debian]
     # `upstreams` is deliberately absent: it is schedule-only and talks to
     # the real internet, so it must never gate a merge.
     runs-on: ubuntu-24.04
