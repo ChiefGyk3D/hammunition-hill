@@ -25,6 +25,12 @@ const panels = [];
 const loaded = new Map();
 
 import { recall, remember } from "./lib/format.js";
+import {
+  clearCallsign,
+  effectiveStation,
+  saveCallsign,
+  savedCallsign,
+} from "./lib/geolocate.js";
 
 const el = (tag, className, text) => {
   const node = document.createElement(tag);
@@ -529,6 +535,88 @@ document.addEventListener("click", (event) => {
   }
 });
 
+// --- the station header --------------------------------------------------
+// The callsign is editable here, in the browser, because a display with no
+// name on it should offer you a way to put one on -- and it is presentation
+// only, the identity twin of the map's QTH override. Sources that SEND a
+// callsign anywhere (cluster login, RBN, PSK Reporter, WSPR queries) read
+// config.toml on the server, which nothing over HTTP can touch; that absence
+// of a write path is the security model, so this override never leaves the
+// browser it was typed into.
+let configuredStation = {};
+let editingCallsign = false;
+
+// Deliberately loose: portable and modified calls (VE3/N0CALL, N0CALL/P) are
+// all somebody's real callsign. Demand only the shape every one shares -- a
+// digit, a letter, and nothing that is not alphanumeric or a slash.
+const CALL_SHAPE = /^[A-Z0-9/]{3,14}$/;
+
+function renderStationHeader() {
+  const s = effectiveStation(configuredStation);
+
+  if (editingCallsign) {
+    const input = el("input", "station-input");
+    input.value = savedCallsign() || (s.callsign ?? "");
+    input.placeholder = "callsign";
+    input.maxLength = 14;
+    input.setAttribute("aria-label", "Callsign shown on this display");
+    const hint = el(
+      "span",
+      "station-hint",
+      "this display only — sources that send a callsign use config.toml · empty resets",
+    );
+    // Enter commits, and the rebuild it triggers removes the input, which
+    // fires blur, which committed AGAIN into a header that had already moved
+    // on -- replaceChildren threw on the second pass. One editor, one commit.
+    let done = false;
+    const commit = () => {
+      if (done) return;
+      const typed = input.value.trim().toUpperCase();
+      if (!typed) {
+        clearCallsign();
+      } else if (!CALL_SHAPE.test(typed) || !/\d/.test(typed) || !/[A-Z]/.test(typed)) {
+        hint.textContent = `"${typed}" does not look like a callsign`;
+        return;
+      } else {
+        saveCallsign(typed);
+      }
+      done = true;
+      editingCallsign = false;
+      renderStationHeader();
+    };
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") commit();
+      if (event.key === "Escape") {
+        done = true;
+        editingCallsign = false;
+        renderStationHeader();
+      }
+    });
+    input.addEventListener("blur", commit);
+    STATION_EL.replaceChildren(input, hint);
+    input.focus();
+    input.select();
+    return;
+  }
+
+  const button = el(
+    "button",
+    "station-edit" + (s.callsign ? "" : " station-unset"),
+    s.callsign
+      ? [s.callsign, s.grid].filter(Boolean).join(" · ")
+      : ["set callsign", s.grid].filter(Boolean).join(" · "),
+  );
+  button.type = "button";
+  button.title = s.callsign_overridden
+    ? `Shown on this display only (config.toml says ${configuredStation.callsign || "nothing"}) — click to change, clear to reset`
+    : "Set the callsign shown on this display — collector-side sources keep using config.toml";
+  button.addEventListener("click", () => {
+    editingCallsign = true;
+    renderStationHeader();
+  });
+  STATION_EL.replaceChildren(button);
+}
+
 async function poll(station) {
   const wanted = new Set(panels.flatMap((p) => p.manifest.sources));
   try {
@@ -563,6 +651,13 @@ async function poll(station) {
     if (fingerprint(entry) === entry.lastPrint) updateAge(entry);
     else renderPanel(entry, station);
   }
+  // The station snapshot moves when the collector follows a GPS fix; keep the
+  // header current with it -- but never yank a half-typed callsign away.
+  const liveStation = snapshots.get("station")?.data;
+  if (liveStation && !editingCallsign) {
+    configuredStation = liveStation;
+    renderStationHeader();
+  }
   renderStatus(classifySources(wanted));
 }
 
@@ -590,9 +685,8 @@ async function main() {
     station = {};
   }
 
-  STATION_EL.textContent = [station.callsign, station.grid]
-    .filter(Boolean)
-    .join(" \u00b7 ");
+  configuredStation = station;
+  renderStationHeader();
 
   // Load every panel module once, up front. They are small and local, and
   // loading on tab switch would make the first click on each tab feel slow.

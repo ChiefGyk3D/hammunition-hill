@@ -31,6 +31,11 @@ rather than what a designer drew.
 <td><a href="https://raw.githubusercontent.com/ChiefGyk3D/hammunition-hill/main/docs/images/field-weather.png"><img src="https://raw.githubusercontent.com/ChiefGyk3D/hammunition-hill/main/docs/images/field-weather.png" alt="Field &amp; Weather"></a><br><b>Field &amp; Weather</b> — NWS alerts, GPS grid, radar and satellite imagery</td>
 <td><a href="https://raw.githubusercontent.com/ChiefGyk3D/hammunition-hill/main/docs/images/home.png"><img src="https://raw.githubusercontent.com/ChiefGyk3D/hammunition-hill/main/docs/images/home.png" alt="Home"></a><br><b>Home</b> — the summary you leave up on the wall</td>
 </tr>
+<tr>
+<td><a href="https://raw.githubusercontent.com/ChiefGyk3D/hammunition-hill/main/docs/images/toolbox.png"><img src="https://raw.githubusercontent.com/ChiefGyk3D/hammunition-hill/main/docs/images/toolbox.png" alt="Toolbox"></a><br><b>Toolbox</b> — antenna and feedline calculators, references, band plan, exam practice</td>
+<td></td>
+<td></td>
+</tr>
 </table>
 
 Regenerate them with `make screenshots` after any change to how the dashboard
@@ -51,7 +56,7 @@ finished, so here is exactly where things stand:
 |---|---|
 | Collector, snapshot architecture, static server | ✅ working |
 | Egress allowlist, CSP, path handling | ✅ working |
-| Panels | ✅ 30 across 6 dashboards |
+| Panels | ✅ 30 across 7 dashboards |
 | Source kinds | ✅ 13 polled, 6 stream, 1 file |
 | Space weather dials | ✅ 8 scales |
 | Map — 3D globe / 2D flat, greyline, spots, aurora, path plotting | ✅ working |
@@ -215,6 +220,7 @@ Twenty-two panels in one grid is unusable, so they are grouped into tabs:
 | **Map** | the globe, with the spot list beside it |
 | **Space Weather** | solar and geomagnetic dials, NOAA scales, alerts, band conditions |
 | **Operating** | beacons, logbook, callsign lookup, log stats, band plan |
+| **Toolbox** | every interactive tool above the fold: antenna, feedline, SWR, ohm, dB, wire, battery and grid-path calculators, references, CW, band plan, exam practice |
 | **Activity** | POTA/SOTA, contests, news |
 | **Field & Weather** | active NWS alerts, radar and satellite tiles |
 
@@ -551,10 +557,13 @@ always comparing like with like. Two sources, in order:
 **There is no settings page in the web UI, and there never will be.** This trips
 up everyone once, so plainly: the only things you can change from the browser
 are presentation — panel arrangement via **customize** (top right), filters,
-which licence class you picked — and those live in that browser's localStorage,
-per display. Everything else — sources, callsign, grid, lookups, imagery,
-binding — is `config.toml` on the machine running `hamhill`, edited with a text
-editor and checked with `hamhill check` — or written for you by
+which licence class you picked, the callsign and grid shown on that display
+(click the callsign in the header, or **FIND MY GRID** on the map) — and those
+live in that browser's localStorage, per display. Everything else — sources,
+the callsign the collector *sends* when logging in to a cluster or querying
+PSK Reporter, lookups, imagery, binding — is `config.toml` on the machine
+running `hamhill`, edited with a text editor and checked with `hamhill
+check` — or written for you by
 `hamhill setup`, a guided interview in the terminal that states, before
 each opt-in, exactly what saying yes will send and to whom.
 

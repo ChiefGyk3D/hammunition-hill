@@ -75,6 +75,27 @@ export function clearQth() {
   remember(KEY, null);
 }
 
+// A browser-side callsign, the identity twin of the QTH override above and
+// with exactly the same boundary: it changes what THIS DISPLAY shows and
+// computes, never what the collector sends. Sources that log in with or
+// query by a callsign (cluster, RBN, PSK Reporter, WSPR) read config.toml on
+// the server, and no browser can reach that -- the absence of a write
+// endpoint is the security model, so this stays presentation all the way
+// down.
+const CALL_KEY = "station.callsign";
+
+export function savedCallsign() {
+  return String(recall(CALL_KEY, "") || "");
+}
+
+export function saveCallsign(callsign) {
+  remember(CALL_KEY, String(callsign || "").toUpperCase());
+}
+
+export function clearCallsign() {
+  remember(CALL_KEY, "");
+}
+
 /**
  * The station to use: a browser override if one is set, otherwise config.
  *
@@ -85,13 +106,20 @@ export function clearQth() {
  */
 export function effectiveStation(configured) {
   const override = savedQth();
-  if (!override) return configured;
-  return {
-    ...configured,
-    lat: override.lat,
-    lon: override.lon,
-    grid: override.grid,
-    located: true,
-    overridden: true,
-  };
+  const callsign = savedCallsign();
+  let station = configured;
+  if (override) {
+    station = {
+      ...station,
+      lat: override.lat,
+      lon: override.lon,
+      grid: override.grid,
+      located: true,
+      overridden: true,
+    };
+  }
+  if (callsign) {
+    station = { ...station, callsign, callsign_overridden: true };
+  }
+  return station;
 }
