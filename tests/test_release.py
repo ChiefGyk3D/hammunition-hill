@@ -142,6 +142,23 @@ def test_the_release_workflow_publishes_checksums():
     assert "sha256sum" in RELEASE_WORKFLOW
 
 
+def test_the_release_ships_the_debian_package():
+    """INSTALL.md sends operators to the releases page for the .deb.
+
+    v1.0.0 shipped without one, because the workflow built only the wheel and
+    the sdist -- so the documentation was describing a file that was not
+    there. It was attached by hand; this test is what stops that being needed
+    twice.
+    """
+    assert "packaging/debian/build.sh dist" in RELEASE_WORKFLOW
+
+
+def test_the_release_installs_the_deb_before_publishing_it():
+    """The wheel gets a smoke test; the .deb is what Debian users download."""
+    assert "debian:trixie-slim" in RELEASE_WORKFLOW
+    assert "apt-get install -y -qq /dist/hammunition-hill_*.deb" in RELEASE_WORKFLOW
+
+
 def test_the_release_workflow_verifies_the_tag_object():
     """--verify-tag refuses to invent a tag that is not already pushed."""
     assert "--verify-tag" in RELEASE_WORKFLOW

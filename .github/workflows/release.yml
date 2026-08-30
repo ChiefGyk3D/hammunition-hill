@@ -83,6 +83,29 @@ jobs:
           /tmp/relcheck/bin/hamhill --version
           cp config.example.toml /tmp/relcheck-config.toml
           /tmp/relcheck/bin/hamhill --config /tmp/relcheck-config.toml check --offline
+      - name: the Debian package, from the same tree
+        # The docs point operators at the releases page for the .deb, so the
+        # release has to carry one. v1.0.0 shipped without it and it had to be
+        # attached by hand afterwards -- the checksums were regenerated over
+        # all three artefacts at the same time, but a release that needs a
+        # manual step is a release that will one day miss it.
+        run: |
+          set -euo pipefail
+          ./packaging/debian/build.sh dist
+          ls -l dist/*.deb
+      - name: the package installs and serves in a Debian container
+        # The wheel is smoke-tested above in a venv; this is the same promise
+        # for the artefact Debian users actually download, on the distribution
+        # it targets rather than on the runner's Ubuntu.
+        run: |
+          set -euo pipefail
+          docker run --rm -v "$PWD/dist:/dist:ro" debian:trixie-slim bash -c '
+            set -eux
+            apt-get update -qq
+            apt-get install -y -qq /dist/hammunition-hill_*.deb
+            hamhill --version
+            hamhill --config /etc/hammunition-hill/config.toml check --offline
+          '
       - name: checksums
         run: |
           set -euo pipefail
