@@ -72,7 +72,7 @@ The parts everything else sits on.
 | Tests cannot reach the network | ✅ | Enforced by a conftest guard, not convention. |
 | `make check` reproduces CI locally | ✅ | |
 | Docker image | ✅ | Built and exercised in CI: the container must serve the dashboard before anything merges. |
-| Distro packages | ✅ | A Debian `.deb`: distro dependencies, a hardened systemd unit, a conffile, and a service account. Built by `packaging/debian/build.sh`, installed and served in CI on trixie, and installed by hand on Debian 13 before 1.0 |
+| Distro packages | ✅ | A Debian `.deb`: distro dependencies, a hardened systemd unit, a conffile, and a service account. Built by `packaging/debian/build.sh`, installed and served in CI on trixie, and installed by hand on Debian 13 and Kali before 1.0 — first install enables and starts, an upgrade leaves a deliberately stopped service alone |
 
 ## Sources
 

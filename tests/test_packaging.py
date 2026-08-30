@@ -192,9 +192,28 @@ def test_postinst_creates_the_account_only_if_it_is_missing():
     assert 'if ! getent passwd "$USER" >/dev/null; then' in POSTINST
 
 
-def test_postinst_does_not_re_enable_a_deliberately_disabled_service():
-    """An operator's `systemctl disable` must survive an upgrade."""
-    assert "was-enabled" in POSTINST
+def test_postinst_tells_first_install_from_upgrade_by_the_argument():
+    """ "$2" is empty on first install. Everything else here follows from that.
+
+    The first version asked `deb-systemd-helper was-enabled` instead, which
+    answers differently across distributions: Debian said yes and enabled the
+    service, Kali said no and the package installed a unit that nothing ever
+    turned on. Found by installing the same .deb on both.
+    """
+    assert '[ -z "$2" ]' in POSTINST
+
+
+def test_postinst_enables_and_starts_on_first_install():
+    first = POSTINST.split('[ -z "$2" ]')[1].split("else")[0]
+    assert 'systemctl enable "$UNIT"' in first
+    assert 'systemctl start "$UNIT"' in first
+
+
+def test_an_upgrade_does_not_start_a_service_the_operator_stopped():
+    """try-restart, not restart: it is a no-op on a stopped unit."""
+    upgrade = POSTINST.split('[ -z "$2" ]')[1].split("else")[1]
+    assert 'systemctl try-restart "$UNIT"' in upgrade
+    assert 'systemctl start "$UNIT"' not in upgrade
 
 
 def test_postinst_protects_the_config_from_other_accounts():
