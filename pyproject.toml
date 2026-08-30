@@ -1,6 +1,10 @@
 [project]
 name = "hammunition-hill"
-version = "0.1.0"
+# Single-sourced from the package, so a release cannot ship a wheel whose
+# metadata disagrees with what `hamhill --version` prints. Two hand-edited
+# copies of a version string is one copy too many; tests/test_release.py
+# holds them together anyway, belt and braces.
+dynamic = ["version"]
 description = "Local-first ham radio dashboard with a snapshot architecture and no inbound attack surface"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -59,6 +63,9 @@ Companion = "https://github.com/ChiefGyk3D/Hammunition"
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools.dynamic]
+version = { attr = "hammunition_hill.__version__" }
 
 [tool.setuptools.packages.find]
 where = ["src"]
