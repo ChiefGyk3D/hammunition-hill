@@ -31,18 +31,25 @@ case "$1" in
 
     if [ -d /run/systemd/system ]; then
       systemctl daemon-reload >/dev/null 2>&1 || true
-      if [ -x /usr/bin/deb-systemd-helper ]; then
+      [ -x /usr/bin/deb-systemd-helper ] && \
         deb-systemd-helper unmask "$UNIT" >/dev/null 2>&1 || true
-        # enable, not enable --now, and only on first install: re-enabling on
-        # every upgrade would undo an operator's deliberate `systemctl disable`.
-        if deb-systemd-helper --quiet was-enabled "$UNIT"; then
-          deb-systemd-helper enable "$UNIT" >/dev/null 2>&1 || true
-        else
-          deb-systemd-helper update-state "$UNIT" >/dev/null 2>&1 || true
-        fi
-      fi
-      if [ -x /usr/bin/deb-systemd-invoke ]; then
-        deb-systemd-invoke restart "$UNIT" >/dev/null 2>&1 || true
+
+      # "$2" is the previously configured version, empty on a first install.
+      # That is the distinction that matters here, and it is spelled out
+      # rather than inferred from deb-systemd-helper's was-enabled, which
+      # answers differently on different distributions: the first version of
+      # this script asked was-enabled, got "no" on Kali where Debian said
+      # "yes", and shipped a package that installed a service it never
+      # enabled or started. The unit was fine; nothing had turned it on.
+      if [ -z "$2" ]; then
+        # First install: enable and start, as a service package should.
+        systemctl enable "$UNIT" >/dev/null 2>&1 || true
+        systemctl start "$UNIT" >/dev/null 2>&1 || true
+      else
+        # Upgrade: restart it only if it is already running. An operator who
+        # stopped or disabled this deliberately does not want an upgrade to
+        # override that decision.
+        systemctl try-restart "$UNIT" >/dev/null 2>&1 || true
       fi
     fi
     ;;

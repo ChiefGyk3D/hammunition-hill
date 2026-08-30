@@ -375,11 +375,16 @@ jobs:
         with:
           python-version: "3.13"
       - run: pip install --disable-pip-version-check .
-      - name: resolve every host in the example config
+      - name: fetch and parse every source in the example config
+        # --fetch, not a bare check: resolving a name proves DNS works, which
+        # is not the thing that rots. An upstream keeps its hostname and its
+        # certificate for years while renaming a JSON field, and the only
+        # signal is a panel that quietly goes empty. This runs the real
+        # client, guard and parser once per source.
         run: |
           cd "$GITHUB_WORKSPACE"
           cp config.example.toml config.toml
-          hamhill check --config config.toml
+          hamhill check --config config.toml --fetch
 
   # One required check to point branch protection at, so adding a job later
   # does not mean remembering to update a settings page.

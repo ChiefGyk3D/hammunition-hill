@@ -46,11 +46,14 @@ the package long description, and PyPI has no repository to resolve
 
 ---
 
-## ⚠️ Alpha — it works, and it is not finished
+## 1.0 — what works, and where the edges are
 
-**Status: alpha. It runs, it is useful today, and config will break between
-versions.** Being honest about where the edges are matters more than looking
-finished, so here is exactly where things stand:
+**Version 1.0.0.** Every endpoint it ships with has been fetched *and parsed*
+on real hardware rather than assumed, it installs as a Debian package and a
+container and a bare `pip install`, and 1.0 means the US-first scope is
+complete — not that there is nothing left to build. Being honest about where
+the edges are matters more than looking finished, so here is exactly where
+things stand:
 
 | | Status |
 |---|---|

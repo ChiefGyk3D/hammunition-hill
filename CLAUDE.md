@@ -137,7 +137,7 @@ if it passes.
   because the formatter's value is consistency in code and those are data.
   Fence a new data table the same way and say why. Comments explain *why*,
   especially where an obvious-looking alternative is wrong.
-- **Alpha: merge to main.** Feature branch → PR → squash merge. Keep README and
+- **Merge to main.** Feature branch → PR → squash merge. Keep README and
   every affected doc current in the same PR.
 - **`docs/STATUS.md` is the feature inventory** and the page kept current;
   `docs/PARITY.md` answers the narrower "how does this compare to hamdash.com".
@@ -151,8 +151,12 @@ if it passes.
 
 `docs/STATUS.md` is authoritative. The ones most likely to bite:
 
-- Upstream endpoint URLs rot and several could not be verified from the build
-  environment. `hamhill check` on real hardware is how that gets found.
+- Upstream endpoint URLs rot. Every one shipped in `config.example.toml` was
+  fetched *and parsed* on a real WAN before 1.0 — that is what
+  `hamhill check --fetch` is for, and it exercises the real client, guard and
+  source class rather than merely resolving a name. Re-run it on real
+  hardware before any release; the weekly `upstreams` CI job is the tripwire
+  between them.
 
 ## Sibling projects
 
