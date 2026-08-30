@@ -63,6 +63,11 @@ def test_the_installed_metadata_agrees_with_the_module():
     """What `pip show` reports and what `hamhill --version` prints, in one test."""
     from importlib.metadata import PackageNotFoundError, version
 
+    # Bound before the try, because pytest.skip() raises but nothing in the
+    # type system says so -- CodeQL flagged the version without this as a
+    # possible use-before-assignment, and it was right about the shape even
+    # though skip() never returns.
+    installed: str | None = None
     try:
         installed = version("hammunition-hill")
     except PackageNotFoundError:  # pragma: no cover - only when running from a bare tree
