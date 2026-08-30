@@ -143,7 +143,14 @@ def test_security_headers_present(live):
     assert headers["X-Content-Type-Options"] == "nosniff"
     assert headers["X-Frame-Options"] == "DENY"
     assert headers["Referrer-Policy"] == "no-referrer"
-    assert "geolocation=()" in headers["Permissions-Policy"]
+    # geolocation is (self), not (): an empty allowlist denies the feature to
+    # this document as well, which silently killed the map's FIND MY GRID for
+    # every operator. Everything the dashboard has no business asking for
+    # stays fully denied, and this test pins the difference so a tidy-up that
+    # "makes them consistent" has to argue with a comment first.
+    assert "geolocation=(self)" in headers["Permissions-Policy"]
+    assert "camera=()" in headers["Permissions-Policy"]
+    assert "microphone=()" in headers["Permissions-Policy"]
     assert "usb=()" in headers["Permissions-Policy"]
     assert headers["Cross-Origin-Opener-Policy"] == "same-origin"
     assert "default-src 'none'" in headers["Content-Security-Policy"]

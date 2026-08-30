@@ -66,6 +66,8 @@ The parts everything else sits on.
 | Tests | ✅ | Suite green with warnings as errors across 3.11–3.13; ruff clean. No count here on purpose — a hand-edited total rots by design, and this one did. |
 | CI | ✅ | Eleven jobs, plus CodeQL in its own workflow: lint, pytest across 3.11–3.13 on x86, ARM and macOS, example-config validation, an end-to-end smoke test, a real-browser render of every dashboard, dependency audit, wheel build, a weekly upstream-liveness check, a container build that must serve the dashboard, and a Debian package that must install into a trixie container and serve from /usr/bin. |
 | CodeQL | ✅ | Python and JavaScript, weekly and per-PR. |
+| Every control clicked in a browser | ✅ | The render check sweeps every button on every panel of every dashboard — 124 controls — and fails on an exception, a panel error, or a control that empties its own panel. A panel added later is swept the day it lands. |
+| Accessibility floor | ✅ | Every control has an accessible name, every input a label, and the tab bar is reachable and activatable from the keyboard. Not a full audit; these are the two failures that lock a mouse-free operator out entirely. |
 | Dependabot | ✅ | Actions and pip, weekly. |
 | Tests cannot reach the network | ✅ | Enforced by a conftest guard, not convention. |
 | `make check` reproduces CI locally | ✅ | |

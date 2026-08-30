@@ -244,7 +244,17 @@ const BASE = `http://127.0.0.1:${PORT}/`;
   const browser = await chromium.launch(executablePath ? { executablePath } : {});
   const problems = [];
 
-  const page = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
+  // Geolocation is granted and pinned, rather than left blocked. The control
+  // sweep below clicks FIND MY GRID like any other button, and a blocked
+  // geolocation makes the browser log a permissions-policy violation the page
+  // cannot catch or prevent -- an error that says nothing about this code.
+  // Granting it costs nothing and buys a real test: the locator maths turning
+  // a fix into a Maidenhead square, asserted below.
+  const page = await browser.newPage({
+    viewport: { width: 1400, height: 1000 },
+    permissions: ['geolocation'],
+    geolocation: { latitude: 39.7392, longitude: -104.9903 },  // -> DM79MR
+  });
 
   // Watch notifications, armed before the first script runs: the Notification
   // constructor is replaced with a recorder (headless CI has no notification
@@ -320,7 +330,14 @@ const BASE = `http://127.0.0.1:${PORT}/`;
     problems.push(`console error: ${msg.text()}`);
   });
 
-  page.on('pageerror', (err) => problems.push(`uncaught exception: ${err.message}`));
+  // Kept in their own list as well as in problems, so the control sweep can
+  // ask "did clicking THAT throw" -- the difference between a red run and a
+  // red run that names the button.
+  const pageErrors = [];
+  page.on('pageerror', (err) => {
+    pageErrors.push(err.message);
+    problems.push(`uncaught exception: ${err.message}`);
+  });
   page.on('requestfailed', (req) => {
     // A blocked external request is itself the finding; report the attempt.
     // ERR_ABORTED is not a failure: it is what every in-flight fetch reports
@@ -825,6 +842,162 @@ const BASE = `http://127.0.0.1:${PORT}/`;
   });
   for (const failure of watchUnits) problems.push(`watch units: ${failure}`);
   if (!watchUnits.length) console.log('  watch units: match, dedupe, expiry, band diff ok');
+
+  // --- a browser fix becomes a grid square ---------------------------------
+  // The pinned position above is Denver; DM79MR is what the repository's own
+  // geo module computes for it, cross-checked in Python rather than by
+  // reading the JavaScript that is under test here.
+  await page.click('#tabs button:text-is("Map")');
+  await page.waitForTimeout(600);
+  await page.click('#grid .panel[data-panel="map"] .chip:text-is("FIND MY GRID")');
+  await page.waitForTimeout(1200);
+  const located = await page.$eval('#grid .panel[data-panel="map"]', (el) => el.textContent);
+  if (!located.includes('DM79MR')) {
+    problems.push(`locate: a fix at 39.7392,-104.9903 should read DM79MR, panel says: ` +
+      `${located.slice(0, 200)}`);
+  } else {
+    console.log('  locate: browser fix -> DM79MR, and the panel offers the config line');
+  }
+  // Hand the QTH back to config, so nothing downstream measures from Denver.
+  const useConfig = await page.$('#grid .panel[data-panel="map"] .chip:text-is("USE CONFIG QTH")');
+  if (useConfig) await useConfig.click();
+  await page.waitForTimeout(400);
+
+  // --- every control on every panel, clicked ------------------------------
+  // The scenarios above each test one thing somebody thought to test. This
+  // one tests the rest: it walks every dashboard, finds every button inside
+  // every panel, and clicks it. Not to assert what each does -- it cannot
+  // know -- but to assert what must be true of all of them: no uncaught
+  // exception, no panel falling back to "panel error:", and no control that
+  // leaves its own panel empty.
+  //
+  // This is the check that would have caught the detached-button bug without
+  // anybody having to guess which button it was, and it grows on its own:
+  // a panel added next year is swept the day it lands, with no edit here.
+  const sweptProblems = [];
+  let clicked = 0;
+  for (const tab of tabs) {
+    await page.click(`#tabs button:text-is("${tab}")`);
+    await page.waitForTimeout(700);
+    const panelIds = await page.$$eval('#grid .panel', (els) => els.map((e) => e.dataset.panel));
+    for (const id of panelIds) {
+      const selector = `#grid .panel[data-panel="${id}"]`;
+      // Buttons are re-queried by index every time, because a chip that
+      // switches a view rebuilds the panel and every handle taken before it
+      // is detached by design. Bounded, so a panel that grows a button per
+      // click cannot spin here forever.
+      const total = await page.$$eval(`${selector} button`, (els) => els.length);
+      for (let i = 0; i < Math.min(total, 24); i += 1) {
+        const buttons = await page.$$(`${selector} button`);
+        const button = buttons[i];
+        if (!button) break;
+        const disabled = await button.isDisabled().catch(() => true);
+        if (disabled) continue;
+        const label = (await button.textContent().catch(() => '')) || '(unlabelled)';
+        const errorsBefore = pageErrors.length;
+        try {
+          await button.click({ timeout: 4000 });
+          clicked += 1;
+        } catch {
+          // A control that cannot be clicked at all -- covered by something,
+          // off screen, detached mid-flight -- is worth reporting once.
+          sweptProblems.push(`${tab}/${id}: could not click "${label.trim()}"`);
+          continue;
+        }
+        await page.waitForTimeout(90);
+        if (pageErrors.length > errorsBefore) {
+          sweptProblems.push(
+            `${tab}/${id}: "${label.trim()}" threw ${pageErrors[errorsBefore]}`);
+        }
+        const state = await page.$eval(selector, (el) => ({
+          body: el.querySelector('.panel-body')?.textContent ?? '',
+          nodes: el.querySelectorAll('*').length,
+        })).catch(() => null);
+        if (!state) {
+          sweptProblems.push(`${tab}/${id}: panel vanished after clicking "${label.trim()}"`);
+          break;
+        }
+        if (state.body.includes('panel error:')) {
+          sweptProblems.push(
+            `${tab}/${id}: "${label.trim()}" -> ${state.body.trim().slice(0, 120)}`);
+          break;
+        }
+        if (state.nodes < 3) {
+          sweptProblems.push(`${tab}/${id}: "${label.trim()}" emptied the panel`);
+          break;
+        }
+      }
+    }
+  }
+  for (const problem of sweptProblems) problems.push(`sweep: ${problem}`);
+  console.log(`  control sweep: ${clicked} controls clicked, ${sweptProblems.length} problem(s)`);
+
+  // Clear what the sweep left behind. Every panel remembers its view in
+  // localStorage, and leaving the whole dashboard on whatever the last click
+  // selected would make the screenshots depend on the order of this loop.
+  await page.evaluate(() => {
+    for (const key of Object.keys(localStorage)) {
+      if (key.startsWith('hh.') && !key.startsWith('hh.layout.')) localStorage.removeItem(key);
+    }
+  });
+  await page.reload({ waitUntil: 'load' });
+  await page.waitForTimeout(1200);
+
+  // --- the accessibility floor ---------------------------------------------
+  // Not a full audit, which needs a person. These are the two failures that
+  // make a dashboard unusable without a mouse, and both are invisible in a
+  // screenshot: a control with no accessible name reads as "button" to a
+  // screen reader, and a tab bar that cannot be reached or activated from the
+  // keyboard locks out everything behind it.
+  const unnamed = await page.$$eval('#grid .panel button, #tabs button', (els) =>
+    els
+      .filter((el) => {
+        const name = (el.textContent || '').trim() ||
+          el.getAttribute('aria-label') || el.getAttribute('title');
+        return !name;
+      })
+      .map((el) => `${el.closest('.panel')?.dataset.panel ?? 'tabs'}:${el.className}`));
+  if (unnamed.length) {
+    problems.push(`a11y: ${unnamed.length} control(s) with no accessible name: ` +
+      `${[...new Set(unnamed)].slice(0, 5).join(', ')}`);
+  }
+
+  const unlabelledInputs = await page.$$eval('#grid .panel input', (els) =>
+    els
+      .filter((el) => {
+        if (el.type === 'range' || el.type === 'checkbox' || el.type === 'radio') {
+          // These live inside a <label> in this codebase; the wrapper names them.
+          return !el.closest('label') && !el.getAttribute('aria-label');
+        }
+        return !el.getAttribute('aria-label') && !el.placeholder && !el.closest('label');
+      })
+      .map((el) => `${el.closest('.panel')?.dataset.panel}:${el.type}`));
+  if (unlabelledInputs.length) {
+    problems.push(`a11y: unlabelled input(s): ${[...new Set(unlabelledInputs)].join(', ')}`);
+  }
+
+  // The tab bar, driven by keyboard alone.
+  await page.click('#tabs button:text-is("Home")');
+  await page.waitForTimeout(300);
+  const keyboardReached = await page.evaluate(async () => {
+    const target = [...document.querySelectorAll('#tabs button')].find(
+      (b) => b.textContent.trim() === 'Map');
+    if (!target) return 'no Map tab';
+    target.focus();
+    if (document.activeElement !== target) return 'the tab bar cannot take focus';
+    target.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+    target.click();  // what Enter does on a focused <button> in a real browser
+    return null;
+  });
+  if (keyboardReached) problems.push(`a11y: ${keyboardReached}`);
+  await page.waitForTimeout(500);
+  const activeTab = await page.$eval('#tabs .tab.on', (e) => e.textContent.trim());
+  if (activeTab !== 'Map') {
+    problems.push(`a11y: keyboard activation left the active tab on "${activeTab}"`);
+  }
+  console.log(`  a11y: ${unnamed.length} unnamed controls, keyboard reached "${activeTab}"`);
+  await page.click('#tabs button:text-is("Home")');
+  await page.waitForTimeout(400);
 
   // The three rooms the stylesheet promises: phone, laptop, TV. Only the
   // laptop width was ever rendered, and the TV tier shipped broken -- the
