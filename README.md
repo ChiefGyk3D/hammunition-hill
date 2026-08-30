@@ -128,6 +128,8 @@ hardware finds it faster than we can.
 | **[Imagery & weather](docs/IMAGERY.md)** | Weather alerts, radar and satellite tiles, and what a tier 2 tile costs you. |
 | **[Branding](docs/BRANDING.md)** | The logo, the mark, the palette, and what you may do with them. |
 | **[Contributing](CONTRIBUTING.md)** | `make check` before you push, and what CI enforces. |
+| **[Releasing](docs/RELEASING.md)** | Cutting a version: where the number lives, and what the tag sets off. |
+| **[Changelog](CHANGELOG.md)** | What changed, newest first. |
 | **[CLAUDE.md](CLAUDE.md)** | Architecture invariants and standing conventions, for humans and agents alike. |
 | **[Status](docs/STATUS.md)** | **Complete feature inventory — what works, what is partial, what is not written.** |
 | **[Parity](docs/PARITY.md)** | Feature-by-feature against hamdash.com, including where we deliberately differ. |

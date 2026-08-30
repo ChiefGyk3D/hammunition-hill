@@ -15,6 +15,7 @@ import sys
 import threading
 from datetime import UTC, datetime
 from pathlib import Path
+from urllib.parse import urlsplit
 
 from . import __version__
 from .about import publish_about
@@ -523,6 +524,104 @@ def _check(config: Config, guard: EgressGuard, enricher: Enricher, *, offline: b
     return 1 if failures else 0
 
 
+def _fetch_probe(config: Config, guard: EgressGuard) -> int:
+    """Actually fetch every configured source once, and say what came back.
+
+    This is the check that answers the question `check` alone cannot: not "does
+    the host resolve" but "does this source still understand what that endpoint
+    returns". Those rot separately. An upstream can keep its DNS and its TLS
+    certificate for years while quietly renaming a JSON field, and the failure
+    an operator sees is one blank panel, months later, with no clue attached.
+
+    It runs the real fetch path -- the same client, the same egress guard, the
+    same source class the collector uses -- because a parallel implementation
+    would prove that the parallel implementation works.
+
+    Imagery is deliberately NOT fetched. Those hosts are tier 2: each viewer's
+    browser fetches them, this process never does, and they are absent from the
+    egress allowlist on purpose. Probing them here would quietly make the
+    collector do the one thing the tier boundary says it does not.
+    """
+    from .collector import build_client
+    from .sources import get_source
+
+    async def probe() -> int:
+        failures = 0
+        async with build_client(guard) as client:
+            for cfg in config.sources:
+                if cfg.is_file_source:
+                    continue
+                if is_stream(cfg.kind):
+                    # A stream is a held connection, not a request. Opening and
+                    # closing one proves the port answers, which is as far as a
+                    # probe should go: logging in to a cluster to test it would
+                    # announce the operator's callsign to a node they did not
+                    # ask to join.
+                    parts = urlsplit(cfg.url)
+                    if parts.scheme == "udp":
+                        # WSJT-X broadcasts at us; there is nothing to connect
+                        # to and silence is the normal state until it decodes.
+                        print(f"  listen    {cfg.id:<18} {cfg.kind:<10} {cfg.url}")
+                        continue
+                    try:
+                        host = guard.check_stream(cfg.url)
+                        port = parts.port
+                        if not port:
+                            failures += 1
+                            print(f"  FAILED    {cfg.id:<18} no port in {cfg.url}")
+                            continue
+                        _, writer = await asyncio.wait_for(
+                            asyncio.open_connection(host, port), timeout=15
+                        )
+                        writer.close()
+                        await writer.wait_closed()
+                        print(f"  reachable {cfg.id:<18} {cfg.kind:<10} {cfg.host}:{port}")
+                    except Exception as exc:  # noqa: BLE001 - report, never raise
+                        failures += 1
+                        print(f"  FAILED    {cfg.id:<18} {type(exc).__name__}: {exc}")
+                    continue
+
+                try:
+                    guard.check(cfg.url)
+                    data = await get_source(cfg.kind).fetch(client, cfg)
+                except Exception as exc:  # noqa: BLE001 - report, never raise
+                    failures += 1
+                    print(f"  FAILED    {cfg.id:<18} {type(exc).__name__}: {exc}")
+                    continue
+                print(f"  OK        {cfg.id:<18} {cfg.kind:<10} {_shape(data)}")
+        return failures
+
+    print("\nfetching every source once — the real client, guard and parser:")
+    failures = asyncio.run(probe())
+    if config.imagery:
+        print(
+            f"\n  {len(config.imagery)} imagery tile(s) not probed: tier 2, fetched by each "
+            "viewer's browser and absent from this collector's allowlist by design."
+        )
+    if failures:
+        print(f"\n{failures} source(s) could not be fetched or parsed.", file=sys.stderr)
+    return failures
+
+
+def _shape(data: object) -> str:
+    """A one-line description of what a source returned.
+
+    Deliberately shallow: enough to tell "parsed and carries rows" from
+    "parsed and is empty", which is the distinction that catches a renamed
+    upstream field. An endpoint answering 200 with a shape this program no
+    longer recognises reports zero rows, and zero rows is the signal.
+    """
+    if isinstance(data, dict):
+        for key in ("spots", "rows", "alerts", "cells", "items", "passes", "entries"):
+            value = data.get(key)
+            if isinstance(value, list):
+                return f"{len(value)} {key}"
+        return f"{len(data)} field(s): {', '.join(list(data)[:4])}"
+    if isinstance(data, list):
+        return f"{len(data)} row(s)"
+    return type(data).__name__
+
+
 def _report_uls(config: Config) -> None:
     """Say whether the offline index actually exists.
 
@@ -818,6 +917,14 @@ def main(argv: list[str] | None = None) -> int:
         help="check: validate config without DNS, for a machine with no WAN (or CI)",
     )
     parser.add_argument(
+        "--fetch",
+        action="store_true",
+        help=(
+            "check: after validating, fetch every source once and report what parsed. "
+            "This is the one that finds an upstream that changed shape."
+        ),
+    )
+    parser.add_argument(
         "--file",
         type=Path,
         metavar="PATH",
@@ -862,7 +969,13 @@ def main(argv: list[str] | None = None) -> int:
     enricher = build_enricher(config)
 
     if args.command == "check":
-        return _check(config, guard, enricher, offline=args.offline)
+        if args.fetch and args.offline:
+            print("--fetch and --offline are opposites", file=sys.stderr)
+            return 2
+        failures = _check(config, guard, enricher, offline=args.offline)
+        if args.fetch:
+            failures += _fetch_probe(config, guard)
+        return 1 if failures else 0
     if args.command == "fcc-import":
         return _fcc_import(config, guard, args.file[0] if args.file else None)
     if args.command == "exam-import":

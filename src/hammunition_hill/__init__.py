@@ -12,4 +12,7 @@ Nothing an attacker sends can steer an outbound fetch, because the fetch
 schedule and the host allowlist are both fixed when the config loads.
 """
 
-__version__ = "0.1.0"
+# The single source of truth for the version: pyproject reads it from here,
+# `hamhill --version` prints it, and the release workflow refuses a tag that
+# disagrees with it. tests/test_release.py holds all three together.
+__version__ = "1.0.0"

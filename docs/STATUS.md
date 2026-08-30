@@ -2,9 +2,12 @@
 
 Complete feature inventory. Every subsystem, honestly marked.
 
-**Version 0.1.0 — alpha.** It runs, it is useful, and it is not finished. The
-distinction this page cares about is between *working*, *partial*, and *not
-written*, because "planned" in a README has a habit of reading like "present".
+**Version 1.0.0.** It runs, it is useful, and every endpoint it ships with has
+been fetched and parsed on real hardware rather than assumed. The distinction
+this page cares about is between *working*, *partial*, and *not written*,
+because "planned" in a README has a habit of reading like "present". 1.0 does
+not mean finished — it means the US-first scope is complete, installable, and
+honest about its edges.
 
 Legend: ✅ working · 🟡 partial · ❌ not written · ⛔ deliberately not planned
 

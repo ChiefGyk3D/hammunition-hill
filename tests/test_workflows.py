@@ -109,7 +109,14 @@ def test_every_workflow_declares_top_level_permissions(path):
 
 
 # The single write this repository's CI is allowed to do, and where.
-ALLOWED_WRITES = {("codeql.yml", "analyze", "security-events")}
+ALLOWED_WRITES = {
+    ("codeql.yml", "analyze", "security-events"),
+    # Creating the GitHub release IS the release workflow's job. Scoped to
+    # the one job that calls `gh release create`: verify and build run with
+    # the read-only default, so the token that can write to this repository
+    # is never present while third-party build dependencies are installing.
+    ("release.yml", "publish", "contents"),
+}
 
 
 @pytest.mark.parametrize("path", WORKFLOW_FILES, ids=lambda p: p.name)
