@@ -329,9 +329,19 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("X-Frame-Options", "DENY")
         self.send_header("Referrer-Policy", "no-referrer")
+        # geolocation=(self), not (). The empty allowlist denies the feature to
+        # *this document too*, not just to embedded content -- so FIND MY GRID
+        # on the map panel could never work in any browser, for anyone, no
+        # matter what the operator allowed at the prompt. It shipped that way
+        # and the panel reported "permission denied" for a permission nobody
+        # was ever asked for. (self) restores the same-origin page's ability
+        # to ask, which is all the feature needs; the browser still puts the
+        # decision in front of the operator, and there is no third-party
+        # content on this page to inherit it. Everything else stays fully
+        # denied, because nothing here has any business asking for it.
         self.send_header(
             "Permissions-Policy",
-            "camera=(), microphone=(), geolocation=(), usb=(), payment=(), interest-cohort=()",
+            "camera=(), microphone=(), geolocation=(self), usb=(), payment=(), interest-cohort=()",
         )
         self.send_header("Cross-Origin-Opener-Policy", "same-origin")
         self.send_header("Cross-Origin-Resource-Policy", "same-origin")
