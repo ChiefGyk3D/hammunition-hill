@@ -18,7 +18,7 @@ import logging
 from pathlib import Path
 from typing import Any, Protocol
 
-from ..adif import load_index
+from ..adif import US_STATES, load_index
 from ..config import SourceConfig
 from ..enrich import Enricher
 
@@ -62,6 +62,10 @@ class AdifLogSource:
             "band_slots": len(index.entity_band),
             "mode_slots": len(index.entity_mode),
             "unresolved": index.unresolved,
+            "states": len(index.states),
+            "confirmed_states": len(index.confirmed_states),
+            "states_missing": sorted(US_STATES - index.states),
+            "entity_total": enricher.table.entity_count,
             "prefix_source": "cty.dat" if not enricher.table.approximate else "built-in",
             "worked": index.worked_summary(),
         }

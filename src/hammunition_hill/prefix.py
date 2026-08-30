@@ -281,6 +281,15 @@ class PrefixTable:
     def approximate(self) -> bool:
         return self._source == "builtin"
 
+    @property
+    def entity_count(self) -> int:
+        """Distinct entities this table can resolve to -- the DXCC denominator.
+
+        Approximate by construction with the built-in table, exact-ish with
+        cty.dat; either way it is the honest ceiling for "worked N of M".
+        """
+        return len({entity.name for _, entity in self._prefixes})
+
     def _load_builtin(self) -> None:
         self._prefixes = [
             (

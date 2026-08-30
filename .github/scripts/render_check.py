@@ -762,6 +762,27 @@ const BASE = `http://127.0.0.1:${PORT}/`;
   await page.waitForTimeout(300);
   console.log(`  rotate: turned ${tabBefore} -> ${tabAfter}, then held ${tabParked} when off`);
 
+  // --- the log drives DXCC and WAS arithmetic ------------------------------
+  // The harness log holds CA (confirmed), CT, and Ontario -- so the WAS
+  // readout must say 2 / 50 with 1 confirmed, and Ontario counting would
+  // make it 3. The DXCC readout must carry a denominator from the prefix
+  // table, not a bare tally.
+  await page.click('#tabs button:text-is("Operating")');
+  await page.waitForTimeout(1000);
+  const logstats = await page.$eval(
+    '#grid .panel[data-panel="logstats"]', (e) => e.textContent);
+  if (!logstats.includes('2 / 50')) {
+    problems.push(
+      `logstats: WAS should read 2 / 50 from the harness log, got: ${logstats.slice(0, 160)}`,
+    );
+  }
+  if (!/of \d{3}/.test(logstats)) {
+    problems.push(`logstats: DXCC readout has no denominator: ${logstats.slice(0, 160)}`);
+  }
+  console.log('  logstats: WAS 2/50 and a DXCC denominator, from a real parsed log');
+  await page.click('#tabs button:text-is("Home")');
+  await page.waitForTimeout(400);
+
   // --- watch notifications fire, once, for the watched call ----------------
   // The cluster stub spotted G0ABC; the init script put G0ABC on the watch
   // list and recorded what Notification was asked to show. The page has been
@@ -900,6 +921,18 @@ def main() -> int:
     port = free_port()
     with TemporaryDirectory() as workdir:
         work = Path(workdir)
+        # A small ADIF log, so the worked/needed machinery runs in CI at all:
+        # without it the logstats panel only ever rendered "no log source
+        # configured" here, and needed-slot colouring shipped untested. Two
+        # states (one confirmed), one confirmed DXCC entity, one STATE=ON
+        # that must NOT count toward WAS.
+        (work / "log.adi").write_text(
+            "Harness log\n<EOH>\n"
+            "<CALL:5>G0ABC<BAND:3>20M<MODE:2>CW<QSL_RCVD:1>Y<EOR>\n"
+            "<CALL:4>W6BB<BAND:3>40M<MODE:3>FT8<STATE:2>CA<LOTW_QSL_RCVD:1>Y<EOR>\n"
+            "<CALL:5>K1ABC<BAND:3>20M<MODE:3>SSB<STATE:2>CT<EOR>\n"
+            "<CALL:5>VE3XY<BAND:3>15M<MODE:2>CW<STATE:2>ON<EOR>\n"
+        )
         (work / "config.toml").write_text(
             f"""
 [server]
@@ -942,6 +975,12 @@ kind = "dxcluster"
 url = "telnet://127.0.0.1:{cluster_port}"
 local = true
 options = {{ callsign = "N0CALL", flush_seconds = 1 }}
+
+[[sources]]
+id = "log"
+kind = "adif"
+path = "{work / "log.adi"}"
+interval = 60
 
 [[sources]]
 id = "solarflux"
@@ -1016,6 +1055,7 @@ options = {{ callsign = "N0CALL" }}
                 "propagation.json",
                 "rbn.json",
                 "cluster.json",
+                "log.json",
                 "pskreporter.json",
                 "wspr.json",
             ]
