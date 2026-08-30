@@ -12,6 +12,16 @@ saying so.
 
 ## [Unreleased]
 
+### Fixed
+
+- The release workflow built only the wheel and the sdist, so **v1.0.0
+  published without the Debian package** that `docs/INSTALL.md` tells operators
+  to download. The `.deb` was built from the v1.0.0 tag, installed and served
+  on Debian 13, and attached to that release by hand, with `SHA256SUMS`
+  regenerated over all three artefacts. The workflow now builds the package,
+  installs it in a `debian:trixie-slim` container and makes it answer before
+  publishing, so the next release cannot miss it.
+
 ## [1.0.0] — 2026-08-30
 
 The first release. Alpha ended when the dashboard had been run against real
