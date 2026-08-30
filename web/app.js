@@ -89,6 +89,16 @@ function resetLayout(dash) {
 }
 
 let editing = false;
+// Kiosk rotation: cycle the dashboards for a display nobody is touching.
+// Any interaction pauses the clock, so a person mid-read never has the page
+// yanked away; the wall TV, untouched, keeps turning.
+let rotating = recall("rotate.on", false) === true;
+// The floor is 2 so the render check can spin it fast; nobody sane goes lower.
+const rotateSeconds = () => Math.max(2, Number(recall("rotate.seconds", 45)) || 45);
+// performance.now, not Date.now: "seconds of stillness" is a monotonic
+// question, and the render harness pins Date for stable screenshots -- a
+// wall-clock rotation engine froze solid under it and the scenario said so.
+let lastInteraction = performance.now();
 // The panel id being dragged in customize mode, module-level because the
 // dragover fires on the panel under the pointer, not the one that started.
 let dragged = null;
@@ -119,6 +129,21 @@ function buildTabs(dashboards, active, onPick) {
   about.type = "button";
   about.addEventListener("click", toggleAboutSheet);
   bar.append(about);
+  // Kiosk rotation, for the display nobody is touching. Like every
+  // non-dashboard control in this bar it must be excluded from the render
+  // census AND covered by its own scenario -- that rule has bitten twice.
+  const rotate = el("button", "tab tab-rotate" + (rotating ? " on" : ""), "rotate");
+  rotate.type = "button";
+  rotate.setAttribute("aria-pressed", String(rotating));
+  rotate.title =
+    `Cycle through the dashboards every ${rotateSeconds()}s — for the wall ` +
+    "display. Touching anything pauses it until you stop.";
+  rotate.addEventListener("click", () => {
+    rotating = !rotating;
+    remember("rotate.on", rotating);
+    onPick(active);
+  });
+  bar.append(rotate);
   return bar;
 }
 
@@ -887,6 +912,31 @@ async function main() {
       if (cadence === "second" || (cadence === "minute" && ticks % 60 === 0)) {
         renderPanel(entry, station);
       }
+    }
+  }, 1000);
+
+  // The rotation clock. Checked every second rather than scheduled per
+  // advance, because the pause rule is "no rotation within one interval of a
+  // human touching anything", and that is a condition to re-evaluate, not a
+  // timer to juggle. Editing, a half-typed callsign, or an open sheet also
+  // hold it still -- rotating away from the customize bar mid-drag would be
+  // the tab equivalent of the detached-button bug.
+  for (const kind of ["pointerdown", "keydown", "wheel"]) {
+    document.addEventListener(kind, () => {
+      lastInteraction = performance.now();
+    });
+  }
+  let lastAdvance = performance.now();
+  setInterval(() => {
+    if (!rotating || editing || editingCallsign || statusSheet || aboutSheet) return;
+    const wait = rotateSeconds() * 1000;
+    const now = performance.now();
+    if (now - lastInteraction < wait || now - lastAdvance < wait) return;
+    const at = dashboards.findIndex((d) => d.id === active);
+    const next = dashboards[(at + 1) % dashboards.length];
+    if (next) {
+      lastAdvance = now;
+      show(next.id);
     }
   }, 1000);
 }

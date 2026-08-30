@@ -309,7 +309,8 @@ const BASE = `http://127.0.0.1:${PORT}/`;
   // timed out underneath it. Every non-dashboard control added to this bar
   // must be excluded here -- and covered by its own scenario below, because
   // "excluded from the census" must never come to mean "never exercised".
-  const tabs = await page.$$eval('#tabs button:not(.tab-edit):not(.tab-about)', (els) =>
+  const tabs = await page.$$eval(
+    '#tabs button:not(.tab-edit):not(.tab-about):not(.tab-rotate)', (els) =>
     els.map((e) => e.textContent.trim()));
   if (tabs.length === 0) problems.push('no dashboard tabs rendered');
   console.log(`dashboards: ${tabs.join(', ')}`);
@@ -689,6 +690,33 @@ const BASE = `http://127.0.0.1:${PORT}/`;
   }
   await bare.close();
   console.log(`  callsign: set, kept over reload, reset; unset offers "${unset.trim()}"`);
+
+  // --- kiosk rotation actually rotates, and off means off ------------------
+  // Excluded from the census above, so per the standing rule it gets its own
+  // scenario. The interval is dropped to 2s through the same localStorage key
+  // an operator would use; the click that enables rotation counts as the last
+  // interaction, so one interval of stillness must pass before the first turn.
+  await page.evaluate(() => localStorage.setItem('hh.rotate.seconds', '2'));
+  await page.reload({ waitUntil: 'load' });
+  await page.waitForTimeout(1000);
+  const tabBefore = await page.$eval('#tabs .tab.on', (e) => e.textContent);
+  await page.click('#tabs .tab-rotate');
+  await page.waitForTimeout(3500);
+  const tabAfter = await page.$eval('#tabs .tab.on', (e) => e.textContent);
+  if (tabAfter === tabBefore) {
+    problems.push(`rotate: enabled at 2s and still on "${tabBefore}" after 3.5s of stillness`);
+  }
+  await page.click('#tabs .tab-rotate');  // off
+  const tabParked = await page.$eval('#tabs .tab.on', (e) => e.textContent);
+  await page.waitForTimeout(3000);
+  const tabStill = await page.$eval('#tabs .tab.on', (e) => e.textContent);
+  if (tabStill !== tabParked) {
+    problems.push(`rotate: switched OFF on "${tabParked}" but drifted to "${tabStill}"`);
+  }
+  await page.evaluate(() => localStorage.removeItem('hh.rotate.seconds'));
+  await page.click('#tabs button:text-is("Home")');
+  await page.waitForTimeout(300);
+  console.log(`  rotate: turned ${tabBefore} -> ${tabAfter}, then held ${tabParked} when off`);
 
   // The three rooms the stylesheet promises: phone, laptop, TV. Only the
   // laptop width was ever rendered, and the TV tier shipped broken -- the

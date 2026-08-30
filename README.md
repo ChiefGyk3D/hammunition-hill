@@ -558,7 +558,8 @@ always comparing like with like. Two sources, in order:
 up everyone once, so plainly: the only things you can change from the browser
 are presentation — panel arrangement via **customize** (top right), filters,
 which licence class you picked, the callsign and grid shown on that display
-(click the callsign in the header, or **FIND MY GRID** on the map) — and those
+(click the callsign in the header, or **FIND MY GRID** on the map), and
+**rotate** for a wall display that cycles its dashboards until touched — and those
 live in that browser's localStorage, per display. Everything else — sources,
 the callsign the collector *sends* when logging in to a cluster or querying
 PSK Reporter, lookups, imagery, binding — is `config.toml` on the machine
