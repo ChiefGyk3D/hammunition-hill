@@ -13,6 +13,13 @@
 // your log first.
 
 import { distance, filterRow, khz, neededClass, recall, remember } from "../../lib/format.js";
+import {
+  notifyReason,
+  saveWatchBandOpenings,
+  saveWatchedCalls,
+  watchBandOpenings,
+  watchedCalls,
+} from "../../lib/watch.js";
 
 const MODE_GROUPS = {
   CW: ["CW"],
@@ -244,5 +251,67 @@ export function render(root, { data, el }) {
     : `${shown.length} of ${all.length} stations`;
   parts.push(el("p", "count", payload.has_log ? summary : `${summary} · no log loaded`));
 
+  parts.push(...watchRow(el, rerender));
+
   root.replaceChildren(...parts);
+}
+
+// --- watch list -------------------------------------------------------------
+// Calls to be notified about, managed where the spots live. The matching runs
+// in the panel host against whatever the visible dashboard fetches, so the
+// wall display parked on Home keeps watching; the hint says exactly that. The
+// permission request happens here, behind a click, never on load.
+function watchRow(el, rerender) {
+  const row = el("div", "chips watch-row");
+  const input = el("input", "pmf-input watch-input");
+  input.value = watchedCalls().join(" ");
+  input.placeholder = "watch calls…";
+  input.title = "Space-separated callsigns to be notified about when they are spotted";
+  input.addEventListener("change", () => {
+    saveWatchedCalls(input.value.trim().split(/[\s,]+/).filter(Boolean));
+    rerender();
+  });
+  row.append(input);
+
+  const bands = el("button", "chip" + (watchBandOpenings() ? " on" : ""), "BAND OPENINGS");
+  bands.type = "button";
+  bands.title = "Notify when the propagation indicator rates a band open that was shut";
+  bands.setAttribute("aria-pressed", String(watchBandOpenings()));
+  bands.addEventListener("click", () => {
+    saveWatchBandOpenings(!watchBandOpenings());
+    rerender();
+  });
+  row.append(bands);
+
+  const blocked = notifyReason();
+  const armed = !blocked && Notification.permission === "granted";
+  if (!armed) {
+    const allow = el("button", "chip", "ALLOW NOTIFICATIONS");
+    allow.type = "button";
+    if (blocked) {
+      allow.disabled = true;
+      allow.title = blocked;
+    } else {
+      allow.addEventListener("click", async () => {
+        await Notification.requestPermission();
+        rerender();
+      });
+    }
+    row.append(allow);
+  }
+
+  const parts = [row];
+  if (blocked) {
+    parts.push(el("p", "empty", `notifications unavailable: ${blocked}`));
+  } else if (armed && (watchedCalls().length || watchBandOpenings())) {
+    parts.push(
+      el(
+        "p",
+        "count",
+        "watching — checks the sources the visible dashboard reads, so leave a " +
+          "tab with spots on it showing",
+      ),
+    );
+  }
+  return parts;
 }

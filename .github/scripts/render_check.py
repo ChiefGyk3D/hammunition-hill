@@ -105,6 +105,32 @@ class RbnStub(socketserver.StreamRequestHandler):
             pass
 
 
+# A DX cluster, spoken like a DXSpider node: a login prompt, then DX de
+# lines. Until this stub existed the harness had no cluster at all, so the
+# cluster stream client was never exercised end to end in CI and the DX
+# CLUSTER panel only ever rendered its not-configured state here. G0ABC is
+# the call the watch-notification scenario watches for.
+CLUSTER_SPOTS = [
+    "DX de W3LPL:     14025.0  G0ABC        CW 25 dB                    1234Z",
+    "DX de K3LR:       7074.0  JA1XYZ       FT8 -11 dB                  1235Z",
+    "DX de N2NT:      21205.0  VK2DEF       SSB loud                    1236Z",
+]
+
+
+class ClusterStub(socketserver.StreamRequestHandler):
+    def handle(self) -> None:
+        try:
+            self.wfile.write(b"login: ")
+            self.wfile.flush()
+            self.rfile.readline()
+            for line in CLUSTER_SPOTS:
+                self.wfile.write((line + "\r\n").encode())
+            self.wfile.flush()
+            time.sleep(120)
+        except (BrokenPipeError, ConnectionResetError, OSError):
+            pass
+
+
 class ThreadedTCP(socketserver.ThreadingTCPServer):
     daemon_threads = True
     allow_reuse_address = True
@@ -219,6 +245,24 @@ const BASE = `http://127.0.0.1:${PORT}/`;
   const problems = [];
 
   const page = await browser.newPage({ viewport: { width: 1400, height: 1000 } });
+
+  // Watch notifications, armed before the first script runs: the Notification
+  // constructor is replaced with a recorder (headless CI has no notification
+  // tray to inspect), permission reads as granted, and the watch list already
+  // contains G0ABC -- the call the cluster stub spots. Re-applied on every
+  // navigation, so the assertion late in this run sees what the CURRENT page
+  // fired on its first poll.
+  await page.addInitScript(() => {
+    window.__notifications = [];
+    window.Notification = class {
+      static permission = 'granted';
+      static async requestPermission() { return 'granted'; }
+      constructor(title, options) {
+        window.__notifications.push({ title, body: options?.body ?? '' });
+      }
+    };
+    localStorage.setItem('hh.watch.calls', JSON.stringify(['G0ABC']));
+  });
 
   // Freeze the wall clock. Half the panels print the time, so without this two
   // runs over identical code produce different PNGs -- and since these
@@ -718,6 +762,49 @@ const BASE = `http://127.0.0.1:${PORT}/`;
   await page.waitForTimeout(300);
   console.log(`  rotate: turned ${tabBefore} -> ${tabAfter}, then held ${tabParked} when off`);
 
+  // --- watch notifications fire, once, for the watched call ----------------
+  // The cluster stub spotted G0ABC; the init script put G0ABC on the watch
+  // list and recorded what Notification was asked to show. The page has been
+  // through at least one poll since its last reload, so the recorder must
+  // hold exactly one G0ABC alert -- zero means the wiring is dead, and the
+  // dedupe rule is unit-checked below where timing cannot blur it.
+  const fired = await page.evaluate(() => window.__notifications);
+  const g0abc = fired.filter((n) => n.title.includes('G0ABC'));
+  if (g0abc.length !== 1) {
+    problems.push(
+      `watch: expected exactly one G0ABC notification, got ${g0abc.length} ` +
+        `of ${fired.length} total: ${JSON.stringify(fired).slice(0, 200)}`,
+    );
+  } else {
+    console.log(`  watch: notified "${g0abc[0].title}" -- ${g0abc[0].body}`);
+  }
+  const watchUi = await page.$('#grid .panel[data-panel="spots"] .watch-input');
+  if (!watchUi) problems.push('watch: no watch-list input in the spots panel');
+
+  // The pure functions, unit-tested in the page -- the only unit rig web/
+  // has. Dedupe, base-call matching, expiry, and the band-opening diff.
+  const watchUnits = await page.evaluate(async () => {
+    const m = await import('./lib/watch.js');
+    const failures = [];
+    const spot = { call: 'W1AW/3', band: '20m' };
+    const first = m.matchSpots(['W1AW'], [spot], new Map(), 1000);
+    if (first.alerts.length !== 1) failures.push('base-call match missed W1AW/3');
+    const again = m.matchSpots(['W1AW'], [spot], first.seen, 2000);
+    if (again.alerts.length !== 0) failures.push('dedupe re-alerted inside the window');
+    const later = m.matchSpots(['W1AW'], [spot], first.seen, 1000 + 31 * 60 * 1000);
+    if (later.alerts.length !== 1) failures.push('expired entry did not re-alert');
+    const opened = m.newlyOpen(
+      [{ band: '20m', level: 'warn' }, { band: '40m', level: 'good' }],
+      [{ band: '20m', level: 'good' }, { band: '40m', level: 'good' }],
+    );
+    if (opened.length !== 1 || opened[0].band !== '20m') {
+      failures.push(`newlyOpen returned ${JSON.stringify(opened)}`);
+    }
+    return failures;
+  });
+  for (const failure of watchUnits) problems.push(`watch units: ${failure}`);
+  if (!watchUnits.length) console.log('  watch units: match, dedupe, expiry, band diff ok');
+
   // The three rooms the stylesheet promises: phone, laptop, TV. Only the
   // laptop width was ever rendered, and the TV tier shipped broken -- the
   // zoom put getBoundingClientRect in a different coordinate space from the
@@ -806,6 +893,10 @@ def main() -> int:
     rbn_port = rbn.server_address[1]
     Thread(target=rbn.serve_forever, daemon=True).start()
 
+    cluster = ThreadedTCP(("127.0.0.1", 0), ClusterStub)
+    cluster_port = cluster.server_address[1]
+    Thread(target=cluster.serve_forever, daemon=True).start()
+
     port = free_port()
     with TemporaryDirectory() as workdir:
         work = Path(workdir)
@@ -842,6 +933,13 @@ interval = 86400
 id = "rbn"
 kind = "rbn"
 url = "telnet://127.0.0.1:{rbn_port}"
+local = true
+options = {{ callsign = "N0CALL", flush_seconds = 1 }}
+
+[[sources]]
+id = "cluster"
+kind = "dxcluster"
+url = "telnet://127.0.0.1:{cluster_port}"
 local = true
 options = {{ callsign = "N0CALL", flush_seconds = 1 }}
 
@@ -917,6 +1015,7 @@ options = {{ callsign = "N0CALL" }}
                 "satellites.json",
                 "propagation.json",
                 "rbn.json",
+                "cluster.json",
                 "pskreporter.json",
                 "wspr.json",
             ]
