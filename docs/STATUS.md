@@ -263,6 +263,19 @@ argument for each can be had before the code is.
 The ones marked **strong fit** need no new architecture: an existing source
 shape, a tier 0 computation, or the log we already read.
 
+One came out of the 1.0 soak rather than a wish list. Running the packaged
+service against real upstreams from three machines at once, SWPC answered 200
+with a body that ended in trailing bytes after a complete JSON document, and
+`services.swpc.noaa.gov` and `celestrak.org` both returned transient errors
+under that load. The collector did exactly what it promises — logged the
+reason, kept the last good snapshot, carried on, and recovered on the next
+cycle — so this is not a defect. But a single transient failure currently
+leaves a panel flagged as failing for up to a whole interval, and **one
+bounded retry before giving up on a cycle** would shorten that. It is a
+candidate rather than a fix because a retry also doubles the load a
+misbehaving upstream sees, and that argument should be had before the code
+is written.
+
 ### Operating, day to day
 
 | Idea | Fit | Notes |
