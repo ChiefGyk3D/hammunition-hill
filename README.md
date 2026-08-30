@@ -60,6 +60,7 @@ finished, so here is exactly where things stand:
 | Source kinds | ✅ 13 polled, 6 stream, 1 file |
 | Space weather dials | ✅ 8 scales |
 | Map — 3D globe / 2D flat, greyline, spots, aurora, path plotting | ✅ working |
+| Watch notifications — watched calls and band openings | ✅ working |
 | Band globes — one sphere per active band, hamdash style | ✅ working |
 | Your log driving spot colouring | ✅ working |
 | DX cluster, WSJT-X, `rigctld` | ✅ working |

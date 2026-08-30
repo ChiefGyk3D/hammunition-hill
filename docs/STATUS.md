@@ -111,6 +111,7 @@ Ten are **tier 0** — they work with the internet unplugged: `bandplan`,
 | Feature | Status | Notes |
 |---|---|---|
 | Rotatable globe with greyline | ✅ | Orthographic projection on 2D canvas. No WebGL, no library. A 2D equirectangular mode shares the same projection dispatch |
+| Watch notifications | ✅ | A watch list in the spots panel; a system notification when a watched call is spotted (cluster, WSJT-X, POTA/SOTA) or the propagation indicator flips a band open. Browser-local, permission asked behind a click, checks only what the visible dashboard already fetches. Needs https or localhost, same as geolocation, and says so |
 | Kiosk rotation | ✅ | "rotate" in the tab bar cycles dashboards (45s default, `hh.rotate.seconds` in localStorage to change); any touch pauses it for one interval. For the wall display |
 | Browser-side callsign | ✅ | Click the header to set the callsign shown on that display; offered outright when config has none. Presentation only — what the collector sends stays config.toml, because there is no write endpoint |
 | Toolbox dashboard | ✅ | The interactive tools on their own tab, above the fold — they were two screens deep on Operating |

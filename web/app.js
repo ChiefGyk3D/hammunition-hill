@@ -31,6 +31,12 @@ import {
   saveCallsign,
   savedCallsign,
 } from "./lib/geolocate.js";
+import {
+  matchSpots,
+  newlyOpen,
+  watchBandOpenings,
+  watchedCalls,
+} from "./lib/watch.js";
 
 const el = (tag, className, text) => {
   const node = document.createElement(tag);
@@ -560,6 +566,53 @@ document.addEventListener("click", (event) => {
   }
 });
 
+// --- watch notifications --------------------------------------------------
+// A system notification when a watched callsign shows up in the spots, or a
+// band the model rates open was shut a poll ago. Checked against snapshots
+// the page already holds -- no new fetch, no new egress -- and only against
+// what the VISIBLE dashboard reads, which the spots panel says out loud. The
+// permission ask lives in the spots panel behind a click, because a page
+// that begs for notification permission on load is a page people mute.
+let watchSeen = new Map();
+let lastWatchedBands = null;
+
+function fireWatch() {
+  if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
+
+  const watch = watchedCalls();
+  if (watch.length) {
+    const spots = [];
+    for (const id of ["cluster", "wsjtx", "pota", "sota"]) {
+      for (const spot of snapshots.get(id)?.data?.spots ?? []) spots.push(spot);
+    }
+    const { alerts, seen } = matchSpots(watch, spots, watchSeen, Date.now());
+    watchSeen = seen;
+    for (const spot of alerts) {
+      const freq = spot.khz ? `${(spot.khz / 1000).toFixed(3)} MHz` : "";
+      const park = spot.ref ? `at ${spot.ref}` : "";
+      new Notification(`${spot.call} spotted`, {
+        body: [spot.band, freq, spot.mode, park].filter(Boolean).join(" · "),
+        tag: `hh-watch-${spot.call}-${spot.band ?? ""}`,
+      });
+    }
+  }
+
+  if (watchBandOpenings()) {
+    const bands = snapshots.get("propagation")?.data?.bands ?? null;
+    if (bands) {
+      if (lastWatchedBands) {
+        for (const band of newlyOpen(lastWatchedBands, bands)) {
+          new Notification(`${band.band} looks open`, {
+            body: `${band.reason} — per the indicator, not a promise`,
+            tag: `hh-band-${band.band}`,
+          });
+        }
+      }
+      lastWatchedBands = bands;
+    }
+  }
+}
+
 // --- the station header --------------------------------------------------
 // The callsign is editable here, in the browser, because a display with no
 // name on it should offer you a way to put one on -- and it is presentation
@@ -676,6 +729,8 @@ async function poll(station) {
     if (fingerprint(entry) === entry.lastPrint) updateAge(entry);
     else renderPanel(entry, station);
   }
+  fireWatch();
+
   // The station snapshot moves when the collector follows a GPS fix; keep the
   // header current with it -- but never yank a half-typed callsign away.
   const liveStation = snapshots.get("station")?.data;
