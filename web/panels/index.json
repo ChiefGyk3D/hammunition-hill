@@ -1,5 +1,5 @@
 {
-  "comment": "Dashboards and the panels on each. A panel id must have a directory under web/panels/ containing panel.json and panel.js, and its manifest names the snapshot ids it reads \u2014 those must match the source ids in your config.toml.",
+  "comment": "Dashboards and the panels on each. A panel id must have a directory under web/panels/ containing panel.json and panel.js, and its manifest names the snapshot ids it reads — those must match the source ids in your config.toml.",
   "dashboards": [
     {
       "id": "home",
@@ -51,6 +51,18 @@
         "logstats",
         "bandplan",
         "tools",
+        "exam"
+      ]
+    },
+    {
+      "id": "toolbox",
+      "name": "Toolbox",
+      "panels": [
+        "tools",
+        "callsign",
+        "cw",
+        "reference",
+        "bandplan",
         "exam"
       ]
     },

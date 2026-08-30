@@ -641,6 +641,55 @@ const BASE = `http://127.0.0.1:${PORT}/`;
   await page.click('#tabs button:text-is("Home")');
   await page.waitForTimeout(400);
 
+  // --- the callsign is editable in the header ------------------------------
+  // Presentation-only by design: the override lives in this browser and the
+  // hint says so. The checks are the honest lifecycle -- set, survive a
+  // reload, reset -- because a header that forgets on refresh teaches the
+  // operator the feature is broken.
+  await page.click('#station .station-edit');
+  await page.fill('#station .station-input', 'W1AW/3');
+  await page.press('#station .station-input', 'Enter');
+  await page.waitForTimeout(200);
+  let header = await page.$eval('#station', (e) => e.textContent);
+  if (!header.includes('W1AW/3')) {
+    problems.push(`callsign: set W1AW/3 but the header reads "${header}"`);
+  }
+  await page.reload({ waitUntil: 'load' });
+  await page.waitForTimeout(1200);
+  header = await page.$eval('#station', (e) => e.textContent);
+  if (!header.includes('W1AW/3')) {
+    problems.push(`callsign: override did not survive a reload -- header reads "${header}"`);
+  }
+  await page.click('#station .station-edit');
+  await page.fill('#station .station-input', '');
+  await page.press('#station .station-input', 'Enter');
+  await page.waitForTimeout(200);
+  header = await page.$eval('#station', (e) => e.textContent);
+  if (!header.includes('N0CALL')) {
+    problems.push(`callsign: clearing should return to config's N0CALL, header reads "${header}"`);
+  }
+
+  // A station with no callsign must OFFER one, not render a blank corner --
+  // served here by stripping the field in flight, since the harness config
+  // sensibly has one.
+  const bare = await browser.newPage({ viewport: { width: 1400, height: 400 } });
+  await bare.route('**/data/station.json', async (route) => {
+    const res = await route.fetch();
+    const body = JSON.parse(await res.text());
+    delete body.data.callsign;
+    await route.fulfill({ response: res, body: JSON.stringify(body) });
+  });
+  await bare.goto(BASE, { waitUntil: 'domcontentloaded' });
+  await bare.waitForSelector('#station .station-edit', { timeout: 15000 });
+  const unset = await bare.$eval('#station', (e) => e.textContent);
+  if (!unset.toLowerCase().includes('set callsign')) {
+    problems.push(
+      `callsign: with none configured the header reads "${unset}", not an offer to set one`,
+    );
+  }
+  await bare.close();
+  console.log(`  callsign: set, kept over reload, reset; unset offers "${unset.trim()}"`);
+
   // The three rooms the stylesheet promises: phone, laptop, TV. Only the
   // laptop width was ever rendered, and the TV tier shipped broken -- the
   // zoom put getBoundingClientRect in a different coordinate space from the
