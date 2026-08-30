@@ -19,8 +19,54 @@ You do *not* need a database, a web server, an account, or an API key.
 
 ## Install
 
-Three ways in. A clone is still the best one for anyone who might edit a panel
-or contribute; the other two exist so that nobody has to.
+Four ways in. On Debian or a Debian derivative the package is the shortest
+path and the one that ends with a running service; a clone is still the best
+one for anyone who might edit a panel or contribute.
+
+### From the Debian package
+
+Download `hammunition-hill_<version>_all.deb` from the
+[releases page](https://github.com/ChiefGyk3D/hammunition-hill/releases), then:
+
+```bash
+sudo apt install ./hammunition-hill_1.0.0_all.deb
+```
+
+`apt` pulls the dependencies from Debian rather than from PyPI — `python3-httpx`,
+`python3-defusedxml`, and `python3-sgp4` for satellites — and installs:
+
+| Path | What |
+|---|---|
+| `/usr/bin/hamhill` | the command |
+| `/etc/hammunition-hill/config.toml` | your config, a conffile, `root:hamhill` and mode 0640 because it carries your callsign |
+| `/var/lib/hammunition-hill` | the snapshots, owned by the service account |
+| `/lib/systemd/system/hammunition-hill.service` | the unit |
+
+The service is enabled and started on install, bound to loopback. Edit the
+config and restart:
+
+```bash
+sudoedit /etc/hammunition-hill/config.toml
+sudo systemctl restart hammunition-hill
+journalctl -u hammunition-hill -f
+```
+
+`apt upgrade` keeps your edited config — dpkg asks before touching a conffile.
+`apt remove` stops the service and leaves your snapshots and the service
+account alone; `apt purge` takes them, along with `/etc/hammunition-hill`.
+
+The unit runs as a system account with no shell and a full set of systemd
+confinement directives: read-only filesystem apart from its own state
+directory, no capabilities, a `@system-service` syscall filter, and only the
+address families the resolver actually needs. `tests/test_packaging.py` holds
+that list, because losing one of those lines changes nothing an operator can
+see.
+
+To build it yourself from a checkout:
+
+```bash
+./packaging/debian/build.sh dist
+```
 
 ### From a clone
 

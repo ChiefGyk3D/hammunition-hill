@@ -1,0 +1,16 @@
+#!/bin/sh
+# Stop the service before its files go away. Not on upgrade: postinst
+# restarts it, and stopping here too would mean a needless second outage.
+set -e
+
+UNIT=hammunition-hill.service
+
+case "$1" in
+  remove|deconfigure)
+    if [ -d /run/systemd/system ] && [ -x /usr/bin/deb-systemd-invoke ]; then
+      deb-systemd-invoke stop "$UNIT" >/dev/null 2>&1 || true
+    fi
+    ;;
+esac
+
+exit 0
