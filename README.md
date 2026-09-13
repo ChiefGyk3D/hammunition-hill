@@ -136,6 +136,7 @@ hardware finds it faster than we can.
 | **[CLAUDE.md](CLAUDE.md)** | Architecture invariants and standing conventions, for humans and agents alike. |
 | **[Status](docs/STATUS.md)** | **Complete feature inventory — what works, what is partial, what is not written.** |
 | **[Parity](docs/PARITY.md)** | Feature-by-feature against hamdash.com, including where we deliberately differ. |
+| **[HamClock](docs/HAMCLOCK.md)** | Feature-by-feature against HamClock, what "MUF" means there, and the measured route to VOACAP. |
 | **[Reuse audit](docs/REUSE.md)** | What is worth borrowing from the sibling projects. |
 
 ---
