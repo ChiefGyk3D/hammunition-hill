@@ -1,0 +1,10 @@
+{
+  "id": "meteors",
+  "name": "Meteor Showers",
+  "tier": 0,
+  "sources": ["station"],
+  "embed_hosts": [],
+  "span": 2,
+  "description": "Which showers are running, when they peak, and where the radiant is in your sky right now — the two things that decide whether meteor scatter is worth trying. Computed here from a shipped radiant table and the clock.",
+  "ticks": "minute"
+}

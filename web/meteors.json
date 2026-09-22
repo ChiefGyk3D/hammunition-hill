@@ -1,0 +1,172 @@
+{
+  "comment": "The IMO working list of major annual meteor showers, as data. Radiants are J2000 right ascension and declination at the peak; they drift a degree or so a day across a shower and that is far below what this panel reads to. Dates are the solar-longitude peaks expressed as a month and day, which move by at most a day between years. ZHR is the visual zenithal hourly rate under a perfect sky at the peak; it is the honest headline number and it is NOT what a radio operator receives, which is why the panel labels it as visual. Showers useful to meteor scatter are marked - the daytime ones are invisible and among the best on the air. Source: International Meteor Organization working list. Edit this file to add a shower; tests/test_meteors.py validates the schema.",
+  "source": "International Meteor Organization working list of visual meteor showers",
+  "showers": [
+    {
+      "id": "QUA",
+      "name": "Quadrantids",
+      "start": "12-28",
+      "peak": "01-03",
+      "end": "01-12",
+      "zhr": 110,
+      "ra": 230.0,
+      "dec": 49.5,
+      "velocity_kms": 41,
+      "note": "Sharp maximum, only a few hours wide. Miss it and the shower is ordinary."
+    },
+    {
+      "id": "LYR",
+      "name": "Lyrids",
+      "start": "04-14",
+      "peak": "04-22",
+      "end": "04-30",
+      "zhr": 18,
+      "ra": 271.0,
+      "dec": 33.6,
+      "velocity_kms": 49
+    },
+    {
+      "id": "ETA",
+      "name": "Eta Aquariids",
+      "start": "04-19",
+      "peak": "05-06",
+      "end": "05-28",
+      "zhr": 50,
+      "ra": 338.0,
+      "dec": -1.0,
+      "velocity_kms": 66,
+      "note": "Halley's dust. Strongly favours the southern hemisphere."
+    },
+    {
+      "id": "ARI",
+      "name": "Daytime Arietids",
+      "start": "05-14",
+      "peak": "06-07",
+      "end": "06-24",
+      "zhr": 30,
+      "ra": 44.5,
+      "dec": 24.0,
+      "velocity_kms": 39,
+      "daytime": true,
+      "note": "The strongest daytime shower of the year and invisible from the ground. Radio operators have it to themselves."
+    },
+    {
+      "id": "JBO",
+      "name": "June Bootids",
+      "start": "06-22",
+      "peak": "06-27",
+      "end": "07-02",
+      "zhr": 0,
+      "ra": 224.0,
+      "dec": 47.6,
+      "velocity_kms": 18,
+      "note": "Normally nothing; occasionally an outburst of a hundred an hour. Worth a look, never worth a plan."
+    },
+    {
+      "id": "SDA",
+      "name": "Southern delta Aquariids",
+      "start": "07-12",
+      "peak": "07-30",
+      "end": "08-23",
+      "zhr": 25,
+      "ra": 340.0,
+      "dec": -16.4,
+      "velocity_kms": 41
+    },
+    {
+      "id": "PER",
+      "name": "Perseids",
+      "start": "07-17",
+      "peak": "08-12",
+      "end": "08-24",
+      "zhr": 100,
+      "ra": 48.2,
+      "dec": 58.1,
+      "velocity_kms": 59,
+      "note": "The reliable one, and the one every VHF operator schedules around."
+    },
+    {
+      "id": "STA",
+      "name": "Southern Taurids",
+      "start": "09-10",
+      "peak": "10-10",
+      "end": "11-20",
+      "zhr": 5,
+      "ra": 32.0,
+      "dec": 9.0,
+      "velocity_kms": 27,
+      "note": "Low rate, very long, and rich in fireballs — which is what makes a long burn."
+    },
+    {
+      "id": "DRA",
+      "name": "Draconids",
+      "start": "10-06",
+      "peak": "10-08",
+      "end": "10-10",
+      "zhr": 0,
+      "ra": 262.0,
+      "dec": 55.7,
+      "velocity_kms": 20,
+      "note": "Storm years or nothing. Slow meteors, which ionise well when they come."
+    },
+    {
+      "id": "ORI",
+      "name": "Orionids",
+      "start": "10-02",
+      "peak": "10-21",
+      "end": "11-07",
+      "zhr": 20,
+      "ra": 95.0,
+      "dec": 15.6,
+      "velocity_kms": 66,
+      "note": "Halley's dust again, from the other side of the orbit."
+    },
+    {
+      "id": "NTA",
+      "name": "Northern Taurids",
+      "start": "10-20",
+      "peak": "11-12",
+      "end": "12-10",
+      "zhr": 5,
+      "ra": 58.0,
+      "dec": 22.0,
+      "velocity_kms": 29
+    },
+    {
+      "id": "LEO",
+      "name": "Leonids",
+      "start": "11-06",
+      "peak": "11-17",
+      "end": "11-30",
+      "zhr": 15,
+      "ra": 152.0,
+      "dec": 21.6,
+      "velocity_kms": 71,
+      "note": "The fastest of the majors. Storms roughly every 33 years; the last was 2001."
+    },
+    {
+      "id": "GEM",
+      "name": "Geminids",
+      "start": "12-04",
+      "peak": "12-14",
+      "end": "12-20",
+      "zhr": 150,
+      "ra": 112.0,
+      "dec": 32.5,
+      "velocity_kms": 35,
+      "note": "The richest shower of the year, and the radiant is usefully high all night from mid-northern latitudes."
+    },
+    {
+      "id": "URS",
+      "name": "Ursids",
+      "start": "12-17",
+      "peak": "12-22",
+      "end": "12-26",
+      "zhr": 10,
+      "ra": 217.0,
+      "dec": 75.8,
+      "velocity_kms": 33,
+      "note": "Circumpolar radiant: up all night from the northern hemisphere, never up from the southern."
+    }
+  ]
+}

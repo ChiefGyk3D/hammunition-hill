@@ -59,10 +59,10 @@ things stand:
 |---|---|
 | Collector, snapshot architecture, static server | ✅ working |
 | Egress allowlist, CSP, path handling | ✅ working |
-| Panels | ✅ 30 across 7 dashboards |
+| Panels | ✅ 33 across 7 dashboards |
 | Source kinds | ✅ 13 polled, 6 stream, 1 file |
 | Space weather dials | ✅ 8 scales |
-| Map — 3D globe / 2D flat, greyline, spots, aurora, path plotting | ✅ working |
+| Map — 3D globe / 2D flat / azimuthal equidistant, greyline, spots, aurora, path plotting | ✅ working |
 | Watch notifications — watched calls and band openings | ✅ working |
 | DXCC and WAS progress from your ADIF log | ✅ working |
 | Band globes — one sphere per active band, hamdash style | ✅ working |
@@ -77,6 +77,9 @@ things stand:
 | VOACAP point-to-point | ❌ **not written** |
 | Weather outside the US | 🟡 feeds and maps; no structured severity |
 | Callsign query endpoint | ✅ working — off by default, local index only |
+| Sun & Moon — sunrise, sunset, greyline window, moon phase and EME look angles | ✅ working |
+| Meteor showers — active showers and the radiant in your sky now | ✅ working |
+| Frequency memories — your channels, checked against your licence class | ✅ working |
 | GPS — portable auto-grid and clock check | ✅ working |
 | CW / Morse tools — reference, translator, audio | ✅ working |
 | Pocket reference — Q signals, RST, phonetics, calling freqs | ✅ working |
@@ -136,6 +139,7 @@ hardware finds it faster than we can.
 | **[CLAUDE.md](CLAUDE.md)** | Architecture invariants and standing conventions, for humans and agents alike. |
 | **[Status](docs/STATUS.md)** | **Complete feature inventory — what works, what is partial, what is not written.** |
 | **[Parity](docs/PARITY.md)** | Feature-by-feature against hamdash.com, including where we deliberately differ. |
+| **[OpenHamClock parity](docs/OPENHAMCLOCK.md)** | Panel-by-panel against OpenHamClock — what it has that we do not, what we have that it does not, and which differences are decisions. |
 | **[Reuse audit](docs/REUSE.md)** | What is worth borrowing from the sibling projects. |
 
 ---

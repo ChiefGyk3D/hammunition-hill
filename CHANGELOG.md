@@ -12,6 +12,42 @@ saying so.
 
 ## [Unreleased]
 
+### Added
+
+- **A parity page against [OpenHamClock](https://github.com/accius/openhamclock)**,
+  walked against its own panel registry rather than its README —
+  `docs/OPENHAMCLOCK.md`. Sixty-eight of their built-in panels against our
+  thirty-three, in both directions, with the differences that are *decisions*
+  separated from the ones that are gaps. The deployment trade-off that drives
+  most of the rows is stated at the top: theirs is an Express proxy that
+  fetches when a browser asks, ours is a collector on a schedule with no code
+  path from the server into it.
+- **Azimuthal equidistant projection** on the map — `AZ` in the view row,
+  centred on your station. Every bearing out of the middle is a straight line
+  and distance along it is linear to the antipode on the rim, which is the
+  projection HamClock made its default and the one a beam operator actually
+  wants. `tests/test_globe_projection.py` asserts exactly that against
+  `geo.py`'s own bearings and distances, because a projection that is subtly
+  wrong still draws a convincing coastline.
+- **Sun & Moon panel** (tier 0) — sunrise, sunset, transit, daylight length and
+  the civil-twilight greyline window; moonrise, moonset, phase, illuminated
+  fraction, distance, live look angles and how much of the EME window is left.
+- **Meteor Showers panel** (tier 0) — which of the IMO major showers are
+  running, when each peaks, and where its radiant is in *your* sky now, which
+  is the thing that decides whether meteor scatter is worth trying. The panel
+  says on its face that ZHR is a visual rate and not what you will hear.
+- **Frequencies panel** (tier 0) — memory channels with export and import,
+  each one checked against the band plan for your licence class. A memory is a
+  frequency you are about to key up on, and a list that silently contains one
+  you may not transmit on is worse than no list, because it looks checked.
+- **`ephemeris.py` and `web/lib/ephemeris.js`** — where the moon is, and when
+  either body rises, sets or transits here. Two implementations of the
+  *Astronomical Almanac*'s low-precision series, pinned to each other by
+  `tests/test_ephemeris_drift.py` and to Meeus's worked example and two known
+  syzygies by `tests/test_ephemeris.py`. The accuracy is stated on the panel
+  rather than implied: half a moon-width, which is fine for planning a window
+  and not fine for pointing a dish open-loop.
+
 ### Fixed
 
 - The release workflow built only the wheel and the sdist, so **v1.0.0

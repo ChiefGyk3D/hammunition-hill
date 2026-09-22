@@ -215,6 +215,7 @@ product. None of these fetch anything.
 | Module | Responsibility |
 |---|---|
 | `solar.py` | Where the sun is. |
+| `ephemeris.py` | Where the moon is, and when either body rises, sets or transits here. Mirrored in `web/lib/ephemeris.js`. |
 | `severity.py` | What a space weather number actually means. |
 | `propagation.py` | A crude HF propagation indicator. |
 | `minimuf.py` | MINIMUF 3.5: point-to-point MUF over a chosen path. Public-domain NOSC algorithm, mirrored in `web/lib/muf.js` with a drift test. |

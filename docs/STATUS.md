@@ -24,7 +24,7 @@ have. Where the two disagree, this page is the one kept current.
 |---|---|
 | Collector, snapshot architecture, static server | ✅ working |
 | Egress allowlist, CSP, path handling | ✅ working |
-| Panels | ✅ 30 across 7 dashboards |
+| Panels | ✅ 33 across 7 dashboards |
 | Source kinds | ✅ 13 polled, 6 stream, 1 file |
 | Space weather dials | ✅ 8 scales |
 | Your log driving spot colouring | ✅ working |
@@ -105,17 +105,22 @@ The parts everything else sits on.
 
 ## Panels
 
-30 panels, 7 dashboards: **Home**, **Map**, **Space Weather**, **Operating**,
+33 panels, 7 dashboards: **Home**, **Map**, **Space Weather**, **Operating**,
 **Toolbox**, **Activity**, **Field & Weather**. Regroup them by editing
 `web/panels/index.json`.
 
-Ten are **tier 0** — they work with the internet unplugged: `bandplan`,
-`beacons`, `callsign`, `clock`, `cw`, `exam`, `gps`, `logbook`, `reference`,
-`tools`. Nineteen are tier 1. One is tier 2 (`imagery`).
+Thirteen are **tier 0** — they work with the internet unplugged: `bandplan`,
+`beacons`, `callsign`, `clock`, `cw`, `exam`, `gps`, `logbook`, `memories`,
+`meteors`, `reference`, `sunmoon`, `tools`. Nineteen are tier 1. One is tier 2
+(`imagery`).
 
 | Feature | Status | Notes |
 |---|---|---|
 | Rotatable globe with greyline | ✅ | Orthographic projection on 2D canvas. No WebGL, no library. A 2D equirectangular mode shares the same projection dispatch |
+| Azimuthal equidistant projection | ✅ | The third mode on the same dispatch, centred on your station: every bearing out of the middle is a straight line and distance along it is linear to the antipode on the rim. `tests/test_globe_projection.py` asserts that against `geo.py`'s own bearings and distances, because a projection that is subtly wrong still draws a convincing coastline |
+| Sun & Moon | ✅ | Sunrise, sunset, transit and the civil-twilight greyline window; moonrise, moonset, phase, illumination, distance, live look angles and how much of the EME window is left. Tier 0 — the clock and your grid square, nothing else |
+| Meteor showers | ✅ | Which showers are running, when they peak, and where each radiant is in your sky *now*, which is what decides whether meteor scatter is worth trying. The panel says outright that ZHR is a visual rate and not what you will hear |
+| Frequency memories | ✅ | Your own channels, checked against the band plan for your licence class. Kept in the browser, with export and import, because there is no write endpoint to keep them anywhere else |
 | DXCC and WAS progress | ✅ | Log stats reads "147 of 340" with the active prefix table as the denominator, and WAS n/50 with confirmed count and the missing states named once ≤12 remain. STATE indexing rides on the log, not the prefix lookup; VE provinces do not count |
 | Watch notifications | ✅ | A watch list in the spots panel; a system notification when a watched call is spotted (cluster, WSJT-X, POTA/SOTA) or the propagation indicator flips a band open. Browser-local, permission asked behind a click, checks only what the visible dashboard already fetches. Needs https or localhost, same as geolocation, and says so |
 | Kiosk rotation | ✅ | "rotate" in the tab bar cycles dashboards (45s default, `hh.rotate.seconds` in localStorage to change); any touch pauses it for one interval. For the wall display |
@@ -144,7 +149,7 @@ Ten are **tier 0** — they work with the internet unplugged: `bandplan`,
 | Part 97 beside the answer | ✅ | 47 CFR Part 97 ships too, so a rules question shows the section it comes from, in full, as the FCC published it. 192 questions cite one. Nothing is paraphrased |
 | Satellite passes | ✅ | Amateur TLEs fetched daily; passes, look angles and Doppler computed here from cached elements, so the panel survives a WAN outage for days. Needs the optional `sgp4` extra — see [SATELLITES.md](SATELLITES.md) |
 | Reverse Beacon Network | ✅ | Who is hearing your callsign, with SNR and speed, plus a rolling per-band tally of everything else. Several thousand spots a minute collapse into a table bounded by the band plan — see [RBN.md](RBN.md) |
-| Ionospheric map | ❌ | |
+| Ionospheric map | ❌ | KC2G/GIRO publish measured foF2 and MUF at a single URL, which fits the source model exactly. The strongest unclaimed item on [OPENHAMCLOCK.md](OPENHAMCLOCK.md) |
 | Built-in SDR receiver | ⛔ | WebUSB needs a secure context, which would force TLS onto a LAN appliance for one panel. Point a tier 2 panel at your own OpenWebRX+ or KiwiSDR instead. |
 
 ## Callsign lookup
