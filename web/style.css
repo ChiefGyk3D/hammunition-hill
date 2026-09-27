@@ -1252,3 +1252,11 @@ table.meteors td { padding: 2px 6px 2px 0; vertical-align: baseline; }
 .met-verdict.met-good { color: var(--good); }
 .met-verdict.met-fair { color: var(--fair); }
 .met-verdict.muted { color: var(--muted); }
+
+/* Ionosondes. The table borrows `bands` for its frame; these are the columns
+   that have to line up as numbers rather than as text. */
+.ion-table .ion-num,
+.ion-table .ion-km { text-align: right; font-variant-numeric: tabular-nums; }
+.ion-table .ion-age { color: var(--muted); }
+.ion-table .ion-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 18ch; }
+.ion-nearest { font-family: var(--mono); font-size: 11.5px; color: var(--muted); margin: 8px 0 2px; }

@@ -24,8 +24,8 @@ have. Where the two disagree, this page is the one kept current.
 |---|---|
 | Collector, snapshot architecture, static server | ✅ working |
 | Egress allowlist, CSP, path handling | ✅ working |
-| Panels | ✅ 33 across 7 dashboards |
-| Source kinds | ✅ 13 polled, 6 stream, 1 file |
+| Panels | ✅ 34 across 7 dashboards |
+| Source kinds | ✅ 14 polled, 6 stream, 1 file |
 | Space weather dials | ✅ 8 scales |
 | Your log driving spot colouring | ✅ working |
 | Rig and WSJT-X integration | ✅ working |
@@ -76,8 +76,9 @@ The parts everything else sits on.
 
 ## Sources
 
-**Polled** (13 kinds): `swpc`, `hamqsl`, `rss`, `pota`, `sota`, `ics`, `aurora`,
-`noaa_scales`, `swpc_alerts`, `nws_alerts`, `tle`, `pskreporter`, `wspr`.
+**Polled** (14 kinds): `swpc`, `hamqsl`, `rss`, `pota`, `sota`, `ics`, `aurora`,
+`ionosonde`, `noaa_scales`, `swpc_alerts`, `nws_alerts`, `tle`, `pskreporter`,
+`wspr`.
 **Stream** (6): `dxcluster`, `rbn`, `wsjtx`, `rigctl`, `gpsd`, `nmea`.
 **File** (1): `adif`.
 
@@ -105,13 +106,13 @@ The parts everything else sits on.
 
 ## Panels
 
-33 panels, 7 dashboards: **Home**, **Map**, **Space Weather**, **Operating**,
+34 panels, 7 dashboards: **Home**, **Map**, **Space Weather**, **Operating**,
 **Toolbox**, **Activity**, **Field & Weather**. Regroup them by editing
 `web/panels/index.json`.
 
 Thirteen are **tier 0** — they work with the internet unplugged: `bandplan`,
 `beacons`, `callsign`, `clock`, `cw`, `exam`, `gps`, `logbook`, `memories`,
-`meteors`, `reference`, `sunmoon`, `tools`. Nineteen are tier 1. One is tier 2
+`meteors`, `reference`, `sunmoon`, `tools`. Twenty are tier 1. One is tier 2
 (`imagery`).
 
 | Feature | Status | Notes |
@@ -149,7 +150,8 @@ Thirteen are **tier 0** — they work with the internet unplugged: `bandplan`,
 | Part 97 beside the answer | ✅ | 47 CFR Part 97 ships too, so a rules question shows the section it comes from, in full, as the FCC published it. 192 questions cite one. Nothing is paraphrased |
 | Satellite passes | ✅ | Amateur TLEs fetched daily; passes, look angles and Doppler computed here from cached elements, so the panel survives a WAN outage for days. Needs the optional `sgp4` extra — see [SATELLITES.md](SATELLITES.md) |
 | Reverse Beacon Network | ✅ | Who is hearing your callsign, with SNR and speed, plus a rolling per-band tally of everything else. Several thousand spots a minute collapse into a table bounded by the band plan — see [RBN.md](RBN.md) |
-| Ionospheric map | ❌ | KC2G/GIRO publish measured foF2 and MUF at a single URL, which fits the source model exactly. The strongest unclaimed item on [OPENHAMCLOCK.md](OPENHAMCLOCK.md) |
+| Ionosonde soundings | ✅ | Measured foF2 and MUF(3000) from KC2G's aggregation of GIRO and NOAA, ranked by distance from your station. The feed is a roster carrying each station's *last* reading — some years old, at full confidence — so anything older than 90 minutes is dropped rather than shown |
+| Ionospheric map | ❌ | The soundings are in; drawing them as a contoured world map over the globe is the part still missing |
 | Built-in SDR receiver | ⛔ | WebUSB needs a secure context, which would force TLS onto a LAN appliance for one panel. Point a tier 2 panel at your own OpenWebRX+ or KiwiSDR instead. |
 
 ## Callsign lookup

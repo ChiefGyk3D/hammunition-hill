@@ -59,8 +59,8 @@ things stand:
 |---|---|
 | Collector, snapshot architecture, static server | ✅ working |
 | Egress allowlist, CSP, path handling | ✅ working |
-| Panels | ✅ 33 across 7 dashboards |
-| Source kinds | ✅ 13 polled, 6 stream, 1 file |
+| Panels | ✅ 34 across 7 dashboards |
+| Source kinds | ✅ 14 polled, 6 stream, 1 file |
 | Space weather dials | ✅ 8 scales |
 | Map — 3D globe / 2D flat / azimuthal equidistant, greyline, spots, aurora, path plotting | ✅ working |
 | Watch notifications — watched calls and band openings | ✅ working |

@@ -48,6 +48,25 @@ saying so.
   rather than implied: half a moon-width, which is fine for planning a window
   and not fine for pointing a dish open-loop.
 
+- **Ionosondes panel** (tier 1) — measured `foF2` and MUF(3000) from the GIRO
+  and NOAA sounder networks via KC2G, ranked by distance from your station,
+  because the sounder 200 km away is about *your* path and one on the far side
+  of the world is a fact about somewhere else. This is the only propagation
+  input here that is measured rather than modelled; where a sounder is near the
+  path it beats MINIMUF outright.
+
+  The fetch was the easy half. The feed is a **roster, not a snapshot** — every
+  station KC2G knows about appears in every response carrying whatever sounding
+  it last managed, and in a real response Austin reported `fof2` 8.6 with a
+  confidence score of 100 and a timestamp six months old, while Beijing carried
+  a reading from 2021. Publishing those beside a live sounding would have put a
+  precise, confident, badly wrong number on the panel, which is the failure the
+  proton dial already exists to avoid. Anything older than 90 minutes is
+  dropped and the count of what went is published, so the panel can tell "the
+  sounders are quiet" from "we discarded the feed". Worth recording that the
+  confidence score does *not* catch this: it grades how well a sounding was
+  scaled, not when it was taken, and the stale reading outscored every live one.
+
 ### Changed
 
 - **The flat map's greyline is solved rather than traced.** It was drawn by

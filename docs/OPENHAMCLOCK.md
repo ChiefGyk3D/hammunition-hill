@@ -84,7 +84,7 @@ The one place OpenHamClock is straightforwardly ahead, and says so honestly.
 | World heatmap / MUF map | **planned** | Same model, evaluated over a grid |
 | Band conditions | **done** | From HamQSL, same source as theirs |
 | MUF / LUF / D-layer absorption | **done** | Computed locally from SFI, K and the real solar zenith at *your* grid square |
-| Ionosonde-corrected real-time data | **planned** | KC2G/GIRO is a single URL and fits the source model exactly. This is the strongest unclaimed row on the page |
+| Ionosonde-corrected real-time data | **done** | KC2G's aggregation of GIRO and NOAA, ranked by distance from your station. The work was not the fetch — it was noticing the feed is a roster that keeps serving each station's last reading, some of them years old at full confidence |
 | IBP beacons | **done** | Computed offline from the 180-second cycle, with bearing and distance to each |
 | Sked planner | **partial** | The DX Path chart answers the same question for one path; a two-station "when are we both in the window" view is not built |
 | Prediction check (predicted vs actual) | **planned** | Clever, and we have both halves already: the MUF model and the RBN/PSK reports of your own signal |
@@ -212,9 +212,9 @@ Shipped in the same change as this page, all tier 0:
 2. **Sun & Moon panel** — sunrise, sunset, transit, the civil-twilight greyline
    window, moonrise, moonset, phase, illumination, distance, live look angles
    and how much of the EME window is left.
-3. **Meteor Showers panel** — which showers are running, when they peak, and
+2. **Meteor Showers panel** — which showers are running, when they peak, and
    where each radiant is in your sky right now.
-4. **Frequencies panel** — memory channels, checked against the band plan for
+3. **Frequencies panel** — memory channels, checked against the band plan for
    your licence class.
 
 The new astronomy lives in `src/hammunition_hill/ephemeris.py` and
@@ -229,16 +229,15 @@ cost.
 
 **No new architecture — an existing source shape or a tier 0 computation:**
 
-1. **Ionosondes (KC2G/GIRO).** One URL, one source class. Real measured foF2
-   and MUF beats any model we can compute, and it closes the "ionospheric map"
-   row that has been open on [STATUS.md](STATUS.md) since the beginning.
-2. **WWFF and WWBOTA.** Same shape as POTA and SOTA, which are already built.
-3. **Maidenhead grid and CQ/ITU zone map overlays.** Tier 0, and the graticule
+1. **WWFF and WWBOTA.** Same shape as POTA and SOTA, which are already built.
+2. **Maidenhead grid and CQ/ITU zone map overlays.** Tier 0, and the graticule
    already knows how to draw a mesh on all three projections.
-4. **Awards beyond DXCC and WAS.** The log index already answers harder
+3. **Awards beyond DXCC and WAS.** The log index already answers harder
    questions than WAZ and VUCC ask of it.
-5. **Space weather history charts.** SWPC publishes the series; we already
+4. **Space weather history charts.** SWPC publishes the series; we already
    fetch the current value from it.
+5. **An ionosonde world map.** The soundings are now fetched; contouring them
+   over the globe is what is left of the "ionospheric map" row.
 
 **Needs a decision before it needs code:**
 

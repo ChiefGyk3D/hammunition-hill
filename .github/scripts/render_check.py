@@ -207,10 +207,113 @@ def wspr_reports() -> str:
     return json.dumps({"meta": [], "data": rows, "rows": len(rows)})
 
 
+def ionosonde_roster() -> str:
+    """KC2G's shape: a roster, quoted coordinates in 0..360 east, naive times.
+
+    Real stations and real coordinates, with the timestamps moved to now so the
+    panel has something live to draw. Austin is left at its genuine six-month-old
+    reading on purpose -- it is the record that proves the collector drops stale
+    soundings, and with it in the roster the panel's footer has something to
+    report. Its confidence score really is 100.
+    """
+    fresh = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime(time.time() - 300))
+    rows = [
+        {
+            "time": fresh,
+            "fof2": 6.1,
+            "mufd": 21.4,
+            "md": "3.51",
+            "hmf2": 232.0,
+            "tec": 14.2,
+            "cs": 100.0,
+            "source": "giro",
+            "station": {
+                "code": "BC840",
+                "name": "Boulder, CO, USA",
+                "latitude": "40",
+                "longitude": "254.7",
+                "id": 11,
+            },
+        },
+        {
+            "time": fresh,
+            "fof2": 6.55,
+            "mufd": 22.7,
+            "md": "3.47",
+            "hmf2": 220.9,
+            "tec": None,
+            "cs": 70.0,
+            "source": "giro",
+            "station": {
+                "code": "MHJ45",
+                "name": "Millstone Hill, MA, USA",
+                "latitude": "42.6",
+                "longitude": "288.5",
+                "id": 6,
+            },
+        },
+        {
+            "time": fresh,
+            "fof2": 7.805,
+            "mufd": 27.7,
+            "md": "3.551",
+            "hmf2": 234.3,
+            "tec": None,
+            "cs": 65.0,
+            "source": "giro",
+            "station": {
+                "code": "AT138",
+                "name": "Athens, Greece",
+                "latitude": "38",
+                "longitude": "23.5",
+                "id": 4,
+            },
+        },
+        {
+            "time": fresh,
+            "fof2": 7.6,
+            "mufd": 25.0,
+            "md": "3.292",
+            "hmf2": 238.2,
+            "tec": 15.6,
+            "cs": 70.0,
+            "source": "giro",
+            "station": {
+                "code": "EA036",
+                "name": "El Arenosillo, Spain",
+                "latitude": "37.1",
+                "longitude": "353.3",
+                "id": 2,
+            },
+        },
+        # Genuinely stale, genuinely scored 100. Must not reach the panel.
+        {
+            "time": "2026-03-19T22:10:05",
+            "fof2": 8.6,
+            "mufd": 28.827,
+            "md": "3.352",
+            "hmf2": 241.8,
+            "tec": 15.837,
+            "cs": 100.0,
+            "source": "giro",
+            "station": {
+                "code": "AU930",
+                "name": "Austin, TX, USA",
+                "latitude": "30.4",
+                "longitude": "262.3",
+                "id": 1,
+            },
+        },
+    ]
+    return json.dumps(rows)
+
+
 class Upstream(BaseHTTPRequestHandler):
     def do_GET(self) -> None:  # noqa: N802
         if self.path.startswith("/f107"):
             body, content_type = F107.encode(), "application/json"
+        elif self.path.startswith("/stations"):
+            body, content_type = ionosonde_roster().encode(), "application/json"
         elif self.path.startswith("/psk"):
             body, content_type = psk_reports().encode(), "text/xml"
         elif self.path.startswith("/wspr"):
@@ -1162,6 +1265,13 @@ url = "http://127.0.0.1:{upstream_port}/f107.json"
 local = true
 interval = 300
 options = {{ product = "f107_flux" }}
+
+[[sources]]
+id = "ionosondes"
+kind = "ionosonde"
+url = "http://127.0.0.1:{upstream_port}/stations.json"
+local = true
+interval = 300
 
 [[sources]]
 id = "pskreporter"

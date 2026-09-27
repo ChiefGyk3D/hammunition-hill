@@ -34,6 +34,7 @@
         "solar",
         "geomag",
         "propagation",
+        "ionosondes",
         "spacewx",
         "bandconditions"
       ]

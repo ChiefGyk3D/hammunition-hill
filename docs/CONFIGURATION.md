@@ -289,6 +289,36 @@ coarse cell grid before anything is written. The raw product is about 8 MB; the
 snapshot is a few tens of kB, because a browser drawing a globe layer does not
 need per-degree resolution and a wall display should not re-parse 8 MB a minute.
 
+### `ionosonde` — measured foF2 and MUF, via KC2G
+
+```toml
+[[sources]]
+id = "ionosondes"
+kind = "ionosonde"
+url = "https://prop.kc2g.com/api/stations.json"
+interval = 900
+```
+
+Real soundings from the GIRO and NOAA ionosonde networks, aggregated by KC2G.
+This is the one propagation input on the dashboard that is measured rather than
+modelled: `fof2` is the highest frequency reflected at vertical incidence, and
+`mufd` — MUF(3000) — is the usable maximum for a 3000 km hop off the same
+layer, which is why it runs three to four times higher.
+
+The important thing the collector does with it is throw readings away. The feed
+is a **roster, not a snapshot**: every station KC2G knows about appears in every
+response, carrying whatever sounding it last managed. In a real response one
+station reported `fof2` 8.6 with a confidence score of 100 and a timestamp six
+months old, and another carried a reading from 2021. Anything older than 90
+minutes is dropped, and the snapshot records how many went, so a panel can tell
+"the sounders are quiet" from "we discarded the whole feed".
+
+Note that the confidence score does not catch this — `cs` describes how well
+that sounding was scaled, not when it was taken, and the stale reading above
+outscored every live one in the same response. Only the timestamp separates
+them, and those timestamps arrive with no timezone, so they are read as UTC
+deliberately rather than by whatever the collector's host is set to.
+
 ### `noaa_scales` — NOAA R/S/G storm scales
 
 ```toml
