@@ -59,7 +59,7 @@ projections and around 28 toggleable overlays.
 | 3D globe | **done** | Orthographic on a 2D canvas, no WebGL and no library. Theirs is a real 3D scene with satellite models; ours is an instrument, and it runs on a Pi Zero |
 | Flat / Mercator | **partial** | Equirectangular, not Mercator. Same dispatch point as the other two |
 | Basemap styles | **not planned** | A basemap is somebody else's tile server in your browser on every pan. The vector coastline ships with the dashboard and costs nothing |
-| Greyline / terminator | **done** | Computed from the clock in all three projections. The azimuthal terminator is solved analytically rather than traced — see the comment in `web/lib/globe.js` |
+| Greyline / terminator | **done** | Computed from the clock in all three projections. The azimuthal and flat terminators are both solved analytically rather than traced — see the comments in `web/lib/globe.js` |
 | Aurora overlay | **done** | SWPC OVATION, reduced to an oval boundary plus cells before publishing |
 | Satellites on the map | **partial** | We have passes, look angles and Doppler in their own panel; they are not drawn on the globe |
 | DX spots with great-circle arcs | **done** | Coloured by band, and by what you still need from your own log |
