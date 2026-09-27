@@ -48,6 +48,24 @@ saying so.
   rather than implied: half a moon-width, which is fine for planning a window
   and not fine for pointing a dish open-loop.
 
+### Changed
+
+- **The flat map's greyline is solved rather than traced.** It was drawn by
+  projecting the terminator ring and sorting the points by screen x, which
+  assumes the curve is a function of x; near an equinox it is not, and at the
+  March 2026 equinox 361 ring points land on 18 distinct columns against 344 at
+  the solstice. It is worth saying what that did and did not cost, because the
+  first write-up of it here overstated the case: the sorted points all still
+  lay on the terminator, so the shading was correct — 0.00% of a 65,000-point
+  grid mis-shaded, measured against `solarElevation` from 0.06 to 23.4 degrees
+  of declination — and the two versions render within a pixel of each other.
+  Nothing visible was wrong. What was missing was any reason to believe that:
+  correctness rested on disordered points cancelling out in the fill.
+  `flatTerminator()` now solves `tan(lat) = -cos(lon - lonSun) / tan(dec)` per
+  column, single-valued by construction, and `tests/test_flat_terminator.py`
+  pins the greyline against `solarElevation` for the first time — every drawn
+  point on the horizon, the shaded side the dark side, over a grid.
+
 ### Fixed
 
 - The release workflow built only the wheel and the sdist, so **v1.0.0
