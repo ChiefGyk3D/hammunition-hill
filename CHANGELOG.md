@@ -12,6 +12,8 @@ saying so.
 
 ## [Unreleased]
 
+## [1.1.0] — 2026-09-28
+
 ### Added
 
 - **A parity page against [OpenHamClock](https://github.com/accius/openhamclock)**,
@@ -84,6 +86,12 @@ saying so.
   column, single-valued by construction, and `tests/test_flat_terminator.py`
   pins the greyline against `solarElevation` for the first time — every drawn
   point on the horizon, the shaded side the dark side, over a grid.
+- **`docs/HAMCLOCK.md` corrects its own KC2G gate.** 1.0.1 shipped the page
+  saying to write to KC2G before any source polled his API. That confused
+  redistribution, which is what HamClock's backend does and what its
+  permission covers, with one operator's collector reading public JSON on a
+  timer. The page now says so, and the `ionosonde` source ships on by default
+  at a 900 s interval with KC2G and GIRO credited where the numbers are read.
 
 ## [1.0.1] — 2026-09-28
 
@@ -209,6 +217,7 @@ can steer an outbound one.
   this does not.
 - Weather outside the US is feeds and images, without structured severity.
 
-[Unreleased]: https://github.com/ChiefGyk3D/hammunition-hill/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/ChiefGyk3D/hammunition-hill/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/ChiefGyk3D/hammunition-hill/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/ChiefGyk3D/hammunition-hill/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/ChiefGyk3D/hammunition-hill/releases/tag/v1.0.0
