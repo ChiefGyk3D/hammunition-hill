@@ -69,7 +69,7 @@ Legend: **done** · **partial** · **planned** · **not planned** (with the reas
 | Countries / Terrain styles | **partial** | Coastlines ship; there is no terrain raster and shipping one is a size decision |
 | Night shading, greyline | **done** | |
 | DRAP map style | **planned** | SWPC publishes the whole model as a text grid, 4° cells — see [Propagation](#propagation-the-part-this-page-is-really-about) |
-| MUF-RT map style (KC2G real-time ionosondes) | **planned, gated** | The data is per-station JSON, ~100 stations. HamClock and its backend carry it *by permission from KC2G, non-commercial*. Ask before shipping a source that polls it |
+| MUF-RT map style (KC2G real-time ionosondes) | **planned** | The `ionosonde` source ships and the Ionosondes panel reads it; what is left is the map style -- interpolating ~100 stations onto the globe. See [the real-time MUF map](#the-real-time-muf-map) |
 | MUF-VCAP map style (VOACAP median MUF from DE) | **planned** | An area run of the same engine as below |
 | /REL and /TOA maps per band | **planned** | Same area run; reliability and take-off angle are two columns of one output |
 | Aurora map style | **done** | OVATION as a globe layer |
@@ -174,7 +174,7 @@ has one and a half of them.
 | **MUF over your own station**, now | not shown as such (the MUF-RT map covers it) | **done** — the indicator panel | — |
 | **Point-to-point MUF by hour** | the VOACAP DE-DX pane, top edge | **done** — MINIMUF 3.5 in the DX Path panel, RMS ≈ 3.8 MHz | — |
 | **Point-to-point reliability**, SNR, mode, power, take-off angle | VOACAP DE-DX pane, from the backend | **not built** | `voacapl`, measured below |
-| **Global MUF map**, real-time | MUF-RT, from KC2G's ionosonde assimilation | **not built** | KC2G's JSON, by permission; or the VOACAP area run for the climatological version |
+| **Global MUF map**, real-time | MUF-RT, from KC2G's ionosonde assimilation | **partial** -- the Ionosondes panel lists the measured stations, nearest first; no map | Interpolate the same feed onto the globe; or the VOACAP area run for the climatological version |
 | **D-region absorption**, map and history | DRAP style and DRAP pane | **partial** — our own D-layer estimate at your station | SWPC's DRAP grid, verified |
 
 ### VOACAP is packaged. The record needs correcting.
@@ -252,13 +252,32 @@ confidence score, updated as GIRO publishes. The open backend interpolates
 them on the sphere with inverse-distance weighting and draws a heat map; that
 is ~300 lines and there is nothing hard in it.
 
-The gate is not technical. The backend's attribution file states the data is
-"used by permission from KC2G" and may not be used commercially. This project
-is non-commercial, but permission is asked, not assumed, and prop.kc2g.com
-publishes no terms of its own. **Write to KC2G before a source kind that
-polls his API ships.** Until then the honest tier 2 option is his rendered
-`renders/current/mufd-normal-now.svg` as an imagery tile, which is a link to
-his site rather than a copy of his data.
+**Correcting the record: the gate written here was wrong.** An earlier
+revision of this page said, in bold, to write to KC2G before shipping a source
+kind that polls his API. That conflated two different things, and since this
+page is where the mistake was made, this is where it gets fixed rather than
+quietly deleted.
+
+The backend's attribution file states the data is "used by permission from
+KC2G" and may not be used commercially. That is a statement about *what the
+backend does*: it fetches once and serves the assimilated result to every
+HamClock in the world. Redistribution is exactly the case where asking is the
+right instinct. This project has no such server and never will -- invariant 1
+is that no request causes a fetch. Each install's collector reads the same
+public, unauthenticated JSON for the one operator whose machine it runs on,
+which is what a browser pointed at prop.kc2g.com does, on a timer.
+prop.kc2g.com publishes no terms restricting that, this project is
+non-commercial, and a rule that ordinary client reads need written permission
+would, applied consistently, gate every source on this dashboard.
+
+So the `ionosonde` source ships, and it is on by default in
+`config.example.toml`. What is owed is not permission but courtesy: a 900 s
+interval rather than a tight one, and KC2G and GIRO named where an operator
+reads the numbers -- the panel's own description, `config.example.toml` and
+[CONFIGURATION.md](CONFIGURATION.md#ionosonde--measured-fof2-and-muf-via-kc2g).
+His rendered `renders/current/mufd-normal-now.svg` remains available as a
+tier 2 `[[imagery]]` tile for operators who would rather see his map than our
+table.
 
 ### DRAP
 
@@ -355,7 +374,8 @@ In order of value per unit of work, subject to the maintainer's call:
    range rings, beacon marks, satellite tracks.
 7. **Field weather**, after the URL-template decision is written down.
 8. **APRS**, WWFF, DXpeditions on the map, watch-list grammar, PTT.
-9. **VOACAP area maps** and, with permission, **MUF-RT**.
+9. **VOACAP area maps** and the **MUF-RT** map style over the ionosonde feed
+   that now ships.
 
 Nothing above is committed. The list is the argument, written so it can be
 disagreed with before the code is.

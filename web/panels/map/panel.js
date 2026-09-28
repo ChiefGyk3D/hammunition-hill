@@ -35,9 +35,11 @@ const state = {
   lat0: null,
   lon0: null,
   zoom: recall("map.zoom", 1),
-  // "globe" or "flat". The globe stays the default -- great circles are the
-  // point of this panel -- but a flat map answers "what is everywhere at
-  // once" without rotating, which is what a wall display wants.
+  // "globe", "flat" or "azimuthal". The globe stays the default -- great
+  // circles are the point of this panel -- but a flat map answers "what is
+  // everywhere at once" without rotating, which is what a wall display wants,
+  // and azimuthal equidistant answers "which way do I turn the beam" by making
+  // every bearing out of your own station a straight line on the screen.
   mode: recall("map.mode", "globe"),
   layers: recall("map.layers", {
     greyline: true, aurora: true, spots: true, arcs: true,
@@ -109,6 +111,13 @@ function draw(canvas, data, station) {
   // Flat keeps the 2:1 equirectangular aspect, fitted to whichever canvas
   // edge binds. halfW doubles as strokePath's wrap-jump threshold.
   const flatHalfH = Math.min((width / 2 - 8) / 2, height / 2 - 8) * state.zoom;
+  const disc = {
+    lat0: state.lat0 ?? 20,
+    lon0: state.lon0 ?? 0,
+    radius: (Math.min(width, height) / 2 - 8) * state.zoom,
+    cx: width / 2,
+    cy: height / 2,
+  };
   const view =
     state.mode === "flat"
       ? {
@@ -121,13 +130,9 @@ function draw(canvas, data, station) {
           cx: width / 2,
           cy: height / 2,
         }
-      : {
-          lat0: state.lat0 ?? 20,
-          lon0: state.lon0 ?? 0,
-          radius: (Math.min(width, height) / 2 - 8) * state.zoom,
-          cx: width / 2,
-          cy: height / 2,
-        };
+      : state.mode === "azimuthal"
+        ? { ...disc, azimuthal: true }
+        : disc;
   state.view = view;
 
   const ink = css("--ink", "#e3e7ed");
@@ -310,9 +315,15 @@ export function render(root, { data, el }) {
   // rest of the dashboard uses. The first version scattered three styles of
   // control around the panel and the operator noticed.
   const viewRow = el("div", "chips");
-  for (const [label, mode] of [["3D", "globe"], ["2D", "flat"]]) {
+  const modes = [
+    ["3D", "globe", "Orthographic globe — great circles look like great circles"],
+    ["2D", "flat", "Equirectangular — the whole world at once, no rotating"],
+    ["AZ", "azimuthal", "Azimuthal equidistant — every bearing from your station is a straight line"],
+  ];
+  for (const [label, mode, hint] of modes) {
     const chip = el("button", "chip" + (state.mode === mode ? " on" : ""), label);
     chip.type = "button";
+    chip.title = hint;
     chip.setAttribute("aria-pressed", String(state.mode === mode));
     chip.addEventListener("click", () => {
       if (state.mode === mode) return;
@@ -321,6 +332,14 @@ export function render(root, { data, el }) {
       // it over shoved the whole world down the canvas and left a blank band
       // where the Arctic should be. Centre the equator; panning still works.
       if (mode === "flat") state.lat0 = 0;
+      // Azimuthal equidistant centred on anything but your own station is a
+      // curiosity: the property that makes it worth having is that bearings
+      // *from here* are straight lines. So selecting it recentres on the
+      // station, and the QTH button below puts it back if you pan away.
+      if (mode === "azimuthal" && station.located) {
+        state.lat0 = station.lat;
+        state.lon0 = station.lon;
+      }
       remember("map.mode", mode);
       state.rerender();
     });

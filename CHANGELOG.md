@@ -12,6 +12,79 @@ saying so.
 
 ## [Unreleased]
 
+### Added
+
+- **A parity page against [OpenHamClock](https://github.com/accius/openhamclock)**,
+  walked against its own panel registry rather than its README —
+  `docs/OPENHAMCLOCK.md`. Sixty-eight of their built-in panels against our
+  thirty-three, in both directions, with the differences that are *decisions*
+  separated from the ones that are gaps. The deployment trade-off that drives
+  most of the rows is stated at the top: theirs is an Express proxy that
+  fetches when a browser asks, ours is a collector on a schedule with no code
+  path from the server into it.
+- **Azimuthal equidistant projection** on the map — `AZ` in the view row,
+  centred on your station. Every bearing out of the middle is a straight line
+  and distance along it is linear to the antipode on the rim, which is the
+  projection HamClock made its default and the one a beam operator actually
+  wants. `tests/test_globe_projection.py` asserts exactly that against
+  `geo.py`'s own bearings and distances, because a projection that is subtly
+  wrong still draws a convincing coastline.
+- **Sun & Moon panel** (tier 0) — sunrise, sunset, transit, daylight length and
+  the civil-twilight greyline window; moonrise, moonset, phase, illuminated
+  fraction, distance, live look angles and how much of the EME window is left.
+- **Meteor Showers panel** (tier 0) — which of the IMO major showers are
+  running, when each peaks, and where its radiant is in *your* sky now, which
+  is the thing that decides whether meteor scatter is worth trying. The panel
+  says on its face that ZHR is a visual rate and not what you will hear.
+- **Frequencies panel** (tier 0) — memory channels with export and import,
+  each one checked against the band plan for your licence class. A memory is a
+  frequency you are about to key up on, and a list that silently contains one
+  you may not transmit on is worse than no list, because it looks checked.
+- **`ephemeris.py` and `web/lib/ephemeris.js`** — where the moon is, and when
+  either body rises, sets or transits here. Two implementations of the
+  *Astronomical Almanac*'s low-precision series, pinned to each other by
+  `tests/test_ephemeris_drift.py` and to Meeus's worked example and two known
+  syzygies by `tests/test_ephemeris.py`. The accuracy is stated on the panel
+  rather than implied: half a moon-width, which is fine for planning a window
+  and not fine for pointing a dish open-loop.
+
+- **Ionosondes panel** (tier 1) — measured `foF2` and MUF(3000) from the GIRO
+  and NOAA sounder networks via KC2G, ranked by distance from your station,
+  because the sounder 200 km away is about *your* path and one on the far side
+  of the world is a fact about somewhere else. This is the only propagation
+  input here that is measured rather than modelled; where a sounder is near the
+  path it beats MINIMUF outright.
+
+  The fetch was the easy half. The feed is a **roster, not a snapshot** — every
+  station KC2G knows about appears in every response carrying whatever sounding
+  it last managed, and in a real response Austin reported `fof2` 8.6 with a
+  confidence score of 100 and a timestamp six months old, while Beijing carried
+  a reading from 2021. Publishing those beside a live sounding would have put a
+  precise, confident, badly wrong number on the panel, which is the failure the
+  proton dial already exists to avoid. Anything older than 90 minutes is
+  dropped and the count of what went is published, so the panel can tell "the
+  sounders are quiet" from "we discarded the feed". Worth recording that the
+  confidence score does *not* catch this: it grades how well a sounding was
+  scaled, not when it was taken, and the stale reading outscored every live one.
+
+### Changed
+
+- **The flat map's greyline is solved rather than traced.** It was drawn by
+  projecting the terminator ring and sorting the points by screen x, which
+  assumes the curve is a function of x; near an equinox it is not, and at the
+  March 2026 equinox 361 ring points land on 18 distinct columns against 344 at
+  the solstice. It is worth saying what that did and did not cost, because the
+  first write-up of it here overstated the case: the sorted points all still
+  lay on the terminator, so the shading was correct — 0.00% of a 65,000-point
+  grid mis-shaded, measured against `solarElevation` from 0.06 to 23.4 degrees
+  of declination — and the two versions render within a pixel of each other.
+  Nothing visible was wrong. What was missing was any reason to believe that:
+  correctness rested on disordered points cancelling out in the fill.
+  `flatTerminator()` now solves `tan(lat) = -cos(lon - lonSun) / tan(dec)` per
+  column, single-valued by construction, and `tests/test_flat_terminator.py`
+  pins the greyline against `solarElevation` for the first time — every drawn
+  point on the horizon, the shaded side the dark side, over a grid.
+
 ## [1.0.1] — 2026-09-28
 
 ### Security

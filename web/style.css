@@ -1143,3 +1143,120 @@ ul.wx-alerts { list-style: none; margin: 0; padding: 0; }
 }
 .pmf-key { display: inline-flex; align-items: center; gap: 4px; }
 .pmf-key .pmf-cell { width: 12px; min-height: 10px; }
+
+/* --- Sun & Moon ---------------------------------------------------------
+   Two stacked blocks rather than two columns: the panel is read top to bottom
+   on a phone in a field as often as it is glanced at on a shack TV, and a
+   two-column layout that collapses badly is worse than one that never had
+   columns. */
+.sm-block + .sm-block { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--rule); }
+.sm-heading {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.sm-face { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.sm-moon { flex: none; }
+.sm-phase-name { font-size: 14px; color: var(--ink); }
+.sm-phase-detail { font-family: var(--mono); font-size: 11px; color: var(--muted); }
+
+/* --- Frequency memories -------------------------------------------------- */
+.mem-form {
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  padding: 8px;
+  margin: 8px 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 6px 10px;
+}
+.mem-field { display: flex; flex-direction: column; gap: 2px; }
+.mem-field-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.mem-input {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink);
+  background: var(--panel-2);
+  border: 1px solid var(--rule);
+  border-radius: 2px;
+  padding: 3px 5px;
+  min-width: 0;
+}
+.mem-form .chips, .mem-preview { grid-column: 1 / -1; }
+.mem-preview { display: flex; gap: 10px; align-items: baseline; }
+/* The file input is the control; the chip around it is the affordance. Hiding
+   the input rather than replacing it keeps the native picker and the label
+   association, which is what makes it reachable from the keyboard. */
+.mem-file { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+table.memories { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 11.5px; }
+table.memories th {
+  text-align: left;
+  font-weight: 400;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  padding: 2px 6px 4px 0;
+}
+table.memories td { padding: 2px 6px 2px 0; vertical-align: baseline; }
+.mem-swatch { width: 12px; }
+.mem-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
+.mem-freq { color: var(--ink); }
+.mem-name { color: var(--ink); }
+.mem-mode, .mem-note { color: var(--muted); }
+.mem-note { margin-left: 8px; }
+.mem-verdict.mem-ok { color: var(--muted); }
+/* Not the status ramp: this is a hard "you may not transmit here", which is a
+   different claim from "conditions are poor" and must not share a colour with
+   it by accident. --poor is reserved for the ramp, so this borrows the alert
+   colour the weather panel uses for the same kind of statement. */
+.mem-verdict.mem-out { color: var(--poor); }
+.mem-verdict.muted { color: var(--muted); font-style: italic; }
+.mem-remove .chip { padding: 0 6px; line-height: 1.4; }
+
+/* --- Meteor showers ------------------------------------------------------ */
+table.meteors { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 11.5px; }
+table.meteors th {
+  text-align: left;
+  font-weight: 400;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  padding: 2px 6px 4px 0;
+}
+table.meteors td { padding: 2px 6px 2px 0; vertical-align: baseline; }
+/* Out-of-season rows are dimmed rather than hidden: "the Perseids are four
+   months away" is a real answer, and one an operator planning a trip wants. */
+.met-off td { color: var(--muted); }
+.met-name { color: var(--ink); }
+.met-off .met-name { color: var(--muted); }
+.met-tag {
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  color: var(--ground);
+  background: var(--accent);
+  border-radius: 2px;
+  padding: 0 3px;
+  margin-left: 6px;
+}
+.met-when, .met-zhr, .met-vel, .met-radiant { color: var(--muted); }
+.met-off .met-when { color: var(--muted); }
+/* The status ramp, used for what it is for: whether the geometry is working. */
+.met-verdict.met-prime { color: var(--good); }
+.met-verdict.met-good { color: var(--good); }
+.met-verdict.met-fair { color: var(--fair); }
+.met-verdict.muted { color: var(--muted); }
+
+/* Ionosondes. The table borrows `bands` for its frame; these are the columns
+   that have to line up as numbers rather than as text. */
+.ion-table .ion-num,
+.ion-table .ion-km { text-align: right; font-variant-numeric: tabular-nums; }
+.ion-table .ion-age { color: var(--muted); }
+.ion-table .ion-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 18ch; }
+.ion-nearest { font-family: var(--mono); font-size: 11.5px; color: var(--muted); margin: 8px 0 2px; }

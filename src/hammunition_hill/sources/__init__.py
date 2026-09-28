@@ -15,6 +15,7 @@ from .aurora import AuroraSource
 from .base import FetchError, Source
 from .hamqsl import HamQslSource
 from .ics import IcsSource
+from .ionosonde import IonosondeSource
 from .local import LOCAL_KINDS, get_local, is_local
 from .pota import PotaSource
 from .pskreporter import PskReporterSource
@@ -36,6 +37,7 @@ REGISTRY: dict[str, Source] = {
         SotaSource,
         IcsSource,
         AuroraSource,
+        IonosondeSource,
         NoaaScalesSource,
         SwpcAlertsSource,
         NwsAlertsSource,

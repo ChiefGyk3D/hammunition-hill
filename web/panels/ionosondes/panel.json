@@ -1,0 +1,13 @@
+{
+  "id": "ionosondes",
+  "name": "Ionosondes",
+  "tier": 1,
+  "sources": [
+    "ionosondes",
+    "station"
+  ],
+  "embed_hosts": [],
+  "span": 2,
+  "description": "Measured foF2 and MUF(3000) from the real ionosondes nearest your station, via KC2G's aggregation of GIRO and NOAA. Measurement rather than model — where a sounder is near the path it beats MINIMUF, and readings older than 90 minutes are dropped rather than shown.",
+  "ticks": "minute"
+}

@@ -90,6 +90,21 @@ kind = "aurora"
 url = "https://services.swpc.noaa.gov/json/ovation_aurora_latest.json"
 interval = 900
 
+# Real ionosonde soundings, aggregated by KC2G from GIRO and NOAA. Measurement
+# rather than model: foF2 and MUF(D) as a sounder actually observed them, which
+# beats MINIMUF wherever a station is near the path.
+#
+# The feed is a roster, not a snapshot -- every station KC2G knows about appears
+# in every response carrying its last reading, and some of those are years old
+# with full confidence scores. The collector drops anything older than 90
+# minutes; see the comment in sources/ionosonde.py for the readings that made
+# that necessary.
+[[sources]]
+id = "ionosondes"
+kind = "ionosonde"
+url = "https://prop.kc2g.com/api/stations.json"
+interval = 900
+
 # NOAA's own R/S/G storm scales -- the official reading, alongside our dials.
 [[sources]]
 id = "scales"

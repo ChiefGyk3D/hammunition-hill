@@ -1,0 +1,12 @@
+{
+  "id": "sunmoon",
+  "name": "Sun & Moon",
+  "tier": 0,
+  "sources": [
+    "station"
+  ],
+  "embed_hosts": [],
+  "span": 2,
+  "description": "Sunrise, sunset and the greyline window; moonrise, moonset, phase and look angles for EME. Computed here from the clock and your grid square \u2014 no network at all.",
+  "ticks": "minute"
+}
