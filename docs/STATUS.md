@@ -12,7 +12,9 @@ honest about its edges.
 Legend: ✅ working · 🟡 partial · ❌ not written · ⛔ deliberately not planned
 
 Related pages answer different questions. [PARITY.md](PARITY.md) asks *how does
-this compare to hamdash.com*, feature by feature against their published guide.
+this compare to hamdash.com*, feature by feature against their published guide;
+[HAMCLOCK.md](HAMCLOCK.md) asks the same of HamClock, whose pane set is the
+appliance reference.
 This page asks *what can I use today*, including everything hamdash does not
 have. Where the two disagree, this page is the one kept current.
 
@@ -101,7 +103,7 @@ The parts everything else sits on.
 | WSPR (wspr.live) | ✅ | Who decoded your beacon, with SNR, power and distance. Same honesty note as PSK Reporter |
 | Satellite passes | ✅ | Cached TLEs, SGP4 when the optional extra is installed, look angles and Doppler. Passes found by bisection, not by scanning |
 | WWFF / WWBOTA | ❌ | Same shape as POTA/SOTA |
-| Repeater directory | ❌ | RepeaterBook has a public API |
+| Repeater directory | ❌ | RepeaterBook's export API answered 401 on 2026-09-13 — it wants a key and an account now. Route: an offline import like `fcc-import`, so the field machine has repeaters with the WAN down |
 | GPS (gpsd / NMEA) | ✅ | Auto grid square and a clock check when portable. Published at Maidenhead precision, never a raw fix — see [GPS.md](GPS.md) |
 
 ## Panels
@@ -180,7 +182,7 @@ Thirteen are **tier 0** — they work with the internet unplugged: `bandplan`,
 | MUF predictor | ✅ | Derived from SFI, K and the sun's height over *your* station. An indicator, not a prediction — see [PROPAGATION.md](PROPAGATION.md) |
 | D-layer absorption | ✅ | Real solar zenith at your grid square, not a UTC-hour proxy |
 | Point-to-point MUF chart (MINIMUF 3.5) | ✅ | Pick a target grid, get the 24-hour band-by-band opening chart, computed in the browser. The honest substitute: F2 only, RMS ≈ 3.8 MHz, and the panel says so |
-| VOACAP point-to-point | ❌ | Still the genuinely hard one: reliability, signal level, antennas, power. MINIMUF answers "when does the band open"; VOACAP answers "how well will this circuit work". Bundling the public-domain ITSHFBC binaries remains the only honest route to the second question |
+| VOACAP point-to-point | ❌ | Reliability, signal level, antennas, power. MINIMUF answers "when does the band open"; VOACAP answers "how well will this circuit work". **Correction, 2026-09-13:** this row used to say bundling the ITSHFBC binaries was the only route. `voacapl` is in Debian, and a full method-30 run took 17 ms here — see [HAMCLOCK.md](HAMCLOCK.md). Not built; no longer hard |
 | FT8 propagation globes | ✅ | One sphere per active band, lit by cluster spots, WSJT-X decodes, and PSK Reporter / WSPR reception reports |
 
 ## Weather
@@ -249,9 +251,11 @@ face. A contributor who transmits under IARU Region 1 or RAC rules is the
 right author for that JSON file, and `tests/test_bandplan.py` will hold the
 schema for them either way.
 
-The honest VOACAP substitute shipped as MINIMUF 3.5 (the DX Path panel);
+The honest VOACAP substitute shipped as MINIMUF 3.5 (the DX Path panel).
 VOACAP itself — reliability and signal level, not just the MUF — stays in
-the candidate list below until someone bundles ITSHFBC.
+the candidate list below, but the reason changed on 2026-09-13: nobody has to
+bundle ITSHFBC, because Debian already packages `voacapl`. It is a system
+dependency and a subprocess wrapper now, not a distribution problem.
 
 Everything the roadmap has ever listed — the query endpoint, packaging in all
 three forms, opaque image mode, Part 97 beside the exam answers, RBN,
@@ -307,7 +311,7 @@ is written.
 | **Coax length by measurement** | strong | Velocity factor and a known resonant frequency give cable length from a VNA null; the arithmetic is already here. |
 
 | **Exam pools for other countries** | medium | The parser is written for the NCVEC layout. Another syllabus is a data contribution and probably a second parser. |
-| **Repeater directory** | medium | RepeaterBook has a public API. Tier 1, one source, but the useful version is filtered by *your* location, which GPS now gives us. |
+| **Repeater directory** | medium | RepeaterBook's API needs a key as of 2026-09-13. The useful version is offline anyway: an import filtered by *your* location, which GPS now gives us, queried with the WAN down. |
 | **Band plan by region** | strong | The loader is generic; this is data. IARU Region 1 and 3 files would cover most of the world. |
 
 ### Signals and propagation
@@ -315,7 +319,7 @@ is written.
 | Idea | Fit | Notes |
 |---|---|---|
 | **Grayline DX prediction** | strong | We compute the terminator already; the useful version is "which entities are on the greyline with me right now", which is the terminator crossed with the prefix table. |
-| **VOACAP point-to-point** | hard | MINIMUF now answers the when-does-it-open half in the DX Path panel. What VOACAP would add is reliability and signal level per circuit; that still means bundling the public-domain ITSHFBC binaries and shelling out. |
+| **VOACAP point-to-point** | strong | MINIMUF answers the when-does-it-open half in the DX Path panel. Reliability and signal level per circuit come from `voacapl`, which Debian packages and which ran here in 17 ms — a derived source shelling out with a hard timeout, and an honest "install voacapl" state when it is absent. See [HAMCLOCK.md](HAMCLOCK.md) |
 | **Sporadic-E and aurora alerting** | medium | We have the aurora oval and the band data. "Tell me when 6m opens" is a threshold and a notification, and notification is a whole capability this project does not have yet. |
 
 ### Station and shack

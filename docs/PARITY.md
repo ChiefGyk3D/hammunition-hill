@@ -9,6 +9,8 @@ deliberately do something else.
 This page answers *how does this compare to hamdash.com*. For *what can I use
 today* — every subsystem, including everything hamdash does not have — see
 **[STATUS.md](STATUS.md)**, which is the page kept current where the two overlap.
+For the same question asked of HamClock, the appliance rather than the web
+dashboard, see **[HAMCLOCK.md](HAMCLOCK.md)**.
 
 ## Where we deliberately differ
 
