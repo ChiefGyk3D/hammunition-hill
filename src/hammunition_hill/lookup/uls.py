@@ -407,6 +407,6 @@ class UlsIndex:
                 .fetchone()
             )
         except sqlite3.Error as exc:
-            log.warning("ULS lookup failed for %s: %s", callsign, exc)
+            log.warning("ULS lookup failed for %r: %s", callsign, exc)
             return None
         return dict(row) if row else None
