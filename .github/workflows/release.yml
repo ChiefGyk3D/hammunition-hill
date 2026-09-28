@@ -131,10 +131,14 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      # v7 to match the upload-artifact major CI already pins. Mixing majors
-      # across the artifact hand-off is the kind of thing that works until
-      # the release you actually need it for.
-      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
+      # v8 against upload-artifact v7: the majors differ on purpose here.
+      # download-artifact v8 is the half written for upload-artifact v7's
+      # direct (unzipped) uploads, and it now fails on a digest mismatch
+      # rather than warning. There is no upload-artifact v8 to match. The
+      # hand-off is still the kind of thing that works until the release you
+      # actually need it for, so a major bump on either side is read, not
+      # just merged.
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           name: dist
           path: dist
