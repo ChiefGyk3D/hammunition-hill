@@ -170,3 +170,9 @@ Use VOACAP. It is the right tool, it is free, and it models what both of
 these deliberately do not: reliability, signal level, antennas, power. The
 indicator is for the glance at the wall on the way past the radio; MINIMUF
 is for picking the hour to try a path; VOACAP is for engineering a circuit.
+
+It is also closer than this page used to admit. `apt install voacapl` gives
+you the real engine on Debian and its derivatives, and a full point-to-point
+run takes milliseconds — measured on 2026-09-13, in
+[HAMCLOCK.md](HAMCLOCK.md), along with what wiring it into a panel would
+take. That page is the plan; this one stays the description of what ships.
