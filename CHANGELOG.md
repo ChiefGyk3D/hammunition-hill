@@ -85,6 +85,30 @@ saying so.
   pins the greyline against `solarElevation` for the first time — every drawn
   point on the horizon, the shaded side the dark side, over a grid.
 
+## [1.0.1] — 2026-09-28
+
+### Security
+
+- A callsign that failed a ULS lookup was written to the log with `%s`, so a
+  callsign carrying control characters — and callsigns arrive from DX
+  cluster spots and WSJT-X decodes, which are other people's text — could
+  forge a log line. It is logged with `%r` now, escaped and quoted (#75, a
+  CodeQL `py/log-injection` finding).
+
+### Added
+
+- `docs/HAMCLOCK.md`: feature by feature against HamClock's user guide and
+  the open continuation, what "MUF" means in each of its four uses, and every
+  endpoint fetched on 2026-09-13, the dead ones included (#63).
+
+### Changed
+
+- **The record on VOACAP is corrected.** `docs/STATUS.md` and
+  `docs/PROPAGATION.md` said bundling the ITSHFBC binaries was the only route
+  to it. `voacapl` is a Debian package and ran a full point-to-point table in
+  17 ms; the pages now say so, along with its one hazard — a missing antenna
+  file makes it hang silently (#63).
+
 ### Fixed
 
 - The release workflow built only the wheel and the sdist, so **v1.0.0
@@ -185,5 +209,6 @@ can steer an outbound one.
   this does not.
 - Weather outside the US is feeds and images, without structured severity.
 
-[Unreleased]: https://github.com/ChiefGyk3D/hammunition-hill/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/ChiefGyk3D/hammunition-hill/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/ChiefGyk3D/hammunition-hill/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/ChiefGyk3D/hammunition-hill/releases/tag/v1.0.0
