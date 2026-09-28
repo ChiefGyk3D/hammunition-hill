@@ -48,7 +48,7 @@ the package long description, and PyPI has no repository to resolve
 
 ## 1.0 — what works, and where the edges are
 
-**Version 1.0.0.** Every endpoint it ships with has been fetched *and parsed*
+**Version 1.0.1.** Every endpoint it ships with has been fetched *and parsed*
 on real hardware rather than assumed, it installs as a Debian package and a
 container and a bare `pip install`, and 1.0 means the US-first scope is
 complete — not that there is nothing left to build. Being honest about where
