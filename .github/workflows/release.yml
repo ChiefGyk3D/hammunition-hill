@@ -109,3 +109,24 @@ jobs:
       egress-policy: block
       # pip for the build venv, and the Debian container the verify step pulls and installs into.
       extra-allowed-endpoints: pypi.org:443 files.pythonhosted.org:443 auth.docker.io:443 registry-1.docker.io:443 production.cloudfront.docker.com:443 deb.debian.org:80
+
+  container:
+    uses: ChiefGyk3D/git-your-ship-together/.github/workflows/container-release.yml@0e58a0e61ea8b3800d1cb0e6ed81bb860ace2094 # v1.6.3
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+      security-events: write
+    secrets:
+      DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}   # optional Service Token fallback; unset means OIDC only
+    with:
+      dockerfile: Dockerfile
+      push: ${{ startsWith(github.ref, 'refs/tags/v') }}
+      docker-test-command: |
+        # Replace with a real check of the image; this only proves it is not root.
+        test "$(docker run --rm --entrypoint id "$IMAGE" -u)" != "0"
+      egress-policy: block
+      doppler-project: ci
+      doppler-config: ci
+      doppler-identity-id: ${{ vars.DOPPLER_IDENTITY_ID }}

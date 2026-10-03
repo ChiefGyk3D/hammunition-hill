@@ -124,6 +124,15 @@ ALLOWED_WRITES = {
     ("release.yml", "package", "contents"),
     ("release.yml", "package", "id-token"),
     ("release.yml", "package", "attestations"),
+    # The container release publishes to GHCR (tags only), signs, attests and
+    # uploads Trivy's SARIF; the shared workflow narrows each of its jobs.
+    ("release.yml", "container", "packages"),
+    ("release.yml", "container", "id-token"),
+    ("release.yml", "container", "attestations"),
+    ("release.yml", "container", "security-events"),
+    # Enabling auto-merge on a Dependabot pull request.
+    ("dependabot-auto-merge.yml", "auto-merge", "contents"),
+    ("dependabot-auto-merge.yml", "auto-merge", "pull-requests"),
 }
 
 
@@ -400,7 +409,7 @@ def test_the_readme_lists_the_required_checks():
     """Branch protection is a setting no YAML holds, so the README names it.
 
     The set is derived from the workflow files: `<job> / CI green` for every
-    job that calls python-ci.yml, the local aggregate, and the release
+    job that calls python-ci.yml or bash-ci.yml, the local aggregate, and the release
     workflow's pull request build. Rename a job and this fails until the
     README (and the setting) agree.
     """
@@ -409,10 +418,10 @@ def test_the_readme_lists_the_required_checks():
     for path in WORKFLOW_FILES:
         for name, job in jobs(load(path)).items():
             uses = str(job.get("uses", ""))
-            if uses.startswith(GYST + "python-ci.yml@"):
+            if uses.startswith((GYST + "python-ci.yml@", GYST + "bash-ci.yml@")):
                 expected.add(f"{name} / CI green")
             if uses.startswith(GYST + "artifact-release.yml@"):
                 expected.add(f"{name} / Build, verify")
-    assert len(expected) == 3, f"expected three required checks, derived {sorted(expected)}"
+    assert len(expected) == 4, f"expected four required checks, derived {sorted(expected)}"
     for check in sorted(expected):
         assert f"`{check}`" in readme, f"README.md does not list the required check `{check}`"

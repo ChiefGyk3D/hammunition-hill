@@ -8,7 +8,7 @@
 # What stays in this file is what a shared workflow cannot express: a real
 # browser against the dashboard, a Debian container that installs the .deb,
 # and the weekly check that upstream hosts still answer. `all-green` ("all
-# checks passed") covers all of them, `ci` included.
+# checks passed") covers all of them, `ci` and `shell` included.
 name: CI
 
 on:
@@ -106,6 +106,18 @@ jobs:
         docker logs hamhill 2>&1 | grep -qi "dashboard on"
         timeout 15 docker stop hamhill
         docker rm hamhill
+      egress-policy: block
+
+  shell:
+    # bash-ci.yml over the packaging scripts (build.sh, postinst, prerm).
+    uses: ChiefGyk3D/git-your-ship-together/.github/workflows/bash-ci.yml@0e58a0e61ea8b3800d1cb0e6ed81bb860ace2094 # v1.6.3
+    permissions:
+      contents: read
+    with:
+      runners: '["ubuntu-24.04", "ubuntu-24.04-arm"]'
+      shfmt-args: -i 2 -ci   # the packaging scripts are written with two spaces
+      shfmt-continue-on-error: true   # Pre-existing drift in build.sh, postinst and prerm (continuation-line alignment, `a|b` spacing), reported rather than failed until the scripts are reformatted
+      workflow-lint: false   # the ci job above already lints the workflow files
       egress-policy: block
 
   frontend:
@@ -244,7 +256,7 @@ jobs:
   all-green:
     name: all checks passed
     if: always()
-    needs: [ci, frontend, debian]
+    needs: [ci, shell, frontend, debian]
     # `upstreams` is deliberately absent: it is schedule-only and talks to
     # the real internet, so it must never gate a merge.
     runs-on: ubuntu-24.04

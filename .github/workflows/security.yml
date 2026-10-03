@@ -1,20 +1,13 @@
-# This Source Code Form is subject to the terms of the Mozilla Public
-# License, v. 2.0. If a copy of the MPL was not distributed with this
-# file, You can obtain one at https://mozilla.org/MPL/2.0/.
-
-# CodeQL (Python, the JavaScript in web/, and the workflows themselves),
-# gitleaks, Semgrep, dependency review and the dependency audit. The jobs live
-# in ChiefGyk3D/git-your-ship-together; this replaces codeql.yml and ci.yml's
-# `audit` job.
+# CodeQL, gitleaks, a dependency audit and dependency review on pull
+# requests. The jobs live in ChiefGyk3D/git-your-ship-together.
 name: Security
 
 on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
   schedule:
-    - cron: "41 5 * * 1"
+    - cron: '0 6 * * 1'   # weekly, so new advisories surface between commits
   workflow_dispatch:
 
 permissions:
@@ -25,31 +18,21 @@ jobs:
     uses: ChiefGyk3D/git-your-ship-together/.github/workflows/security.yml@0e58a0e61ea8b3800d1cb0e6ed81bb860ace2094 # v1.6.3
     permissions:
       contents: read
-      security-events: write   # CodeQL, Semgrep and Trivy-style SARIF uploads
-      pull-requests: write     # dependency review's comment
-      id-token: write          # Doppler OIDC, when an identity is configured
+      security-events: write
+      pull-requests: write
+      id-token: write
     secrets:
       DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}   # optional Service Token fallback; unset means OIDC only
     with:
-      codeql-languages: python,javascript-typescript,actions
-      codeql-queries: security-and-quality
+      codeql-languages: python,javascript-typescript,actions   # the dashboard under web/ is JavaScript; the old codeql.yml scanned it
+      codeql-queries: security-and-quality   # what the old codeql.yml ran
       semgrep-config: p/python p/javascript p/github-actions p/secrets
-      # Scoped to what this project ships, generated from pyproject so it
-      # cannot drift from the real list. Auditing the whole environment would
-      # also report advisories against the runner's own pip and setuptools,
-      # which we neither ship nor control: a recurring red that everyone
-      # learns to ignore is worse than none. So no requirements file for the
-      # shared pip-audit step; the command below is the audit.
-      pip-audit-requirements: ""
-      audit-install-command: pip install --disable-pip-version-check pip-audit
+      pip-audit-requirements: ""   # no requirements.txt; the declared dependencies are audited below, as the old ci.yml did
+      audit-install-command: pip install pip-audit
       audit-command: |
-        python - <<'PY' > "$RUNNER_TEMP/requirements.txt"
-        import pathlib, tomllib
-        project = tomllib.loads(pathlib.Path("pyproject.toml").read_text())["project"]
-        print("\n".join(project["dependencies"]))
-        PY
-        cat "$RUNNER_TEMP/requirements.txt"
+        python -c 'import tomllib; print("\n".join(tomllib.load(open("pyproject.toml", "rb"))["project"]["dependencies"]))' > "$RUNNER_TEMP/requirements.txt"
         pip-audit --strict --progress-spinner off -r "$RUNNER_TEMP/requirements.txt"
+      scorecard: true
       egress-policy: block
       doppler-project: ci
       doppler-config: ci
