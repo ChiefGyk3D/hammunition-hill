@@ -107,5 +107,5 @@ jobs:
         print((match.group(1) if match else "").strip())
         PY
       egress-policy: block
-      # The Debian container the verify step pulls and installs into.
-      extra-allowed-endpoints: auth.docker.io:443 registry-1.docker.io:443 production.cloudfront.docker.com:443 deb.debian.org:80
+      # pip for the build venv, and the Debian container the verify step pulls and installs into.
+      extra-allowed-endpoints: pypi.org:443 files.pythonhosted.org:443 auth.docker.io:443 registry-1.docker.io:443 production.cloudfront.docker.com:443 deb.debian.org:80
