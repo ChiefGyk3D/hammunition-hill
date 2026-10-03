@@ -190,7 +190,7 @@ jobs:
           set -eux
           hamhill --config /etc/hammunition-hill/config.toml check --offline
           hamhill --config /etc/hammunition-hill/config.toml serve &
-          for i in $(seq 1 30); do
+          for _ in $(seq 1 30); do
             python3 -c "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8073/',timeout=2)" && break
             sleep 1
           done
@@ -206,7 +206,7 @@ jobs:
         run: |
           set -eux
           test -d /var/lib/hammunition-hill
-          ls /var/lib/hammunition-hill | head
+          find /var/lib/hammunition-hill -maxdepth 1 | head
           test -s /var/lib/hammunition-hill/morse.json
 
   upstreams:
