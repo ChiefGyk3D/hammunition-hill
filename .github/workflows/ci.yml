@@ -250,9 +250,11 @@ jobs:
     timeout-minutes: 2
     steps:
       - name: verify every job succeeded
+        env:
+          NEEDS: ${{ toJSON(needs) }}
         run: |
-          echo '${{ toJSON(needs) }}'
-          if echo '${{ toJSON(needs) }}' | grep -qE '"result": *"(failure|cancelled|skipped)"'; then
+          echo "$NEEDS"
+          if echo "$NEEDS" | grep -qE '"result": *"(failure|cancelled|skipped)"'; then
             echo "::error::at least one job did not succeed"
             exit 1
           fi

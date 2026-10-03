@@ -12,6 +12,10 @@ updates:
     schedule:
       interval: weekly
       day: monday
+    # A seven-day cooldown, so a release that is pulled within the week is
+    # never proposed.
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 5
     commit-message:
       prefix: "ci"
@@ -26,6 +30,10 @@ updates:
     schedule:
       interval: weekly
       day: monday
+    # A seven-day cooldown, so a release that is pulled within the week is
+    # never proposed.
+    cooldown:
+      default-days: 7
     open-pull-requests-limit: 5
     commit-message:
       prefix: "deps"
