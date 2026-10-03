@@ -126,13 +126,14 @@ jobs:
           node-version: "22"
       - run: pip install --disable-pip-version-check .
       - name: install playwright and chromium
-        # Both are needed and they are different things: `npm install` puts the
-        # module where the driver's require() can find it, and `playwright
-        # install` fetches the matching browser build. Installing only the
-        # browser leaves the driver unable to import the library that drives it.
+        # Both are needed and they are different things: `npm ci` puts the
+        # module, at the version and hash package-lock.json pins, where the
+        # driver's require() can find it, and `playwright install` fetches the
+        # matching browser build. Installing only the browser leaves the driver
+        # unable to import the library that drives it.
         run: |
-          npm install --no-save --no-audit --no-fund playwright@1.49.0
-          npx playwright@1.49.0 install --with-deps chromium
+          npm ci --ignore-scripts --no-audit --no-fund
+          npx playwright install --with-deps chromium
       - name: every dashboard renders without a console error
         # The checks pytest cannot do: that the panels actually load, that no
         # module throws, and that nothing on the page tries to reach a host the
