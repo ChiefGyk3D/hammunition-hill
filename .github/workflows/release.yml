@@ -1,161 +1,60 @@
-# Cut a release when a v* tag is pushed.
-#
-# The tag is the trigger, and the tag is also the thing most likely to be
-# wrong: it is the one input a human types by hand. So the first job's whole
-# purpose is to refuse a tag that disagrees with the tree it points at -- a
-# v1.0.0 tag on a package that says 0.9.0, or on a CHANGELOG with no 1.0.0
-# section. Publishing that and fixing it afterwards means a version number
-# that means two different things depending on where you read it.
-#
-# No third-party actions here beyond checkout and setup-python. The release is
-# created with `gh`, which is already on the runner: one fewer supply-chain
-# dependency in the job that has write permission is worth a few lines of
-# shell.
-name: release
+# Publishes on a version tag. The jobs live in ChiefGyk3D/git-your-ship-together.
+name: Release
 
 on:
   push:
-    tags:
-      - "v*"
+    tags: ['v*']
+  pull_request:   # builds and checks; never publishes
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  verify:
-    name: the tag agrees with the tree
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    outputs:
-      version: ${{ steps.version.outputs.version }}
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: "3.13"
-      - name: the tag, the package and the changelog must agree
-        id: version
-        env:
-          # Through the environment, never interpolated into the script: a tag
-          # is attacker-controllable in the general case, and $GITHUB_REF_NAME
-          # pasted into a shell line is the classic injection in this file.
-          TAG: ${{ github.ref_name }}
-        run: |
-          set -euo pipefail
-          version="$(python -c 'import sys; sys.path.insert(0, "src"); import hammunition_hill; print(hammunition_hill.__version__)')"
-          echo "package says $version, tag says $TAG"
-          if [ "v$version" != "$TAG" ]; then
-            echo "::error::tag $TAG does not match package version $version"
-            exit 1
-          fi
-          if ! grep -q "^## \[$version\]" CHANGELOG.md; then
-            echo "::error::CHANGELOG.md has no section for $version"
-            exit 1
-          fi
-          echo "version=$version" >> "$GITHUB_OUTPUT"
-
-  build:
-    name: wheel, sdist and checksums
-    needs: verify
-    runs-on: ubuntu-24.04
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
-        with:
-          python-version: "3.13"
-      - run: pip install --disable-pip-version-check build twine
-      - run: python -m build
-      - run: python -m twine check --strict dist/*
-      - name: the wheel must actually serve the dashboard
-        # A wheel that installs and cannot serve is the failure this project
-        # has already had once: web/ reaches the package through a symlink,
-        # and a packaging change that stops following it produces a CLI that
-        # answers 404 for every file. Install from the artifact, not the tree.
-        run: |
-          set -euo pipefail
-          python -m venv /tmp/relcheck
-          /tmp/relcheck/bin/pip install --disable-pip-version-check dist/*.whl
-          /tmp/relcheck/bin/hamhill --version
-          cp config.example.toml /tmp/relcheck-config.toml
-          /tmp/relcheck/bin/hamhill --config /tmp/relcheck-config.toml check --offline
-      - name: the Debian package, from the same tree
-        # The docs point operators at the releases page for the .deb, so the
-        # release has to carry one. v1.0.0 shipped without it and it had to be
-        # attached by hand afterwards -- the checksums were regenerated over
-        # all three artefacts at the same time, but a release that needs a
-        # manual step is a release that will one day miss it.
-        run: |
-          set -euo pipefail
-          ./packaging/debian/build.sh dist
-          ls -l dist/*.deb
-      - name: the package installs and serves in a Debian container
-        # The wheel is smoke-tested above in a venv; this is the same promise
-        # for the artefact Debian users actually download, on the distribution
-        # it targets rather than on the runner's Ubuntu.
-        run: |
-          set -euo pipefail
-          docker run --rm -v "$PWD/dist:/dist:ro" debian:trixie-slim bash -c '
-            set -eux
-            apt-get update -qq
-            apt-get install -y -qq /dist/hammunition-hill_*.deb
-            hamhill --version
-            hamhill --config /etc/hammunition-hill/config.toml check --offline
-          '
-      - name: checksums
-        run: |
-          set -euo pipefail
-          cd dist
-          sha256sum ./* > SHA256SUMS
-          cat SHA256SUMS
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: dist
-          path: dist/
-          if-no-files-found: error
-
-  publish:
-    name: publish the release
-    needs: [verify, build]
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
+  package:
+    uses: ChiefGyk3D/git-your-ship-together/.github/workflows/python-package-release.yml@0e58a0e61ea8b3800d1cb0e6ed81bb860ace2094 # v1.6.3
     permissions:
-      # The one write in this repository's CI outside CodeQL, and the reason
-      # this workflow exists. tests/test_workflows.py holds the list.
-      contents: write
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      # v8 against upload-artifact v7: the majors differ on purpose here.
-      # download-artifact v8 is the half written for upload-artifact v7's
-      # direct (unzipped) uploads, and it now fails on a digest mismatch
-      # rather than warning. There is no upload-artifact v8 to match. The
-      # hand-off is still the kind of thing that works until the release you
-      # actually need it for, so a major bump on either side is read, not
-      # just merged.
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: dist
-          path: dist
-      - name: create the release from the changelog section
-        env:
-          GH_TOKEN: ${{ github.token }}
-          TAG: ${{ github.ref_name }}
-          VERSION: ${{ needs.verify.outputs.version }}
-        run: |
-          set -euo pipefail
-          python - <<'PY' > notes.md
-          import os, re
-          version = os.environ["VERSION"]
-          text = open("CHANGELOG.md", encoding="utf-8").read()
-          match = re.search(
-              rf"^## \[{re.escape(version)}\].*?$(.*?)(?=^## |\Z)", text, re.M | re.S
-          )
-          print((match.group(1) if match else "").strip())
-          PY
-          gh release create "$TAG" dist/* --title "$TAG" --notes-file notes.md --verify-tag
+      contents: write      # the GitHub release and its assets
+      id-token: write      # PyPI Trusted Publishing, and build provenance
+      attestations: write  # the provenance record
+    with:
+      publish: ${{ startsWith(github.ref, 'refs/tags/v') }}
+      github-release: false   # the artifacts job below makes the one GitHub release, with the wheel, sdist and .deb together
+      pypi: false   # turn on once a Trusted Publisher on PyPI names this repository, release.yml and the pypi environment
+      smoke-command: hamhill --version
+      verify-command: grep -q "^## \[$VERSION\]" CHANGELOG.md   # the sdist version already comes from __version__
+      egress-policy: block
+
+  container:
+    uses: ChiefGyk3D/git-your-ship-together/.github/workflows/container-release.yml@0e58a0e61ea8b3800d1cb0e6ed81bb860ace2094 # v1.6.3
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+      security-events: write
+    secrets:
+      DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}   # optional Service Token fallback; unset means OIDC only
+    with:
+      dockerfile: Dockerfile
+      push: ${{ startsWith(github.ref, 'refs/tags/v') }}
+      docker-test-command: |
+        # Replace with a real check of the image; this only proves it is not root.
+        test "$(docker run --rm --entrypoint id "$IMAGE" -u)" != "0"
+      egress-policy: block
+      doppler-project: ci
+      doppler-config: ci
+      doppler-identity-id: ${{ vars.DOPPLER_IDENTITY_ID }}
+
+  artifacts:
+    uses: ChiefGyk3D/git-your-ship-together/.github/workflows/artifact-release.yml@0e58a0e61ea8b3800d1cb0e6ed81bb860ace2094 # v1.6.3
+    permissions:
+      contents: write      # the GitHub release and its assets
+      id-token: write      # keyless signing and build provenance
+      attestations: write  # the provenance record
+    with:
+      publish: ${{ startsWith(github.ref, 'refs/tags/v') }}
+      build-install-command: sudo apt-get install -y dpkg-dev
+      build-command: ./packaging/debian/build.sh dist
+      artifacts: dist/*.deb
+      egress-policy: block
