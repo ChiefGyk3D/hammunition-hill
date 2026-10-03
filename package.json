@@ -3,6 +3,6 @@
   "private": true,
   "description": "Pins the browser driver that .github/scripts/render_check.py needs. Not a package; nothing here ships.",
   "devDependencies": {
-    "playwright": "1.49.0"
+    "playwright": "1.63.0"
   }
 }
