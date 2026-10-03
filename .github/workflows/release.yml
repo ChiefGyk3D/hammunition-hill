@@ -19,13 +19,14 @@ jobs:
       attestations: write  # the provenance record
     with:
       publish: ${{ startsWith(github.ref, 'refs/tags/v') }}
+      github-release: false   # the artifacts job below makes the one GitHub release, with the wheel, sdist and .deb together
       pypi: false   # turn on once a Trusted Publisher on PyPI names this repository, release.yml and the pypi environment
-      smoke-command: hamhill --help
-      verify-command: grep -q "^## \[$VERSION\]" CHANGELOG.md
+      smoke-command: hamhill --version
+      verify-command: grep -q "^## \[$VERSION\]" CHANGELOG.md   # the sdist version already comes from __version__
       egress-policy: block
 
   container:
-    uses: ChiefGyk3D/git-your-ship-together/.github/workflows/python-docker-release.yml@0e58a0e61ea8b3800d1cb0e6ed81bb860ace2094 # v1.6.3
+    uses: ChiefGyk3D/git-your-ship-together/.github/workflows/container-release.yml@0e58a0e61ea8b3800d1cb0e6ed81bb860ace2094 # v1.6.3
     permissions:
       contents: read
       packages: write
@@ -44,3 +45,16 @@ jobs:
       doppler-project: ci
       doppler-config: ci
       doppler-identity-id: ${{ vars.DOPPLER_IDENTITY_ID }}
+
+  artifacts:
+    uses: ChiefGyk3D/git-your-ship-together/.github/workflows/artifact-release.yml@0e58a0e61ea8b3800d1cb0e6ed81bb860ace2094 # v1.6.3
+    permissions:
+      contents: write      # the GitHub release and its assets
+      id-token: write      # keyless signing and build provenance
+      attestations: write  # the provenance record
+    with:
+      publish: ${{ startsWith(github.ref, 'refs/tags/v') }}
+      build-install-command: sudo apt-get install -y dpkg-dev
+      build-command: ./packaging/debian/build.sh dist
+      artifacts: dist/*.deb
+      egress-policy: block

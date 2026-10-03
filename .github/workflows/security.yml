@@ -24,7 +24,12 @@ jobs:
     secrets:
       DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}   # optional Service Token fallback; unset means OIDC only
     with:
-      pip-audit-requirements: ""   # no requirements.txt; add a hash-pinned lock and name it here
+      codeql-languages: python,javascript-typescript,actions   # the dashboard under web/ is JavaScript; the old codeql.yml scanned it
+      pip-audit-requirements: ""   # no requirements.txt; the declared dependencies are audited below, as the old ci.yml did
+      audit-install-command: pip install pip-audit
+      audit-command: |
+        python -c 'import tomllib; print("\n".join(tomllib.load(open("pyproject.toml", "rb"))["project"]["dependencies"]))' > "$RUNNER_TEMP/requirements.txt"
+        pip-audit --strict --progress-spinner off -r "$RUNNER_TEMP/requirements.txt"
       scorecard: true
       egress-policy: block
       doppler-project: ci

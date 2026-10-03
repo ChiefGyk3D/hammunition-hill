@@ -28,13 +28,13 @@ jobs:
       install-command: |
         python -m pip install --upgrade pip
         pip install -e ".[dev]"
-      test-command: pytest
-      lint-install-command: |
-        pip install ruff
+      runners: '["ubuntu-24.04", "ubuntu-24.04-arm"]'
+      test-command: pytest -q --durations=10 -W error::DeprecationWarning
+      lint-install-command: pip install "ruff>=0.5"
       lint-command: |
-        ruff check .
-        ruff format --check . || echo "::warning title=ruff format::formatting drift (advisory)"
-      smoke-command: hamhill --help
+        ruff check src/ tests/ .github/scripts/
+        ruff format --check src/ tests/ .github/scripts/
+      smoke-command: hamhill --version
       dockerfile: Dockerfile
       docker-test-command: |
         # Replace with a real check of the image; this only proves it is not root.
@@ -49,6 +49,7 @@ jobs:
     permissions:
       contents: read
     with:
+      runners: '["ubuntu-24.04", "ubuntu-24.04-arm"]'
       shfmt-args: -i 4 -ci
       workflow-lint: false   # the ci job above already lints the workflow files
       egress-policy: block
