@@ -12,6 +12,20 @@ saying so.
 
 ## [Unreleased]
 
+### Changed
+
+- **CI runs through git-your-ship-together's reusable workflows**, pinned by
+  commit: `python-ci.yml` (lint, the pytest matrix, smoke, container build,
+  workflow lint), `security.yml` (CodeQL, gitleaks, Semgrep, dependency review
+  and audit, replacing `codeql.yml`) and `artifact-release.yml` (the release,
+  now signed, with provenance). The browser render, the Debian container job
+  and the weekly upstream check stay local, with an `all-green` aggregate.
+  Branch protection must require `ci / CI green`, `shell / CI green`,
+  `all checks passed` and `package / Build, verify`. This completes #79, which
+  moved the generic legs and left the browser render, the example-config and
+  smoke checks, the Debian container job, the weekly upstream check and the
+  workflow tests out of CI.
+
 ## [1.1.0] — 2026-09-28
 
 ### Added

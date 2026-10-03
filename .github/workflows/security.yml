@@ -25,6 +25,8 @@ jobs:
       DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}   # optional Service Token fallback; unset means OIDC only
     with:
       codeql-languages: python,javascript-typescript,actions   # the dashboard under web/ is JavaScript; the old codeql.yml scanned it
+      codeql-queries: security-and-quality   # what the old codeql.yml ran
+      semgrep-config: p/python p/javascript p/github-actions p/secrets
       pip-audit-requirements: ""   # no requirements.txt; the declared dependencies are audited below, as the old ci.yml did
       audit-install-command: pip install pip-audit
       audit-command: |

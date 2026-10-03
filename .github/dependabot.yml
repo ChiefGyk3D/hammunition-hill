@@ -26,3 +26,12 @@ updates:
       interval: weekly
     cooldown:
       default-days: 7
+
+  # The browser driver the render job installs, pinned by package-lock.json.
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5

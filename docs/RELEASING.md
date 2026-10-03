@@ -50,20 +50,19 @@ number until you reinstall. The test says so in its failure message.
 
 ## What the tag sets off
 
-`.github/workflows/release.yml`:
+`.github/workflows/release.yml` calls the shared `artifact-release.yml`. On a
+pull request it builds and checks and publishes nothing; on a tag:
 
+- **build** — wheel, sdist and `.deb`, `twine check --strict`.
 - **verify** — refuses the tag unless `v$version` equals the tag name *and*
-  `CHANGELOG.md` has a section for it. This job exists because the tag is the
-  one input a human types by hand.
-- **build** — wheel and sdist, `twine check --strict`, then installs the built
-  wheel into a fresh virtualenv and runs `hamhill check --offline` against the
-  example config. Packaging has broken `web/` once before; publishing an
-  unopened box is how that ships. Ends with `sha256sum` over the artefacts.
-- **publish** — the only job with `contents: write`, holding it for exactly
-  one step, so the token that can write to this repository is never present
-  while third-party build dependencies install. Release notes come from the
-  changelog section; `--verify-tag` refuses to invent a tag that was not
-  pushed.
+  `CHANGELOG.md` has a section for it (this check exists because the tag is the
+  one input a human types by hand), then installs the built wheel into a fresh
+  virtualenv and serves from it, and installs the `.deb` into a trixie
+  container. Packaging has broken `web/` once before; publishing an unopened
+  box is how that ships.
+- **publish** — the only job with write access to the release; it writes
+  `SHA256SUMS`, records build provenance, signs every file with cosign
+  (keyless) and attaches them, with notes from the changelog section.
 
 The write scope is listed in `tests/test_workflows.py::ALLOWED_WRITES` with its
 reason, which is the only way a write gets into this repository's CI.

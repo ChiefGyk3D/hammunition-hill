@@ -129,6 +129,7 @@ def test_every_released_section_has_a_link_definition():
 def test_the_release_workflow_refuses_a_mismatched_tag():
     """The check that makes a hand-typed tag safe. Its absence is silent."""
     assert 'if [ "v$version" != "$TAG" ]' in RELEASE_WORKFLOW
+    assert "GITHUB_REF_TYPE" in RELEASE_WORKFLOW
     assert 'grep -q "^## \\[$version\\]" CHANGELOG.md' in RELEASE_WORKFLOW
 
 
@@ -139,7 +140,9 @@ def test_the_release_workflow_installs_the_built_wheel_before_publishing():
 
 
 def test_the_release_workflow_publishes_checksums():
-    assert "sha256sum" in RELEASE_WORKFLOW
+    # SHA256SUMS, signatures and provenance are written by the shared workflow.
+    assert "artifact-release.yml@" in RELEASE_WORKFLOW
+    assert "publish: ${{ startsWith(github.ref, 'refs/tags/v') }}" in RELEASE_WORKFLOW
 
 
 def test_the_release_ships_the_debian_package():
@@ -159,15 +162,11 @@ def test_the_release_installs_the_deb_before_publishing_it():
     assert "apt-get install -y -qq /dist/hammunition-hill_*.deb" in RELEASE_WORKFLOW
 
 
-def test_the_release_workflow_verifies_the_tag_object():
-    """--verify-tag refuses to invent a tag that is not already pushed."""
-    assert "--verify-tag" in RELEASE_WORKFLOW
+def test_the_release_builds_and_checks_on_pull_requests_but_publishes_only_on_a_tag():
+    """The same job runs on a PR so packaging breakage is caught before the tag."""
+    assert "pull_request:" in RELEASE_WORKFLOW
+    assert "publish: ${{ startsWith(github.ref, 'refs/tags/v') }}" in RELEASE_WORKFLOW
 
 
-def test_only_the_publish_job_can_write():
-    """The build job installs third-party code; it must not hold a write token."""
-    body = RELEASE_WORKFLOW.split("  publish:")[0]
-    assert "contents: write" not in body, (
-        "a job before publish grants contents: write -- keep the write token out "
-        "of the job that runs pip install"
-    )
+def test_the_release_ships_the_wheel_the_sdist_and_the_deb():
+    assert "dist/*.whl dist/*.tar.gz dist/*.deb" in RELEASE_WORKFLOW

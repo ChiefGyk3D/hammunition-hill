@@ -342,6 +342,9 @@ function renderPanel(entry, station) {
   for (const id of entry.manifest.sources) data[id] = snapshots.get(id) ?? null;
   entry.lastPrint = fingerprint(entry);
   try {
+    // A panel module's own render(); there is no Express here, and the rule
+    // matches any `.render(` whose arguments are not literals.
+    // nosemgrep: javascript.express.security.audit.res-render-injection.res-render-injection
     entry.module.render(entry.body, { data, station, el });
   } catch (err) {
     entry.body.replaceChildren(el("p", "error", `panel error: ${err.message}`));
