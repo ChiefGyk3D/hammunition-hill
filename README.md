@@ -93,7 +93,7 @@ things stand:
 | Metrics — InfluxDB push | ❌ **not written** |
 | Licence exam practice — all three US pools included | ✅ working |
 | Part 97 quoted beside a rules answer | ✅ working |
-| CI — 11 jobs plus CodeQL, 3 Python versions, x86 + ARM + macOS | ✅ working |
+| CI — shared GYST workflows (lint, tests, smoke, container, security scans) plus three local jobs, 3 Python versions, x86 + ARM + macOS | ✅ working |
 | Docker image and `pip install` without a clone | ✅ working — distro packages still ❌ |
 
 **Full inventory, every subsystem: [docs/STATUS.md](docs/STATUS.md).** That page
@@ -747,6 +747,25 @@ MPL-2.0, matching both siblings, so logic ports by copy-paste.
 - **[VA3HDL/hamdashboard](https://github.com/VA3HDL/hamdashboard)** — the
   tile-and-iframe dashboard a lot of hams already run. Excellent at what it
   does. Config compatibility is planned for v1.0.
+
+## Continuous integration
+
+Lint, the test matrix, the smoke test, the container build, the workflow lint,
+the security scans and the release are
+[git-your-ship-together](https://github.com/ChiefGyk3D/git-your-ship-together)'s
+reusable workflows, pinned by commit. Three jobs stay local because a shared
+workflow cannot express them: the real-browser render (it needs
+`playwright install --with-deps`, which is root), the Debian container that
+installs the `.deb`, and the weekly upstream-liveness check.
+
+Branch protection requires these checks:
+
+- `ci / CI green` (the shared gate: ruff, pytest on 3.11 to 3.13 across x86, ARM and macOS, smoke, container build, workflow lint)
+- `all checks passed` (the local aggregate: `ci`, the browser render and the Debian package)
+- `package / Build, verify` (the release workflow's pull request build of the wheel, sdist and `.deb`; it publishes only on a tag)
+
+The `Security` workflow (CodeQL, gitleaks, Semgrep, dependency review and the
+dependency audit) reports separately.
 
 ## Contributing
 

@@ -110,12 +110,20 @@ def test_every_workflow_declares_top_level_permissions(path):
 
 # The single write this repository's CI is allowed to do, and where.
 ALLOWED_WRITES = {
-    ("codeql.yml", "analyze", "security-events"),
-    # Creating the GitHub release IS the release workflow's job. Scoped to
-    # the one job that calls `gh release create`: verify and build run with
-    # the read-only default, so the token that can write to this repository
-    # is never present while third-party build dependencies are installing.
-    ("release.yml", "publish", "contents"),
+    # Security's caller job grants what the shared security.yml declares it
+    # may use: SARIF uploads, dependency review's comment, and the OIDC token
+    # for Doppler. The shared workflow narrows each of its own jobs.
+    ("security.yml", "security", "security-events"),
+    ("security.yml", "security", "pull-requests"),
+    ("security.yml", "security", "id-token"),
+    ("ci.yml", "ci", "id-token"),
+    # Creating the GitHub release IS the release workflow's job. The shared
+    # artifact-release.yml keeps its build job at contents: read, so the token
+    # that can write to this repository is never present while third-party
+    # build dependencies are installing; only its publish job widens.
+    ("release.yml", "package", "contents"),
+    ("release.yml", "package", "id-token"),
+    ("release.yml", "package", "attestations"),
 }
 
 
@@ -178,6 +186,9 @@ def test_no_run_block_interpolates_untrusted_input(path):
 def test_every_job_has_a_timeout(path):
     """A hung job holds a runner for six hours by default and tells no one."""
     for job_name, job in jobs(load(path)).items():
+        if "uses" in job:
+            # A call to a shared workflow: the timeouts are inside it.
+            continue
         assert job.get("timeout-minutes"), f"{path.name}: job {job_name!r} has no timeout-minutes"
 
 
@@ -364,25 +375,44 @@ def test_make_lint_runs_ruff_over_the_same_paths_as_ci():
     )
 
 
-def test_the_documented_job_count_matches_the_workflow():
-    """This number was wrong in both directions inside one day.
+GYST = "ChiefGyk3D/git-your-ship-together/.github/workflows/"
 
-    STATUS.md said "Nine jobs", which was right. It was then "corrected" to Ten
-    on a grep that counted the `push:` and `schedule:` keys under `on:` as
-    jobs, and that correction shipped. A hand-counted number in prose is worth
-    exactly as much as the counting method behind it, so count it here instead.
 
-    CodeQL lives in its own workflow and is named separately rather than folded
-    into the total, because "how many jobs does CI run" and "how many jobs does
-    ci.yml define" are different questions and conflating them is what caused
-    the error.
+def test_the_shared_workflows_are_pinned_to_a_commit_not_a_tag_object():
+    """An annotated tag's own SHA is a tag object, not a commit.
+
+    GitHub happens to resolve one, Dependabot would not, and a reviewer cannot
+    tell which they are looking at. The pin must be the peeled commit.
     """
-    words = {8: "Eight", 9: "Nine", 10: "Ten", 11: "Eleven", 12: "Twelve"}
-    total = len(jobs(load(CI)))
-    status = (REPO / "docs" / "STATUS.md").read_text(encoding="utf-8")
-    readme = (REPO / "README.md").read_text(encoding="utf-8")
-
-    assert f"{words[total]} jobs" in status, (
-        f"ci.yml defines {total} jobs; STATUS.md does not say {words[total]}"
+    pins = set()
+    for path in WORKFLOW_FILES:
+        for match in re.finditer(
+            rf"uses:\s*{re.escape(GYST)}\S+@([0-9a-f]{{40}})", path.read_text()
+        ):
+            pins.add(match.group(1))
+    assert pins, "no workflow calls the shared GYST workflows any more"
+    assert len(pins) == 1, (
+        f"the GYST calls are pinned to {len(pins)} different commits: {sorted(pins)}"
     )
-    assert f"{total} jobs" in readme, f"ci.yml defines {total} jobs; README.md disagrees"
+
+
+def test_the_readme_lists_the_required_checks():
+    """Branch protection is a setting no YAML holds, so the README names it.
+
+    The set is derived from the workflow files: `<job> / CI green` for every
+    job that calls python-ci.yml, the local aggregate, and the release
+    workflow's pull request build. Rename a job and this fails until the
+    README (and the setting) agree.
+    """
+    readme = (REPO / "README.md").read_text(encoding="utf-8")
+    expected = {"all checks passed"}
+    for path in WORKFLOW_FILES:
+        for name, job in jobs(load(path)).items():
+            uses = str(job.get("uses", ""))
+            if uses.startswith(GYST + "python-ci.yml@"):
+                expected.add(f"{name} / CI green")
+            if uses.startswith(GYST + "artifact-release.yml@"):
+                expected.add(f"{name} / Build, verify")
+    assert len(expected) == 3, f"expected three required checks, derived {sorted(expected)}"
+    for check in sorted(expected):
+        assert f"`{check}`" in readme, f"README.md does not list the required check `{check}`"

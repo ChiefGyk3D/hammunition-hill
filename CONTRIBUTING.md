@@ -32,22 +32,25 @@ make build    # wheel + sdist, then verify the wheel installs
 
 ## What CI checks, and why each one is there
 
+The generic jobs are [git-your-ship-together](https://github.com/ChiefGyk3D/git-your-ship-together)'s
+reusable workflows (the README lists the required checks); `ci.yml` keeps three
+of its own.
+
 | Job | Catches |
 |---|---|
-| `lint` | `ruff check` and `ruff format --check` over `src/`, `tests/` and `.github/scripts/` |
-| `test` | pytest on 3.11–3.13, on x86, ARM and macOS |
-| `example-config` | the file every new user copies having rotted |
-| `smoke` | the collector→snapshot→HTTP loop breaking, and the security headers going missing |
+| `ci` (shared) | `ruff check` and `ruff format --check`; pytest on 3.11–3.13 on x86, ARM and macOS; the shipped example config rotting; the collector→snapshot→HTTP loop breaking; a container that builds but does not serve; workflow lint |
 | `frontend` | a panel that throws, or the browser reaching a host it should not |
-| `audit` | advisories against the two runtime dependencies |
-| `build` | a wheel that builds but does not install |
+| `debian` | a `.deb` that builds but does not install and serve |
 | `upstreams` | *(weekly)* an upstream host disappearing |
+| `all-green` | the one local job that needs the rest, so a job cannot be added and forgotten |
+| `release.yml` | on a pull request, the wheel, sdist and `.deb` build, install and serve; on a tag, they are signed and published |
+| `security.yml` | CodeQL, gitleaks, Semgrep, dependency review, and the audit of the declared dependencies |
 
 ARM is in the matrix because a Raspberry Pi is the primary deployment target,
 not an afterthought.
 
-`all-green` is the one job branch protection points at, so that adding a job
-later does not mean remembering to update a settings page.
+`all-green` needs `ci` and the other local jobs; branch protection requires it
+beside the shared `ci / CI green`.
 
 ### The workflows themselves are tested
 
@@ -63,7 +66,7 @@ quietly stopped meaning anything:
 - `${{ github.event.* }}` interpolated into a `run:` block, where a branch name
   is code rather than a value
 - a job with no `timeout-minutes`
-- **a job missing from `all-green`'s `needs`** — it would run, fail, and merge
+- **a local job missing from `all-green`'s `needs`** — it would run, fail, and merge
   anyway, because the check branch protection watches never heard about it
 - the artifact path drifting from where `render_check.py` writes screenshots
   (`if-no-files-found: warn` means that drift uploads nothing and still passes)
