@@ -74,9 +74,6 @@ _HEADING = re.compile(
 
 _SUBPART = re.compile(r"(?m)^\s*Subpart\s+(?P<letter>[A-Z])\s*[—–-]\s*(?P<title>\S.{2,90}?)\s*$")
 
-# `97.113(a)(4)` and `97.3(a)(4)(ii)` both resolve to the section they open with.
-_REFERENCE = re.compile(r"(?P<section>9?7?\.?97\.\d+[a-z]?|97\.\d+[a-z]?)")
-
 
 def dehyphenate(text: str) -> str:
     """Rejoin words a typesetter split across a line, without a dictionary.

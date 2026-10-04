@@ -281,7 +281,7 @@ def the_gate_pattern() -> str:
         match = re.search(r"grep -qE '([^']+)'", step.get("run") or "")
         if match:
             return match.group(1)
-    pytest.fail(f"no grep pattern found in {GATE} -- this test no longer checks anything")
+    raise AssertionError(f"no grep pattern found in {GATE} -- this test no longer checks anything")
 
 
 def test_the_gate_passes_when_everything_succeeded():

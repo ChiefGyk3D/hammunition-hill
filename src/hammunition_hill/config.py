@@ -576,6 +576,8 @@ def _default_web_dir(base_dir: Path) -> Path:
             if concrete.is_dir():
                 return Path(concrete)
     except (ModuleNotFoundError, TypeError, OSError):
+        # No packaged web/ resource (a source checkout, or a zipped install):
+        # fall through to the checkout path chosen above.
         pass
     return checkout
 

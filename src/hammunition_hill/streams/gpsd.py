@@ -67,6 +67,8 @@ class GpsdStream:
                 try:
                     await writer.wait_closed()
                 except (OSError, asyncio.CancelledError):
+                    # Cleanup of a socket we are discarding. A cancel arriving
+                    # here must not replace the exception already unwinding.
                     pass
 
         await with_reconnect(f"gpsd {cfg.id}", connect)

@@ -530,7 +530,7 @@ def test_the_collector_publishes_the_snapshot_and_keeps_failure_honest(tmp_path)
     )
     publish_repeaters(
         config,
-        collect_fn=lambda: build(),
+        collect_fn=build,
     )
     snap = read_snapshot(tmp_path, "repeaters")
     assert snap["kind"] == "repeaters"

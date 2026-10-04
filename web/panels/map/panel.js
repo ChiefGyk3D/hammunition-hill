@@ -185,7 +185,6 @@ function draw(canvas, data, station) {
   state.view = view;
 
   const ink = css("--ink", "#e3e7ed");
-  const muted = css("--muted", "#8f98a4");
   const rule = css("--rule", "#28313c");
   const accent = css("--accent", "#3bc6d0");
   const panel = css("--panel", "#151a21");
