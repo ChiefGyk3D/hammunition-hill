@@ -35,6 +35,11 @@ def _row(**over: Any) -> dict[str, Any]:
         "offset_hz": None,
         "tone": "",
         "mode": "FM",
+        "modes": ["FM"],
+        "band": "2m",
+        "digital": {},
+        "distance_km": None,
+        "bearing_deg": None,
         "place": "",
         "notes": "",
         "use": "OPEN",
@@ -141,6 +146,9 @@ def listing_document() -> dict[str, Any]:
                 output_hz=442_000_000,
                 offset_hz=5_000_000,
                 mode="DMR",
+                modes=["DMR"],
+                band="70cm",
+                digital={"dmr_color_code": "1", "dmr_network": "Brandmeister"},
                 place="Providence, RI",
                 lat=41.8240,
                 lon=-71.4128,
@@ -148,7 +156,117 @@ def listing_document() -> dict[str, Any]:
         ],
         "merged": 1,
         "credits": [OPEN_CREDIT, REPEATERBOOK_CREDIT],
+        "centre": {"lat": GRID_LAT, "lon": GRID_LON, "source": "station"},
+        "within_km": None,
     }
+
+
+def legacy_listing_document() -> dict[str, Any]:
+    """The same document as an engine that predates the mode vocabulary prints it
+    (Hammunition before #316): no ``modes``, ``band``, ``digital``, ``distance_km``
+    or ``bearing_deg`` on a row, and no ``centre`` or ``within_km``."""
+    doc = copy.deepcopy(listing_document())
+    for key in ("centre", "within_km"):
+        del doc[key]
+    for r in doc["rows"]:
+        for key in ("modes", "band", "digital", "distance_km", "bearing_deg"):
+            del r[key]
+    return doc
+
+
+def modes_listing_document() -> dict[str, Any]:
+    """Every mode of the engine's vocabulary, over four bands, all from the open layer
+    (so nothing here is RepeaterBook's). Callsigns are invented; positions are city
+    centres. Each digital key appears on at least one row."""
+    doc = copy.deepcopy(listing_document())
+    extra = [
+        _row(
+            callsign="W1EEE",
+            output_hz=147_345_000,
+            mode="FM, D-STAR",
+            modes=["FM", "D-STAR"],
+            digital={"dstar_module": "B", "dstar_gateway": "W1EEE G"},
+            place="Worcester, MA",
+            lat=42.2626,
+            lon=-71.8023,
+        ),
+        _row(
+            callsign="W1FFF",
+            output_hz=444_500_000,
+            mode="YSF",
+            modes=["YSF"],
+            band="70cm",
+            digital={"ysf_dgid": "00"},
+            place="Springfield, MA",
+            lat=42.1015,
+            lon=-72.5898,
+        ),
+        _row(
+            callsign="W1GGG",
+            output_hz=449_925_000,
+            mode="P25",
+            modes=["P25"],
+            band="70cm",
+            digital={"p25_nac": "293"},
+            place="Albany, NY",
+            lat=42.6526,
+            lon=-73.7562,
+        ),
+        _row(
+            callsign="W1HHH",
+            output_hz=446_000_000,
+            mode="NXDN",
+            modes=["NXDN"],
+            band="70cm",
+            digital={"nxdn_ran": "1"},
+            place="New Haven, CT",
+            lat=41.3083,
+            lon=-72.9279,
+        ),
+        _row(
+            callsign="W1III",
+            output_hz=223_900_000,
+            mode="M17",
+            modes=["M17"],
+            band="1.25m",
+            place="Portland, ME",
+            lat=43.6591,
+            lon=-70.2568,
+        ),
+        _row(
+            callsign="W1JJJ",
+            output_hz=430_000_000,
+            mode="TETRA",
+            modes=["TETRA"],
+            band="70cm",
+            place="Burlington, VT",
+            lat=44.4759,
+            lon=-73.2121,
+        ),
+        _row(
+            callsign="W1KKK",
+            output_hz=1_294_500_000,
+            mode="ATV",
+            modes=["ATV"],
+            band="23cm",
+            place="Concord, NH",
+            lat=43.2081,
+            lon=-71.5376,
+        ),
+        _row(
+            callsign="W1LLL",
+            output_hz=145_470_000,
+            mode="FM, DMR",
+            modes=["FM", "DMR"],
+            digital={"dmr_color_code": "3", "dmr_id": "310999"},
+            place="Manchester, NH",
+            lat=42.9956,
+            lon=-71.4548,
+        ),
+    ]
+    doc["rows"].extend(extra)
+    doc["layers"][0]["rows"] = 3 + len(extra)
+    return doc
 
 
 def empty_listing() -> dict[str, Any]:

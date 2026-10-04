@@ -86,7 +86,7 @@ things stand:
 | CW trainer — Koch, callsigns, QSO simulator, quiz | ✅ working |
 | Shack tools — antenna, feedline, SWR, Ohm's law, dB, wire, battery | ✅ working |
 | Satellites — cached TLEs, SGP4 passes, Doppler | ✅ working, optional extra |
-| Repeaters — Hammunition's layers, distance and bearing from your station or any chosen point, tier 0 | ✅ working, needs the engine |
+| Repeaters — Hammunition's layers, mode and band chips with digital details, distance and bearing from your station or any chosen point, tier 0 | ✅ working, needs the engine |
 | RBN — who is hearing you, and band activity | ✅ working, off by default |
 | PSK Reporter + WSPR — who decoded your digital signal, with distance | ✅ working, off by default |
 | DX Path — 24-hour point-to-point MUF chart (MINIMUF 3.5) | ✅ working |
