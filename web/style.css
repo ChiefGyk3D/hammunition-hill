@@ -1301,3 +1301,6 @@ table.meteors td { padding: 2px 6px 2px 0; vertical-align: baseline; }
   .rp-row { grid-template-columns: 70px 60px 1fr 56px; }
   .rp-off, .rp-tone, .rp-mode, .rp-brg, .rp-src { display: none; }
 }
+.rp-centre { font-family: var(--mono); font-size: 11px; color: var(--ink); }
+.rp-centre-input { width: 190px; font-size: 11px; padding: 3px 6px; }
+.rp-coverage { color: var(--fair); }

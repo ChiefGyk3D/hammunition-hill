@@ -6,9 +6,9 @@
 //
 // Tier 0: the collector asked the local engine for its repeater layers and
 // worked out distance and bearing from the grid square's centre. This panel
-// only filters and draws. Nothing here fetches, and there is deliberately no
-// "near X" search -- a search box would be a way to ask somebody where a place
-// is, and nothing here asks anybody anything.
+// filters and draws, and can re-measure from any centre the operator picks (a
+// grid, coordinates, a map point). Nothing here fetches, so a place NAME is not
+// understood: that would be a lookup, and nothing here asks anybody anything.
 //
 // There is no export button, on purpose. Some of these rows are RepeaterBook's
 // (marked personal use by the engine), and its terms keep them on the machine
@@ -18,13 +18,20 @@
 import { recall, relativeAge, remember } from "../../lib/format.js";
 import { bandColor } from "../../lib/bandcolors.js";
 import {
+  CENTRE_EVENT,
   DEFAULT_FILTERS,
   bearingLabel,
+  clearCentre,
+  coverageNote,
   facets,
   filterRows,
   kmLabel,
+  loadCentre,
   mhz,
   offsetLabel,
+  parseCentre,
+  saveCentre,
+  withCentre,
 } from "../../lib/repeaters.js";
 
 const MAX_ROWS = 60;
@@ -36,6 +43,77 @@ const state = {
   source: recall("repeaters.source", DEFAULT_FILTERS.source),
   withinKm: recall("repeaters.withinKm", DEFAULT_FILTERS.withinKm),
 };
+
+// The chosen centre lives in localStorage and nowhere else; the map panel sets
+// it too (a click or long press), so both announce a change with an event and
+// whichever panel is showing re-renders.
+let redraw = null;
+let listening = false;
+let centreError = "";
+
+function storage() {
+  try {
+    return window.localStorage;
+  } catch {
+    return null;
+  }
+}
+
+function announce() {
+  window.dispatchEvent(new CustomEvent(CENTRE_EVENT));
+}
+
+function centreRow(el, payload, chosen) {
+  const row = el("div", "rp-filter");
+  row.append(el("span", "rp-filter-label", "CENTRE"));
+  row.append(
+    el(
+      "span",
+      "rp-centre",
+      chosen
+        ? `${chosen.kind === "grid" ? "grid " : "point "}${chosen.label}`
+        : payload.grid
+          ? `station ${payload.grid}`
+          : "no station set",
+    ),
+  );
+  const input = el("input", "cs-input rp-centre-input");
+  input.type = "text";
+  input.placeholder = "grid FN42 or lat, lon";
+  input.setAttribute("aria-label", "Centre for distances: a Maidenhead grid or latitude, longitude");
+  input.maxLength = 40;
+  const apply = () => {
+    const centre = parseCentre(input.value);
+    if (!centre) {
+      centreError =
+        "not a 4- or 6-character grid square or a latitude, longitude pair " +
+        "(a place name is not looked up: nothing here asks anyone anything)";
+      redraw?.();
+      return;
+    }
+    centreError = "";
+    const store = storage();
+    if (store) saveCentre(store, centre);
+    announce();
+  };
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") apply();
+  });
+  const set = el("button", "chip", "SET");
+  set.type = "button";
+  set.addEventListener("click", apply);
+  const back = el("button", "chip", "STATION");
+  back.type = "button";
+  back.title = "Measure from the station's own grid square again";
+  back.addEventListener("click", () => {
+    centreError = "";
+    const store = storage();
+    if (store) clearCentre(store);
+    announce();
+  });
+  row.append(input, set, back);
+  return row;
+}
 
 function chipRow(el, label, key, options, rerender, allLabel = "ALL") {
   const row = el("div", "rp-filter");
@@ -115,7 +193,18 @@ export function render(root, { data, el }) {
   }
 
   const rerender = () => render(root, { data, el });
-  const rows = payload.rows ?? [];
+  redraw = rerender;
+  if (!listening) {
+    listening = true;
+    window.addEventListener(CENTRE_EVENT, () => redraw?.());
+  }
+
+  // The station is the default and its numbers are the collector's, so the
+  // first paint computes nothing. A chosen centre recomputes every row here.
+  const store = storage();
+  const chosen = store ? loadCentre(store) : null;
+  const rows = chosen ? withCentre(payload.rows ?? [], chosen) : (payload.rows ?? []);
+  const measured = Boolean(chosen || payload.station);
   const offered = facets(rows);
 
   // A saved filter for a band, mode or source this machine no longer has would
@@ -127,12 +216,14 @@ export function render(root, { data, el }) {
   const parts = [];
 
   const filters = el("div", "rp-filters");
+  filters.append(centreRow(el, payload, chosen));
+  if (centreError) filters.append(el("p", "error", centreError));
   filters.append(
     chipRow(el, "BAND", "band", offered.bands.map((b) => [b, b]), rerender),
     chipRow(el, "MODE", "mode", offered.modes.map((m) => [m, m]), rerender),
     chipRow(el, "SOURCE", "source", offered.sources.map((s) => [s, s]), rerender),
   );
-  if (payload.station) {
+  if (measured) {
     filters.append(
       chipRow(el, "WITHIN", "withinKm", KM_STEPS.map((k) => [k, `${k} km`]), rerender, "ANY"),
     );
@@ -159,12 +250,17 @@ export function render(root, { data, el }) {
     );
   }
 
+  // The data is what was imported, not the world. Said when the centre is far
+  // from every row, and always when there are none.
+  const coverage = measured ? coverageNote(rows, state.withinKm) : null;
+  if (coverage) parts.push(el("p", "rp-note rp-coverage", coverage));
+
   if (payload.truncated) {
     parts.push(
       el("p", "rp-note", `${payload.truncated} farther repeaters were left out to keep this panel light.`),
     );
   }
-  if (payload.distance_note) parts.push(el("p", "rp-note", payload.distance_note));
+  if (payload.distance_note && !chosen) parts.push(el("p", "rp-note", payload.distance_note));
   for (const skipped of payload.skipped ?? []) {
     parts.push(el("p", "rp-note", `layer ${skipped.layer} left out: ${skipped.reason}`));
   }

@@ -21,7 +21,10 @@ saying so.
   prints the credits, and the map gains an off-by-default RPTR layer. Rows the
   engine marks `personal_use` (RepeaterBook, D-081) are served to this
   machine's own page only: any other host, or any proxied request, gets the
-  snapshot without them, and nothing exports them. `[repeaters] enabled`.
+  snapshot without them, and nothing exports them. The centre defaults to the
+  station; a typed grid, coordinates or a map click or long press can replace
+  it (remembered in the browser only, distances recomputed there), and a centre
+  far from every row says the data is only what was imported. `[repeaters] enabled`.
   See [docs/REPEATERS.md](docs/REPEATERS.md).
 
 ### Changed

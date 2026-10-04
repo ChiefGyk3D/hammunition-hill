@@ -32,11 +32,41 @@ badge per source. A repeater two sources agree on carries a dashed badge for the
 second. Rows are nearest first.
 
 Filters are in your browser and nothing you filter for is sent anywhere: band,
-mode, source, and "within N km". There is no "near X" search, because that would
-be a way to ask someone where a place is, and this panel asks nobody anything.
+mode, source, and "within N km".
 
-The map's **RPTR** layer draws the same rows, filtered the same way, and is off
-until you turn it on.
+## Choosing the centre
+
+Distance, bearing, the "within" filter and the sort order are measured from a
+**centre**. It defaults to your station's grid square, using the numbers the
+collector already computed, so the first paint needs no arithmetic. To look
+somewhere else, in the panel's CENTRE row:
+
+- type a **Maidenhead grid**, four or six characters (`FN42`, `FN42ab`), or a
+  **latitude, longitude** pair (`42.36, -71.06`), then SET; or
+- on the map, press **SET CENTRE** and click, or **press and hold** a point.
+
+STATION puts it back. The map pans to the centre and draws a marker for it. Every
+row's distance and bearing are recomputed in the browser from the rows already in
+the snapshot (the same great-circle and Maidenhead maths as `geo.py`, held to the
+same hand-computed paths by a test). The last centre is remembered in this
+browser's `localStorage` and goes nowhere else: it is never sent to the
+collector or any server.
+
+**A place name is not supported.** Turning a name into a point is a lookup, and
+nothing here asks anyone anything; use a grid, coordinates or the map.
+
+**The data is what was imported.** Choosing a centre does not make the data
+worldwide. When the nearest repeater is farther than the current "within" radius
+(250 km when none is set), or there are none, the panel says so and names the
+commands that fill the gap: `hammunition maps repeaters fetch-repeaterbook
+--state CODE` and `hammunition maps repeaters import --from-osm`.
+
+The obvious next centre source is the GPS tether's position stream
+(`127.0.0.1:10111`, server-sent events). Hill does not read it yet, so there is
+no "use GPS position" here; it is deliberately not added as a dependency now.
+
+The map's **RPTR** layer draws the same rows, filtered and measured the same way,
+and is off until you turn it on.
 
 The grid square is the one Hammunition has saved (`hammunition station show`).
 If it has none, Hill's own `[station]` is used, and if there is neither the rows
@@ -94,7 +124,9 @@ false` ([CONFIGURATION.md](CONFIGURATION.md)).
   square is about 70 by 110 km, so a nearby repeater's distance is only as good
   as that.
 - The numbers are checked against two paths worked out by hand with a different
-  formula (`tests/test_repeaters.py`). The page was rendered in headless Chromium
+  formula (`tests/test_repeaters.py`), and the browser's recomputation against the
+  same two (`tests/test_repeaters_js.py`). The map click and long press were not
+  exercised with a pointer, only the logic behind them. The page was rendered in headless Chromium
   against fixture data. It has not been run against a real station's layers by
   the author of the panel, and no real station value is used anywhere in the
   tests.

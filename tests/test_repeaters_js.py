@@ -140,3 +140,203 @@ def test_labels(js):
 
 def test_filtering_does_not_change_the_rows_it_is_given(js):
     assert js["mutated"] == 4
+
+
+# --- the chosen centre ---------------------------------------------------------
+CENTRE_DRIVER = """
+import {
+  parseGrid, parseLatLon, parseCentre, withCentre, distanceKm, bearingDeg,
+  coverageNote, loadCentre, saveCentre, clearCentre, centreFromPoint, CENTRE_KEY,
+} from "__LIB__";
+
+const rows = __ROWS__;
+const out = {};
+
+out.grid = Object.fromEntries(
+  ["FN31", "FN31pr", "fn31PR", "FN", "FN3", "FN31p", "FN31pr99", "ZZ99", "FN31yy", "", "12ab", null]
+    .map((g) => [String(g), parseGrid(g)]));
+out.latlon = Object.fromEntries(
+  ["41.7, -72.7", "41.7 -72.7", "-33.9,151.2", "91, 0", "0, 181", "41.7", "a, b",
+   "1,2,3", "N41 W72"]
+    .map((t) => [t, parseLatLon(t)]));
+out.centre = {
+  grid: parseCentre("FN42"), point: parseCentre("40.5, -73.5"),
+  name: parseCentre("Boston"), empty: parseCentre(""),
+};
+
+// The station's centre, as the collector computes it (FN31pr).
+const here = parseGrid("FN31pr");
+const moved = withCentre(rows, here);
+out.moved = moved.map((r) => [r.callsign, r.km, r.bearing]);
+out.rawInputUntouched = rows.every((r) => r.__marker === undefined);
+out.sortedFromSydney = withCentre(rows, centreFromPoint(-33.9, 151.2)).map((r) => r.callsign);
+out.meridian = [distanceKm(0, 0, 1, 0), bearingDeg(0, 0, 1, 0)];
+out.equator = [distanceKm(0, 0, 0, 90), bearingDeg(0, 0, 0, 90)];
+
+const sydney = withCentre(rows, centreFromPoint(-33.9, 151.2));
+out.farNote = coverageNote(sydney, null);
+out.nearNote = coverageNote(moved, null);
+out.tightNote = coverageNote(moved, 4);
+out.noRowsNote = coverageNote([], null);
+out.noDistanceNote = coverageNote(rows.map((r) => ({ ...r, km: null })), null);
+
+const make = () => {
+  const map = new Map();
+  return {
+    map,
+    getItem: (k) => (map.has(k) ? map.get(k) : null),
+    setItem: (k, v) => map.set(k, String(v)),
+    removeItem: (k) => map.delete(k),
+  };
+};
+const store = make();
+out.empty = loadCentre(store);
+saveCentre(store, parseCentre("FN42"));
+out.roundTrip = loadCentre(store);
+out.key = [...store.map.keys()];
+store.setItem(CENTRE_KEY, "{not json");
+out.garbage = loadCentre(store);
+store.setItem(CENTRE_KEY, JSON.stringify({ kind: "point", lat: 95, lon: 0 }));
+out.outOfRange = loadCentre(store);
+saveCentre(store, centreFromPoint(10, 20));
+clearCentre(store);
+out.cleared = loadCentre(store);
+const broken = {
+  getItem() { throw new Error("blocked"); },
+  setItem() { throw new Error("blocked"); },
+  removeItem() { throw new Error("blocked"); },
+};
+saveCentre(broken, centreFromPoint(1, 2));
+clearCentre(broken);
+out.blocked = loadCentre(broken);
+console.log(JSON.stringify(out));
+"""
+
+
+@pytest.fixture(scope="module")
+def centre_js():
+    data = repeaters.build_data(docs.listing_document(), docs.station_document())
+    with tempfile.TemporaryDirectory() as tmp:
+        driver = Path(tmp) / "centre.mjs"
+        driver.write_text(
+            CENTRE_DRIVER.replace("__LIB__", str(ROOT / "web/lib/repeaters.js")).replace(
+                "__ROWS__", json.dumps(data["rows"])
+            ),
+            encoding="utf-8",
+        )
+        result = subprocess.run(  # noqa: S603
+            [node, str(driver)], capture_output=True, text=True, timeout=60
+        )
+    assert result.returncode == 0, result.stderr
+    return json.loads(result.stdout)
+
+
+def test_four_and_six_character_grids_are_parsed_to_their_centre(centre_js):
+    g = centre_js["grid"]
+    assert g["FN31"]["lat"] == pytest.approx(41.5) and g["FN31"]["lon"] == pytest.approx(-73.0)
+    assert g["FN31pr"]["lat"] == pytest.approx(41.7291667, abs=1e-6)
+    assert g["FN31pr"]["lon"] == pytest.approx(-72.7083333, abs=1e-6)
+    assert g["fn31PR"]["grid"] == "FN31pr"
+
+
+@pytest.mark.parametrize(
+    "bad", ["FN", "FN3", "FN31p", "FN31pr99", "ZZ99", "FN31yy", "", "12ab", "null"]
+)
+def test_grids_that_are_not_four_or_six_characters_are_rejected(centre_js, bad):
+    assert centre_js["grid"][bad] is None
+
+
+def test_the_js_grid_agrees_with_geo_py():
+    from hammunition_hill.geo import grid_to_latlon
+
+    assert grid_to_latlon("FN31") == pytest.approx((41.5, -73.0))
+
+
+def test_latitude_longitude_pairs(centre_js):
+    p = centre_js["latlon"]
+    assert p["41.7, -72.7"] == {"lat": 41.7, "lon": -72.7}
+    assert p["41.7 -72.7"] == {"lat": 41.7, "lon": -72.7}
+    assert p["-33.9,151.2"] == {"lat": -33.9, "lon": 151.2}
+    for bad in ("91, 0", "0, 181", "41.7", "a, b", "1,2,3", "N41 W72"):
+        assert p[bad] is None
+
+
+def test_a_place_name_is_not_a_centre(centre_js):
+    c = centre_js["centre"]
+    assert c["grid"]["kind"] == "grid" and c["grid"]["label"] == "FN42"
+    assert c["point"]["kind"] == "point" and c["point"]["label"] == "40.500, -73.500"
+    assert c["name"] is None and c["empty"] is None
+
+
+def test_recomputing_from_the_station_centre_gives_the_hand_computed_pairs(centre_js):
+    """Boston 153.2 km at 62.2 and New York 156.7 km at 224.3, the pairs the
+    collector's own test uses, now through the browser's copy of the maths."""
+    by = {call: (km, brg) for call, km, brg in centre_js["moved"]}
+    assert by["W1AAA"][0] == pytest.approx(153.2, abs=0.1)
+    assert by["W1AAA"][1] == pytest.approx(62.2, abs=0.1)
+    assert by["W1BBB"][0] == pytest.approx(156.7, abs=0.1)
+    assert by["W1BBB"][1] == pytest.approx(224.3, abs=0.1)
+    assert [m[0] for m in centre_js["moved"]] == ["W1CCC", "W1DDD", "W1AAA", "W1BBB"]
+
+
+def test_the_browser_numbers_agree_with_the_collectors_to_a_tenth(centre_js):
+    data = repeaters.build_data(docs.listing_document(), docs.station_document())
+    for row, (call, km, brg) in zip(data["rows"], centre_js["moved"], strict=True):
+        assert row["callsign"] == call
+        assert km == pytest.approx(row["km"], abs=0.1)
+        assert brg == pytest.approx(row["bearing"], abs=0.1)
+
+
+def test_exact_arcs(centre_js):
+    assert centre_js["meridian"] == [pytest.approx(111.195, abs=0.001), 0]
+    assert centre_js["equator"] == [pytest.approx(10007.557, abs=0.01), 90]
+
+
+def test_rows_re_sort_from_a_new_centre_and_the_input_is_not_changed(centre_js):
+    from hammunition_hill.geo import distance_km
+
+    data = repeaters.build_data(docs.listing_document(), docs.station_document())
+    want = [
+        r["callsign"]
+        for r in sorted(data["rows"], key=lambda r: distance_km(-33.9, 151.2, r["lat"], r["lon"]))
+    ]
+    assert centre_js["sortedFromSydney"] == want
+    assert centre_js["rawInputUntouched"] is True
+
+
+def test_a_far_centre_says_the_data_is_only_what_was_imported(centre_js):
+    note = centre_js["farNote"]
+    assert "not worldwide" in note
+    assert "hammunition maps repeaters fetch-repeaterbook --state CODE" in note
+    assert "hammunition maps repeaters import --from-osm" in note
+    assert "nearest repeater" in note
+
+
+def test_coverage_note_cases(centre_js):
+    assert centre_js["nearNote"] is None
+    assert "beyond 4 km" in centre_js["tightNote"]
+    assert centre_js["noRowsNote"].startswith("No repeaters on this machine")
+    assert "fetch-repeaterbook" in centre_js["noRowsNote"]
+    # Rows with no distance at all are treated as no coverage, not as near.
+    assert centre_js["noDistanceNote"].startswith("No repeaters")
+
+
+def test_the_centre_round_trips_through_storage(centre_js):
+    assert centre_js["empty"] is None
+    assert centre_js["roundTrip"]["kind"] == "grid"
+    assert centre_js["roundTrip"]["label"] == "FN42"
+    assert centre_js["roundTrip"]["lat"] == pytest.approx(42.5)
+    assert centre_js["key"] == ["hh.repeaters.centre"]
+    assert centre_js["garbage"] is None
+    assert centre_js["outOfRange"] is None
+    assert centre_js["cleared"] is None
+    assert centre_js["blocked"] is None
+
+
+def test_the_centre_is_never_sent_anywhere():
+    """Browser-only: nothing in the lib or the panel may fetch, beacon or open a
+    socket, and the collector snapshot never learns the centre."""
+    for rel_path in ("web/lib/repeaters.js", "web/panels/repeaters/panel.js"):
+        text = (ROOT / rel_path).read_text(encoding="utf-8")
+        for forbidden in ("fetch(", "XMLHttpRequest", "sendBeacon", "WebSocket", "EventSource"):
+            assert forbidden not in text, f"{rel_path} uses {forbidden}"

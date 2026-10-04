@@ -30,7 +30,15 @@ import {
   unproject,
 } from "../../lib/globe.js";
 import { bandColor } from "../../lib/bandcolors.js";
-import { DEFAULT_FILTERS, filterRows } from "../../lib/repeaters.js";
+import {
+  CENTRE_EVENT,
+  DEFAULT_FILTERS,
+  centreFromPoint,
+  filterRows,
+  loadCentre,
+  saveCentre,
+  withCentre,
+} from "../../lib/repeaters.js";
 
 const state = {
   lat0: null,
@@ -52,6 +60,9 @@ const state = {
   // planning a sked wants the same target tomorrow.
   target: recall("map.target", ""),
   plotting: false,
+  // Armed by the SET CENTRE chip: the next click makes that point the centre
+  // the repeaters panel measures from. A long press does the same unarmed.
+  centring: false,
   world: null,
   loading: false,
   selected: null,
@@ -65,6 +76,37 @@ const state = {
 
 // Nearest first, so the cap drops the farthest.
 const REPEATER_MARKERS = 2000;
+
+function chosenCentre() {
+  try {
+    return loadCentre(window.localStorage);
+  } catch {
+    return null;
+  }
+}
+
+function setCentreFrom(at) {
+  try {
+    saveCentre(window.localStorage, centreFromPoint(at.lat, at.lon));
+  } catch {
+    // Not remembered; the event below still moves this view.
+  }
+  window.dispatchEvent(new CustomEvent(CENTRE_EVENT));
+}
+
+// The repeaters panel's centre changed (typed there, or picked here): pan to it,
+// or back to the station when it was cleared.
+if (typeof window !== "undefined") {
+  window.addEventListener(CENTRE_EVENT, () => {
+    const to = chosenCentre() ?? (state.station?.located ? state.station : null);
+    if (to) {
+      state.lat0 = to.lat;
+      state.lon0 = to.lon;
+    }
+    state.centring = false;
+    state.rerender?.();
+  });
+}
 
 function css(name, fallback) {
   const value = getComputedStyle(document.body).getPropertyValue(name).trim();
@@ -247,7 +289,11 @@ function draw(canvas, data, station) {
       source: recall("repeaters.source", DEFAULT_FILTERS.source),
       withinKm: recall("repeaters.withinKm", DEFAULT_FILTERS.withinKm),
     };
-    const rows = filterRows(data.repeaters?.data?.rows ?? [], filters);
+    // Measured from the chosen centre when there is one, so "within 50 km"
+    // means the same on the map as in the table.
+    const centre = chosenCentre();
+    const all = data.repeaters?.data?.rows ?? [];
+    const rows = filterRows(centre ? withCentre(all, centre) : all, filters);
     for (const row of rows.slice(0, REPEATER_MARKERS)) {
       drawMarker(ctx, row.lat, row.lon, view, { color: bandColor(row.band), radius: 2.2 });
     }
@@ -255,6 +301,11 @@ function draw(canvas, data, station) {
 
   if (home) {
     drawMarker(ctx, home.lat, home.lon, view, { color: accent, radius: 4, ring: ink });
+  }
+
+  const centre = chosenCentre();
+  if (centre) {
+    drawMarker(ctx, centre.lat, centre.lon, view, { color: ink, radius: 4.5, ring: accent });
   }
 
   // Labels only for the selected spot: hamdash labels everything, which is
@@ -316,8 +367,10 @@ export function render(root, { data, el }) {
 
   const station = effectiveStation(data.station?.data ?? {});
   if (state.lat0 === null && station.located) {
-    state.lat0 = station.lat;
-    state.lon0 = station.lon;
+    // A remembered repeaters centre is where the operator was last looking.
+    const start = chosenCentre() ?? station;
+    state.lat0 = start.lat;
+    state.lon0 = start.lon;
   }
 
   // Rebuild only the chrome; the canvas is kept so a redraw does not flicker
@@ -377,6 +430,17 @@ export function render(root, { data, el }) {
     state.rerender();
   });
   viewRow.append(plotChip);
+
+  const centreChip = el("button", "chip" + (state.centring ? " on" : ""), "SET CENTRE");
+  centreChip.type = "button";
+  centreChip.title =
+    "Click the map to measure repeater distances from there (or press and hold)";
+  centreChip.setAttribute("aria-pressed", String(state.centring));
+  centreChip.addEventListener("click", () => {
+    state.centring = !state.centring;
+    state.rerender();
+  });
+  viewRow.append(centreChip);
 
   const parts = [viewRow, layerRow(el, redrawNow)];
 
@@ -551,13 +615,26 @@ function attachControls(canvas) {
   canvas.addEventListener("pointerdown", (event) => {
     canvas.setPointerCapture(event.pointerId);
     state.dragging = { x: event.offsetX, y: event.offsetY, moved: false };
+    // Long press: hold still for 600 ms to make this point the centre.
+    clearTimeout(state.pressTimer);
+    const press = state.dragging;
+    state.pressTimer = setTimeout(() => {
+      if (state.dragging !== press || press.moved || !state.view) return;
+      const at = unproject(press.x, press.y, state.view);
+      if (!at) return;
+      press.moved = true; // the release is not a click
+      setCentreFrom(at);
+    }, 600);
   });
 
   canvas.addEventListener("pointermove", (event) => {
     if (!state.dragging) return;
     const dx = event.offsetX - state.dragging.x;
     const dy = event.offsetY - state.dragging.y;
-    if (Math.abs(dx) + Math.abs(dy) > 2) state.dragging.moved = true;
+    if (Math.abs(dx) + Math.abs(dy) > 2) {
+      state.dragging.moved = true;
+      clearTimeout(state.pressTimer);
+    }
 
     // Flat pans at the map's own scale (degrees per pixel comes from the
     // view), so the world moves with the pointer instead of at globe speed.
@@ -573,7 +650,16 @@ function attachControls(canvas) {
   });
 
   const release = (event) => {
+    clearTimeout(state.pressTimer);
     if (state.dragging && !state.dragging.moved) {
+      if (state.centring && state.view) {
+        const at = unproject(event.offsetX, event.offsetY, state.view);
+        if (at) {
+          state.dragging = null;
+          setCentreFrom(at);
+          return;
+        }
+      }
       if (state.plotting && state.view) {
         // The plot tool is armed: a click drops the path's far end, at
         // 4-character precision -- a click is not a 6-character gesture.
