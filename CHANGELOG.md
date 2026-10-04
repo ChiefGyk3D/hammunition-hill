@@ -38,6 +38,7 @@ saying so.
 
 ### Fixed
 
+- **A checksum-valid element set with nonsense elements no longer reaches SGP4.** An epoch day of 1.1e11 makes the C propagator loop without returning, and `upcoming()` calls it inline from the collector, so one such set in a Celestrak listing would have frozen the dashboard. `parse_tles` now checks the epoch, angles, eccentricity and mean motion against their physical ranges. Found by the new fuzz target's first CI run (a hang, not a crash).
 - **A Unicode digit in an element set no longer crashes the parser.**
   `tle_checksum` summed `int(char)` for every `char.isdigit()`, which is also
   true of `²` and `⓼`; `parse_tles` raised `ValueError` out of the Celestrak
