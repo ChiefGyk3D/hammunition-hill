@@ -263,7 +263,7 @@ def test_duplicate_provider_is_refused(tmp_path):
 def test_every_chain_provider_reaches_the_egress_allowlist(tmp_path):
     config = parse_config(base_cfg(lookup={"providers": ["fcc_uls", "hamqth"]}), base_dir=tmp_path)
     allowed, _ = config.allowlist()
-    assert "www.hamqth.com" in allowed
+    assert {"www.hamqth.com"} <= set(allowed)
 
 
 def test_fcc_uls_grants_no_egress_reach(tmp_path):
@@ -562,3 +562,17 @@ def test_expired_licences_do_not_gain_names_from_a_later_pass(tmp_path):
     index = UlsIndex(db)
     assert index.lookup("K0DEAD") is None
     index.close()
+
+
+def test_a_failed_lookup_logs_the_callsign_on_one_line(tmp_path, caplog):
+    """The callsign comes off the request path. A newline in it must not be
+    able to start a second, forged log line, whatever the formatter does."""
+    db = tmp_path / "uls.sqlite"
+    db.write_bytes(b"this is not a sqlite database" * 20)
+    with caplog.at_level("WARNING", logger="hammunition_hill.lookup.uls"):
+        assert UlsIndex(db).lookup("K0ABC\nWARNING forged\r\x1b[31m") is None
+    message = caplog.records[-1].getMessage()
+    assert "K0ABC" in message
+    assert not any(c in message for c in "\n\r\x1b")
+    assert caplog.records[-1].args is not None
+    assert all("\n" not in str(a) for a in caplog.records[-1].args)

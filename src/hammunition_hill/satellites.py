@@ -353,7 +353,7 @@ def subsatellite_point(tle: Tle, moment: datetime) -> tuple[float, float, float]
     """
     x, y, z = position_at(tle, moment)
     lon = math.degrees(math.atan2(y, x))
-    radius = math.sqrt(x * x + y * y)
+    radius = math.hypot(x, y)
 
     # Bowring's method, iterated. Converges in two passes for anything in orbit.
     e2 = 2 * EARTH_FLATTENING - EARTH_FLATTENING**2

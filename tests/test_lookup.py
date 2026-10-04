@@ -421,3 +421,18 @@ def test_no_source_file_tests_an_element_for_truth():
     assert not offenders, (
         "these test an ElementTree result for truth instead of `is None`: " + ", ".join(offenders)
     )
+
+
+def test_the_session_hooks_are_abstract():
+    """An unfinished provider must fail loudly, not return None from a stub."""
+    from hammunition_hill.lookup.session_xml import _SessionXmlProvider
+
+    provider = _SessionXmlProvider.__new__(_SessionXmlProvider)
+    with pytest.raises(NotImplementedError):
+        provider._login_request()
+    with pytest.raises(NotImplementedError):
+        provider._session_from(None)
+    with pytest.raises(NotImplementedError):
+        provider._query_request("s", "N0CALL")
+    with pytest.raises(NotImplementedError):
+        provider._result_from(None, "N0CALL")

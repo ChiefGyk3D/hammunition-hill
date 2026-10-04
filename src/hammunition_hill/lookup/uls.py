@@ -360,6 +360,16 @@ def _write_meta(connection: sqlite3.Connection, stats: ImportStats) -> None:
     )
 
 
+def _loggable(value: str) -> str:
+    """A callsign made safe to put in a log line.
+
+    The value arrives from the request path. Anything outside what a callsign
+    can contain (letters, digits, ``/``, ``-``) becomes ``?``, so no newline or
+    escape sequence can end the line and start a forged one.
+    """
+    return "".join(c if (c.isascii() and (c.isalnum() or c in "/-")) else "?" for c in value[:32])
+
+
 class UlsIndex:
     """Read-only queries against an imported index."""
 
@@ -407,6 +417,6 @@ class UlsIndex:
                 .fetchone()
             )
         except sqlite3.Error as exc:
-            log.warning("ULS lookup failed for %r: %s", callsign, exc)
+            log.warning("ULS lookup failed for %s: %s", _loggable(callsign), exc)
             return None
         return dict(row) if row else None
