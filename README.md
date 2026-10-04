@@ -764,7 +764,7 @@ Branch protection requires these checks:
 
 - `ci / CI green` (the shared gate: ruff, pytest on 3.11 to 3.13 across x86, ARM and macOS, smoke, container build, workflow lint)
 - `shell / CI green` (the shared bash gate: shellcheck over the packaging scripts; shfmt drift is reported, not yet failed)
-- `all checks passed` (the local aggregate: `ci`, `shell`, the browser render and the Debian package)
+- `all checks passed` (the local aggregate: `ci`, `fuzz`, `shell`, the browser render and the Debian package)
 - `package / Build, verify` (the release workflow's pull request build of the wheel, sdist and `.deb`; it publishes only on a tag)
 
 The `Security` workflow (CodeQL, gitleaks, Semgrep, dependency review and the

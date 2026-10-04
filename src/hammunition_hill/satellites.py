@@ -41,6 +41,7 @@ would be precision this cannot support.
 from __future__ import annotations
 
 import math
+import re
 from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -133,6 +134,9 @@ class Observer:
 # --- elements ---------------------------------------------------------------
 
 
+_ASCII_DIGITS = frozenset("0123456789")
+
+
 def tle_checksum(line: str) -> int:
     """The modulo-10 sum every TLE line ends with.
 
@@ -143,7 +147,9 @@ def tle_checksum(line: str) -> int:
     """
     total = 0
     for char in line[:68]:
-        if char.isdigit():
+        # ASCII digits only: `str.isdigit` is also true of "\u00b2" and "\u24fc",
+        # which `int` cannot read (found by fuzz/fuzz_tle.py).
+        if char in _ASCII_DIGITS:
             total += int(char)
         elif char == "-":
             total += 1
@@ -156,7 +162,7 @@ def validate_line(line: str, expected_number: int) -> None:
     if line[0] != str(expected_number):
         raise TleError(f"line {expected_number} starts with {line[0]!r}")
     stated = line[68]
-    if not stated.isdigit():
+    if stated not in _ASCII_DIGITS:
         raise TleError(f"line {expected_number} has no checksum digit")
     computed = tle_checksum(line)
     if int(stated) != computed:
@@ -164,6 +170,36 @@ def validate_line(line: str, expected_number: int) -> None:
             f"line {expected_number} checksum is {stated}, computed {computed} "
             "-- the elements arrived corrupted"
         )
+
+
+_UNSIGNED = re.compile(r"\d+(?:\.\d+)?")
+
+
+def _field(line: str, start: int, end: int, low: float, high: float, what: str) -> None:
+    """Require line[start:end] to be a plain number in [low, high].
+
+    The checksum proves a line arrived intact, not that it is a TLE. A set whose
+    checksum happens to be right but whose epoch day is 1.1e11 makes SGP4's C
+    routine loop without returning (found by fuzz/fuzz_tle.py in CI), and
+    `upcoming()` calls it inline from the collector. The bounds are the physical
+    ones, wide enough for every real catalogue entry.
+    """
+    text = line[start:end].strip()
+    if _UNSIGNED.fullmatch(text) is None or not low <= float(text) <= high:
+        raise TleError(f"{what} {text!r} is not a number between {low:g} and {high:g}")
+
+
+def validate_elements(line1: str, line2: str) -> None:
+    """Check the orbital fields both lines carry, by the fixed TLE columns."""
+    _field(line1, 18, 20, 0, 99, "epoch year")
+    _field(line1, 20, 32, 0, 367, "epoch day")
+    _field(line2, 8, 16, 0, 180, "inclination")
+    _field(line2, 17, 25, 0, 360, "right ascension")
+    if not line2[26:33].isascii() or not line2[26:33].isdigit():
+        raise TleError(f"eccentricity {line2[26:33]!r} is not seven digits")
+    _field(line2, 34, 42, 0, 360, "argument of perigee")
+    _field(line2, 43, 51, 0, 360, "mean anomaly")
+    _field(line2, 52, 63, 0.0001, 20, "mean motion")
 
 
 def parse_tles(text: str, *, strict: bool = False) -> list[Tle]:
@@ -198,6 +234,7 @@ def parse_tles(text: str, *, strict: bool = False) -> list[Tle]:
         try:
             validate_line(line1, 1)
             validate_line(line2, 2)
+            validate_elements(line1, line2)
             if line1[2:7] != line2[2:7]:
                 raise TleError(
                     f"the two lines name different satellites: {line1[2:7]} and {line2[2:7]}"

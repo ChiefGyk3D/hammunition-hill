@@ -32,11 +32,11 @@ venv:
 	$(PY) -m pip install -e ".[dev]"
 
 lint:
-	$(RUFF) check src/ tests/ .github/scripts/
-	$(RUFF) format --check src/ tests/ .github/scripts/
+	$(RUFF) check src/ tests/ fuzz/ .github/scripts/
+	$(RUFF) format --check src/ tests/ fuzz/ .github/scripts/
 
 format:
-	$(RUFF) format src/ tests/ .github/scripts/
+	$(RUFF) format src/ tests/ fuzz/ .github/scripts/
 
 test:
 	$(PY) -m pytest -q -W error::DeprecationWarning

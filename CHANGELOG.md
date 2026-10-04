@@ -22,6 +22,33 @@ saying so.
   and CI install from hash-checked locks (`requirements/`) on digest-pinned
   base images, and the repository gains `SECURITY.md`.
 
+### Added
+
+- **Atheris fuzz targets for the parsers** (`fuzz/`), run on every pull request
+  for 30 s each and weekly for 600 s each by the shared GYST `python-fuzz.yml`
+  (`fuzz` in `ci.yml`, and in `all-green`'s `needs`): the RBN and DX cluster
+  streams, the gpsd JSON and NMEA lines, the FCC ULS importer, the HamQTH and
+  QRZ XML, the NOAA SWPC, scales, alerts, HamQSL and ionosonde feeds, and the
+  Celestrak element sets. `tests/test_fuzz_targets.py` keeps them honest in the
+  ordinary suite.
+
+### Changed
+
+- **Every GYST caller moves from v1.6.3 to v1.10.0** (one pin, as the pin test requires). No input the callers pass was renamed or removed. New defaults now apply: Snyk runs weekly, the Semgrep job's egress is `block`, and `container-release` runs hadolint, requires a non-root image and fails on Trivy findings that have a fix.
+
+### Fixed
+
+- **A checksum-valid element set with nonsense elements no longer reaches SGP4.** An epoch day of 1.1e11 makes the C propagator loop without returning, and `upcoming()` calls it inline from the collector, so one such set in a Celestrak listing would have frozen the dashboard. `parse_tles` now checks the epoch, angles, eccentricity and mean motion against their physical ranges. Found by the new fuzz target's first CI run (a hang, not a crash).
+- **A Unicode digit in an element set no longer crashes the parser.**
+  `tle_checksum` summed `int(char)` for every `char.isdigit()`, which is also
+  true of `²` and `⓼`; `parse_tles` raised `ValueError` out of the Celestrak
+  fetch instead of skipping that one satellite. Found by the new fuzz target.
+- **The SWPC feeds answer a wrong shape with `FetchError`.** Valid JSON that was
+  not the feed (`null`, a number, a list of non-objects, a non-numeric `Kp` or
+  `flux`) raised `TypeError`, `AttributeError` or `ValueError` out of `fetch`;
+  rows that cannot be read are skipped and a feed with none left is a
+  `FetchError`. Found by the new fuzz target.
+
 ## [1.2.0] — 2026-10-04
 
 ### Added

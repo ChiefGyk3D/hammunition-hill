@@ -30,7 +30,7 @@ permissions:
 
 jobs:
   package:
-    uses: ChiefGyk3D/git-your-ship-together/.github/workflows/artifact-release.yml@0e58a0e61ea8b3800d1cb0e6ed81bb860ace2094 # v1.6.3
+    uses: ChiefGyk3D/git-your-ship-together/.github/workflows/artifact-release.yml@b4dec64ea0efba8b0604339e283adb25da6fd430 # v1.10.0
     permissions:
       # The only writes this repository's CI does outside Security's SARIF
       # upload. tests/test_workflows.py holds the list. The shared workflow
@@ -111,7 +111,7 @@ jobs:
       extra-allowed-endpoints: pypi.org:443 files.pythonhosted.org:443 auth.docker.io:443 registry-1.docker.io:443 production.cloudfront.docker.com:443 deb.debian.org:80
 
   container:
-    uses: ChiefGyk3D/git-your-ship-together/.github/workflows/container-release.yml@0e58a0e61ea8b3800d1cb0e6ed81bb860ace2094 # v1.6.3
+    uses: ChiefGyk3D/git-your-ship-together/.github/workflows/container-release.yml@b4dec64ea0efba8b0604339e283adb25da6fd430 # v1.10.0
     permissions:
       contents: read
       packages: write

@@ -40,7 +40,7 @@ env:
 
 jobs:
   ci:
-    uses: ChiefGyk3D/git-your-ship-together/.github/workflows/python-ci.yml@0e58a0e61ea8b3800d1cb0e6ed81bb860ace2094 # v1.6.3
+    uses: ChiefGyk3D/git-your-ship-together/.github/workflows/python-ci.yml@b4dec64ea0efba8b0604339e283adb25da6fd430 # v1.10.0
     permissions:
       contents: read
       id-token: write   # Doppler OIDC, when an identity is configured; python-ci keeps it off the test job
@@ -62,8 +62,8 @@ jobs:
       # severity.py and bands.py fenced off by `# fmt: off`: those are data,
       # laid out as tables because that is how they are read and reviewed.
       lint-command: |
-        ruff check --output-format=github src/ tests/ .github/scripts/
-        ruff format --check src/ tests/ .github/scripts/
+        ruff check --output-format=github src/ tests/ fuzz/ .github/scripts/
+        ruff format --check src/ tests/ fuzz/ .github/scripts/
       smoke-install-command: pip install --disable-pip-version-check .
       # Two checks that used to be two jobs, both of which need only the
       # installed package: the file every new user copies still validates,
@@ -108,9 +108,30 @@ jobs:
         docker rm hamhill
       egress-policy: block
 
+  fuzz:
+    # python-fuzz.yml runs every Atheris target under fuzz/ for a fixed time and
+    # fails on a crash, uploading the input that caused it. Short on a pull
+    # request (30 s each, enough to catch a regression a target already knows
+    # how to find) and long on the weekly schedule above (600 s each, which is
+    # where new findings come from). It is the same job either way, so there is
+    # one place to read the targets' results and one name for the merge gate.
+    uses: ChiefGyk3D/git-your-ship-together/.github/workflows/python-fuzz.yml@b4dec64ea0efba8b0604339e283adb25da6fd430 # v1.10.0
+    permissions:
+      contents: read
+    with:
+      seconds-per-target: ${{ github.event_name == 'schedule' && 600 || 30 }}
+      # Seven targets run one after another: 7 x 600 s is 70 minutes of fuzzing.
+      timeout-minutes: ${{ github.event_name == 'schedule' && 90 || 30 }}
+      # The hash-checked runtime lock (it includes the satellites extra, so the
+      # element-set target also reaches the propagator), then the project itself.
+      install-command: |
+        pip install --disable-pip-version-check --require-hashes -r requirements/runtime.txt
+        pip install --disable-pip-version-check --no-deps -e .
+      egress-policy: block
+
   shell:
     # bash-ci.yml over the packaging scripts (build.sh, postinst, prerm).
-    uses: ChiefGyk3D/git-your-ship-together/.github/workflows/bash-ci.yml@0e58a0e61ea8b3800d1cb0e6ed81bb860ace2094 # v1.6.3
+    uses: ChiefGyk3D/git-your-ship-together/.github/workflows/bash-ci.yml@b4dec64ea0efba8b0604339e283adb25da6fd430 # v1.10.0
     permissions:
       contents: read
     with:
@@ -260,7 +281,7 @@ jobs:
   all-green:
     name: all checks passed
     if: always()
-    needs: [ci, shell, frontend, debian]
+    needs: [ci, fuzz, shell, frontend, debian]
     # `upstreams` is deliberately absent: it is schedule-only and talks to
     # the real internet, so it must never gate a merge.
     runs-on: ubuntu-24.04

@@ -159,6 +159,50 @@ def test_one_bad_set_does_not_cost_the_whole_file():
     assert [t.name for t in tles] == ["SYNTHETIC GEO"]
 
 
+@pytest.mark.parametrize("digit_lookalike", ["\u00b2", "\u24fc", "\u2466"])
+def test_a_unicode_digit_in_an_element_set_is_a_rejected_set_not_a_crash(digit_lookalike):
+    """`str.isdigit` is true of superscripts and circled digits that `int` cannot read.
+
+    Found by fuzz/fuzz_tle.py. The checksum summed `int(char)` for every
+    `char.isdigit()`, so a listing with one such character raised ValueError out
+    of `parse_tles` (and so out of TleSource.fetch, which only expects
+    FetchError) instead of costing that one satellite. Only the ASCII digits
+    count toward a TLE checksum.
+    """
+    lines = ISS.splitlines()
+    mangled = lines[1][:20] + digit_lookalike + lines[1][21:]
+    listing = "\n".join([lines[0], mangled, lines[2]])
+    assert parse_tles(listing) == []
+    with pytest.raises(TleError):
+        parse_tles(listing, strict=True)
+
+
+# Checksum-valid, shaped like a TLE, and not one: the epoch day is 1.1e11. Found
+# by fuzz/fuzz_tle.py in CI, where it hung the run: SGP4's C routine never
+# returns from `sgp4()` for an epoch like this, and `upcoming()` calls it inline
+# from the collector, so one such set in a listing would freeze the dashboard.
+HANGING_LINE1 = "1 44908U 11(1(1055+111111111111111111111111\x7f\x7f111111111111111111111117"
+HANGING_LINE2 = "2 44908 1111111111111055+11111111111111111+01(5511^11111111(1055+11\x7f1"
+
+
+def test_the_hanging_set_is_checksum_valid():
+    """Without this the test below could pass for the wrong reason."""
+    validate_line(HANGING_LINE1, 1)
+    validate_line(HANGING_LINE2, 2)
+
+
+def test_a_set_with_nonsense_elements_is_rejected_before_it_reaches_sgp4():
+    """The checksum proves the line arrived intact, not that it is a TLE."""
+    listing = f"HANG\n{HANGING_LINE1}\n{HANGING_LINE2}\n"
+    assert parse_tles(listing) == []
+    with pytest.raises(TleError):
+        parse_tles(listing, strict=True)
+
+
+def test_the_published_sets_still_pass_the_element_checks():
+    assert [t.name for t in parse_tles(ISS + GEO, strict=True)] == ["ISS (ZARYA)", "SYNTHETIC GEO"]
+
+
 def test_blank_lines_and_trailing_whitespace_are_tolerated():
     messy = "\n\n" + ISS.replace("\n", "   \n") + "\n\n\n" + GEO + "\n"
     assert len(parse_tles(messy)) == 2

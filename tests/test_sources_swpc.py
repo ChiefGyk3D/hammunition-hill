@@ -151,3 +151,40 @@ async def test_an_unknown_product_names_the_valid_ones():
         await run("[]", "not_a_product")
 
     assert "planetary_k_index" in str(exc.value)
+
+
+# --- feeds that are valid JSON and not the feed ------------------------------
+# Found by the Atheris target fuzz/fuzz_space_weather.py (the first input was
+# the single byte string `null`). A source's one documented failure is
+# FetchError, which degrades one panel and keeps the last snapshot; a TypeError,
+# AttributeError or ValueError is a different path out of `fetch`.
+PRODUCTS = ["planetary_k_index", "f107_flux", "xray_flux", "proton_flux"]
+NOT_THE_FEED = [
+    "null",
+    "{}",
+    "42",
+    '"text"',
+    "[null]",
+    "[1, 2]",
+    "[[1]]",
+    '[{"energy": "0.1-0.8nm"}, null]',
+    '[{"Kp": "high", "time_tag": "t"}]',
+    '[{"Kp": null, "time_tag": "t"}]',
+    '[{"Kp": 1}]',
+    '[["time_tag", "Kp"], ["t"]]',
+    '[["time_tag", "Kp"], ["t", "x"]]',
+    '[["time_tag", "Kp"], 7]',
+    '[{"energy": ">=10 MeV", "flux": "high"}, {"energy": ">=10 MeV", "flux": 1}]',
+    '[{"energy": "0.1-0.8nm", "flux": [1]}, {"energy": "0.1-0.8nm", "flux": 1}]',
+]
+
+
+@pytest.mark.parametrize("product", PRODUCTS)
+@pytest.mark.parametrize("body", NOT_THE_FEED)
+async def test_a_feed_of_the_wrong_shape_is_a_fetch_error_or_a_reading(body, product):
+    """Whatever the feed says, `fetch` returns data or raises FetchError, nothing else."""
+    try:
+        data = await run(body, product)
+    except FetchError:
+        return
+    assert data["product"] == product

@@ -25,7 +25,29 @@ from ..severity import classify
 from .base import FetchError, get_bounded
 
 
-def _kindex_rows(rows: list[Any]) -> list[dict[str, Any]]:
+def _number(value: Any) -> float | None:
+    """A float, or None for anything that is not a plain number or a numeric string.
+
+    A feed that serves ``"flux": "high"`` or ``"flux": [1]`` has stopped being the
+    feed; the reducers below skip such a sample rather than let a ValueError or
+    TypeError out of ``fetch``, whose one documented failure is ``FetchError``.
+    """
+    if isinstance(value, bool) or not isinstance(value, (int, float, str)):
+        return None
+    try:
+        return float(value)
+    except ValueError:
+        return None
+
+
+def _samples(rows: Any, product: str) -> list[dict[str, Any]]:
+    """The object rows of a list-shaped product, or FetchError for any other shape."""
+    if not isinstance(rows, list):
+        raise FetchError(f"{product}: expected a list of samples, got {type(rows).__name__}")
+    return [row for row in rows if isinstance(row, dict)]
+
+
+def _kindex_rows(rows: Any) -> list[dict[str, Any]]:
     """Normalize either shape SWPC has served this product in.
 
     It used to be a header row followed by positional rows, CSV rendered as
@@ -33,28 +55,40 @@ def _kindex_rows(rows: list[Any]) -> list[dict[str, Any]]:
     happened without notice and could happen back, and because the difference
     is three lines here against a dead panel in the field.
     """
-    if not rows:
+    if not isinstance(rows, list) or not rows:
         raise FetchError("planetary K index: no data rows")
     if isinstance(rows[0], dict):
-        return rows
+        return [row for row in rows if isinstance(row, dict)]
     header, *data = rows
-    if not data:
+    if not data or not isinstance(header, list):
         raise FetchError("planetary K index: no data rows")
-    idx = {name: i for i, name in enumerate(header)}
+    idx = {name: i for i, name in enumerate(header) if isinstance(name, str)}
     time_at, kp_at = idx.get("time_tag", 0), idx.get("Kp", 1)
-    return [{"time_tag": row[time_at], "Kp": row[kp_at]} for row in data]
+    needed = max(time_at, kp_at) + 1
+    return [
+        {"time_tag": row[time_at], "Kp": row[kp_at]}
+        for row in data
+        if isinstance(row, list) and len(row) >= needed
+    ]
 
 
-def _latest_kindex(rows: list[Any]) -> dict[str, Any]:
-    data = _kindex_rows(rows)
-    latest = data[-1]
-    kp = float(latest["Kp"])
+def _latest_kindex(rows: Any) -> dict[str, Any]:
+    # A row with no readable Kp is skipped, not fatal: one bad row in the
+    # series should not cost the panel, and a series of nothing else is an error.
+    data = [
+        (row, kp)
+        for row in _kindex_rows(rows)
+        if "time_tag" in row and (kp := _number(row.get("Kp"))) is not None
+    ]
+    if not data:
+        raise FetchError("planetary K index: no rows with a time_tag and a numeric Kp")
+    latest, kp = data[-1]
     return {
         "kp": kp,
         "observed_at": latest["time_tag"],
         # G-scale is what tells an operator whether to care.
         "storm_level": _g_scale(kp),
-        "history": [{"at": row["time_tag"], "kp": float(row["Kp"])} for row in data[-24:]],
+        "history": [{"at": row["time_tag"], "kp": value} for row, value in data[-24:]],
     }
 
 
@@ -72,7 +106,8 @@ def _g_scale(kp: float) -> str:
     return "quiet"
 
 
-def _latest_f107(rows: list[dict[str, Any]]) -> dict[str, Any]:
+def _latest_f107(payload: Any) -> dict[str, Any]:
+    rows = _samples(payload, "F10.7 flux")
     if not rows:
         raise FetchError("F10.7 flux: no data rows")
     latest = rows[-1]
@@ -83,20 +118,21 @@ def _latest_f107(rows: list[dict[str, Any]]) -> dict[str, Any]:
     }
 
 
-def _latest_xray(rows: list[dict[str, Any]]) -> dict[str, Any]:
+def _latest_xray(payload: Any) -> dict[str, Any]:
     """GOES long-band X-ray flux, reduced to the current class and the day's peak."""
+    rows = _samples(payload, "GOES X-ray")
     long_band = [r for r in rows if r.get("energy") == "0.1-0.8nm"]
     if not long_band:
         raise FetchError("GOES X-ray: no long-band samples")
     latest = long_band[-1]
-    peak = max(long_band, key=lambda r: r.get("flux") or 0.0)
+    peak = max(long_band, key=lambda r: _number(r.get("flux")) or 0.0)
     return {
-        "flux": latest.get("flux"),
-        "class": _xray_class(latest.get("flux")),
+        "flux": _number(latest.get("flux")),
+        "class": _xray_class(_number(latest.get("flux"))),
         "observed_at": latest.get("time_tag"),
         "peak_today": {
-            "flux": peak.get("flux"),
-            "class": _xray_class(peak.get("flux")),
+            "flux": _number(peak.get("flux")),
+            "class": _xray_class(_number(peak.get("flux"))),
             "at": peak.get("time_tag"),
         },
     }
@@ -112,7 +148,7 @@ def _xray_class(flux: float | None) -> str:
     return f"A{flux / 1e-8:.1f}"
 
 
-def _latest_protons(rows: list[dict[str, Any]]) -> dict[str, Any]:
+def _latest_protons(payload: Any) -> dict[str, Any]:
     """GOES integral proton flux at >=10 MeV.
 
     That channel specifically, because it is the one NOAA's S scale is defined
@@ -121,15 +157,15 @@ def _latest_protons(rows: list[dict[str, Any]]) -> dict[str, Any]:
     >=1 MeV read 10.4 pfu while >=10 MeV read 0.25 on the day this was written.
     Taking the wrong row would not fail, it would just be wrong.
     """
-    channel = [r for r in rows if r.get("energy") == ">=10 MeV"]
+    channel = [r for r in _samples(payload, "GOES protons") if r.get("energy") == ">=10 MeV"]
     if not channel:
         raise FetchError("GOES protons: no >=10 MeV samples")
     latest = channel[-1]
-    peak = max(channel, key=lambda r: r.get("flux") or 0.0)
+    peak = max(channel, key=lambda r: _number(r.get("flux")) or 0.0)
     return {
-        "flux": latest.get("flux"),
+        "flux": _number(latest.get("flux")),
         "observed_at": latest.get("time_tag"),
-        "peak_today": {"flux": peak.get("flux"), "at": peak.get("time_tag")},
+        "peak_today": {"flux": _number(peak.get("flux")), "at": peak.get("time_tag")},
     }
 
 

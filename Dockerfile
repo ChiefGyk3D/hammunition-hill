@@ -46,6 +46,7 @@ COPY --from=build /dist/*.whl /tmp/
 # digest still carries the version before Debian's security fix; the digest is
 # the pin for everything else (the apt line cannot be version-pinned while the
 # fix is newer than the base).
+# hadolint ignore=DL3008
 RUN pip install --no-cache-dir --require-hashes -r /tmp/runtime.txt \
     && pip install --no-cache-dir --no-deps /tmp/*.whl \
     && pip uninstall -y pip \
