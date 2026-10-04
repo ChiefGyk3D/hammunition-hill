@@ -12,6 +12,8 @@ saying so.
 
 ## [Unreleased]
 
+## [1.2.0] — 2026-10-04
+
 ### Added
 
 - **Repeaters panel (tier 0)**, closing #82. The collector runs two read-only
@@ -255,7 +257,8 @@ can steer an outbound one.
   this does not.
 - Weather outside the US is feeds and images, without structured severity.
 
-[Unreleased]: https://github.com/ChiefGyk3D/hammunition-hill/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/ChiefGyk3D/hammunition-hill/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/ChiefGyk3D/hammunition-hill/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/ChiefGyk3D/hammunition-hill/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/ChiefGyk3D/hammunition-hill/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/ChiefGyk3D/hammunition-hill/releases/tag/v1.0.0
