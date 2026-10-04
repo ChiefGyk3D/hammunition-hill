@@ -132,7 +132,7 @@ def test_allowlist_separates_local_sources(tmp_path):
 def test_embed_hosts_join_the_allowlist(tmp_path):
     raw = cfg(embeds={"allow_hosts": ["radar.weather.gov"]})
     allowed, _ = parse_config(raw, base_dir=tmp_path).allowlist()
-    assert "radar.weather.gov" in allowed
+    assert {"radar.weather.gov"} <= set(allowed)
 
 
 def test_port_range_validated(tmp_path):
