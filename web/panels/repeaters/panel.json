@@ -1,0 +1,9 @@
+{
+  "id": "repeaters",
+  "name": "Repeaters",
+  "tier": 0,
+  "sources": ["repeaters"],
+  "embed_hosts": [],
+  "span": 2,
+  "description": "The repeater layers your Hammunition install holds, with distance and bearing from your grid square or any point you choose. Read from this machine's disk by the collector; nothing is fetched from anyone. Filters run in your browser."
+}

@@ -12,6 +12,21 @@ saying so.
 
 ## [Unreleased]
 
+### Added
+
+- **Repeaters panel (tier 0)**, closing #82. The collector runs two read-only
+  Hammunition commands (`maps repeaters list --json`, `station show --json`)
+  and stores the layers with distance and bearing from the grid square's
+  centre; the panel filters by band, mode, source and distance in the browser,
+  prints the credits, and the map gains an off-by-default RPTR layer. Rows the
+  engine marks `personal_use` (RepeaterBook, D-081) are served to this
+  machine's own page only: any other host, or any proxied request, gets the
+  snapshot without them, and nothing exports them. The centre defaults to the
+  station; a typed grid, coordinates or a map click or long press can replace
+  it (remembered in the browser only, distances recomputed there), and a centre
+  far from every row says the data is only what was imported. `[repeaters] enabled`.
+  See [docs/REPEATERS.md](docs/REPEATERS.md).
+
 ### Changed
 
 - **CI runs through git-your-ship-together's reusable workflows**, pinned by

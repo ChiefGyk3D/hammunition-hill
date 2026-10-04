@@ -178,6 +178,7 @@ BUILT_IN_SNAPSHOTS = {
     "reference",
     "satellites",
     "antenna",
+    "repeaters",
 }
 
 

@@ -136,6 +136,17 @@ This is worth being explicit about because it is the one place where the
 dashboard touches genuinely private data. A hosted dashboard offering the same
 feature has to receive your log; this one does not.
 
+### Data whose terms keep it on this machine
+
+One snapshot, `repeaters.json`, can hold rows from RepeaterBook, whose terms
+keep them on the machine that fetched them. It is the only snapshot the server
+does not hand over as bytes: the file is read, and a reader that is not this
+machine (a peer that is not loopback or the server's own address, or any request
+carrying a reverse proxy's forwarding headers) gets it with those rows, and
+every name of the source, removed. The check is on the file a path resolves to,
+so differently spelled paths reach the same filter. Nothing exports it. See
+[REPEATERS.md](REPEATERS.md).
+
 ### Response size cap
 
 Responses are streamed and cut off at 4 MB. An upstream cannot fill a Pi's disk,

@@ -34,6 +34,7 @@ from urllib.parse import unquote
 
 from .config import Config
 from .logbook import LogbookError, log_qso
+from .repeaters import public_data
 
 log = logging.getLogger(__name__)
 
@@ -41,6 +42,7 @@ DATA_PREFIX = "/data/"
 QSO_PATH = "/api/qso"
 METRICS_PATH = "/metrics"
 LOOKUP_PREFIX = "/lookup/"
+REPEATERS_FILE = "repeaters.json"
 
 # The query endpoint's callsign gate. Charset and length, nothing cleverer: a
 # format regex tight enough to be interesting rejects real calls, and the first
@@ -85,6 +87,7 @@ DERIVED_SOURCES = frozenset(
         "antenna",
         "propagation",
         "satellites",
+        "repeaters",
         "tle",
         "sources",
         "about",
@@ -115,6 +118,60 @@ def _host_is_expected(host_header: str, bound_host: str) -> bool:
     except ValueError:
         return False
     return True
+
+
+# Headers a reverse proxy adds. Behind one, the TCP peer is the proxy -- often
+# this very machine -- and the real client is somebody else. A request carrying
+# any of these is therefore not "this machine's own page", whatever address it
+# arrived from.
+_PROXY_HEADERS = frozenset(
+    {
+        "forwarded",
+        "x-forwarded-for",
+        "x-forwarded-host",
+        "x-forwarded-proto",
+        "x-real-ip",
+        "via",
+        "cf-connecting-ip",
+        "true-client-ip",
+    }
+)
+
+
+def is_own_machine(client_ip: str, server_ip: str, headers: Any) -> bool:
+    """Is this request from the machine the dashboard runs on, and nobody behind it?
+
+    True for a loopback peer, and for the machine reaching itself by its own LAN
+    address (the peer is then the address the server socket answered on). False
+    for any other peer, for an address that does not parse, and for any request
+    that a reverse proxy has marked -- the proxy's own peer address would
+    otherwise make every client look local.
+
+    This decides one thing: whether data whose terms keep it on this machine
+    (RepeaterBook's rows, D-081) may be sent. Wrong in the cautious direction
+    costs a viewer some rows; wrong the other way ships them off the machine.
+    """
+    try:
+        present = {str(key).lower() for key in headers.keys()}
+    except AttributeError:
+        return False
+    if present & _PROXY_HEADERS:
+        return False
+    try:
+        peer = ipaddress.ip_address(client_ip.split("%", 1)[0].strip("[]"))
+    except ValueError:
+        return False
+    if isinstance(peer, ipaddress.IPv6Address) and peer.ipv4_mapped is not None:
+        peer = peer.ipv4_mapped
+    if peer.is_loopback:
+        return True
+    try:
+        own = ipaddress.ip_address(server_ip.split("%", 1)[0].strip("[]"))
+    except ValueError:
+        return False
+    if isinstance(own, ipaddress.IPv6Address) and own.ipv4_mapped is not None:
+        own = own.ipv4_mapped
+    return peer == own and not own.is_unspecified
 
 
 def build_csp(embed_hosts: tuple[str, ...], image_hosts: tuple[str, ...] = ()) -> str:
@@ -209,6 +266,8 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         if clean.startswith(LOOKUP_PREFIX):
             self._serve_lookup(clean[len(LOOKUP_PREFIX) :])
             return
+        if self._serve_guarded_data(clean):
+            return
         super().do_GET()
 
     def do_HEAD(self) -> None:  # noqa: N802
@@ -225,7 +284,52 @@ class DashboardHandler(SimpleHTTPRequestHandler):
         if clean.startswith(LOOKUP_PREFIX):
             self._serve_lookup(clean[len(LOOKUP_PREFIX) :], body=False)
             return
+        if self._serve_guarded_data(clean, body=False):
+            return
         super().do_HEAD()
+
+    def _serve_guarded_data(self, clean: str, *, body: bool = True) -> bool:
+        """The one snapshot that is not the same for every reader.
+
+        ``repeaters.json`` may hold rows whose terms keep them on this machine.
+        The file is never handed over as bytes: it is read, and a reader that
+        is not this machine gets :func:`~hammunition_hill.repeaters.public_data`
+        of it. The check is on where the request *resolves to*, not on how it
+        was spelled, so ``Repeaters.json`` (a case-insensitive filesystem),
+        ``%72epeaters.json`` and ``x/../repeaters.json`` all land here, and the
+        atomic write's ``.repeaters.*.tmp`` file is refused outright.
+
+        Returns True when the response was sent.
+        """
+        if not clean.startswith(DATA_PREFIX):
+            return False
+        resolved = PurePosixPath(self.translate_path(clean))
+        data_root = PurePosixPath(self._config.data_dir.resolve())
+        if resolved.parent != data_root:
+            return False
+        name = resolved.name.casefold()
+        if name.startswith(".repeaters."):
+            self.send_error(HTTPStatus.NOT_FOUND, "Not Found")
+            return True
+        if name != REPEATERS_FILE:
+            return False
+
+        try:
+            document = json.loads(
+                (self._config.data_dir / REPEATERS_FILE).read_text(encoding="utf-8")
+            )
+        except (OSError, ValueError):
+            self.send_error(HTTPStatus.NOT_FOUND, "Not Found")
+            return True
+        if not isinstance(document, dict):
+            self.send_error(HTTPStatus.NOT_FOUND, "Not Found")
+            return True
+
+        own = is_own_machine(self.client_address[0], self.request.getsockname()[0], self.headers)
+        if not own:
+            document["data"] = public_data(document.get("data"))
+        self._send_json(HTTPStatus.OK, document, body=body)
+        return True
 
     def _serve_metrics(self, *, body: bool = True) -> None:
         if not self._config.metrics.enabled:

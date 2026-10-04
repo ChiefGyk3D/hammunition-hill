@@ -220,6 +220,7 @@ product. None of these fetch anything.
 | `propagation.py` | A crude HF propagation indicator. |
 | `minimuf.py` | MINIMUF 3.5: point-to-point MUF over a chosen path. Public-domain NOSC algorithm, mirrored in `web/lib/muf.js` with a drift test. |
 | `satellites.py` | When the satellites are up, and where to point. |
+| `repeaters.py` | The engine's repeater layers, with distance and bearing, and the view of them another host may see. Tier 0. |
 | `antenna.py` | Antenna, feedline and SWR arithmetic. |
 | `electrical.py` | Ohm's law, decibels, wire gauge and battery runtime. |
 | `morse.py` | Morse code: the tables, the timing, and the shorthand. |
