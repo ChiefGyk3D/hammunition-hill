@@ -159,6 +159,24 @@ def test_one_bad_set_does_not_cost_the_whole_file():
     assert [t.name for t in tles] == ["SYNTHETIC GEO"]
 
 
+@pytest.mark.parametrize("digit_lookalike", ["\u00b2", "\u24fc", "\u2466"])
+def test_a_unicode_digit_in_an_element_set_is_a_rejected_set_not_a_crash(digit_lookalike):
+    """`str.isdigit` is true of superscripts and circled digits that `int` cannot read.
+
+    Found by fuzz/fuzz_tle.py. The checksum summed `int(char)` for every
+    `char.isdigit()`, so a listing with one such character raised ValueError out
+    of `parse_tles` (and so out of TleSource.fetch, which only expects
+    FetchError) instead of costing that one satellite. Only the ASCII digits
+    count toward a TLE checksum.
+    """
+    lines = ISS.splitlines()
+    mangled = lines[1][:20] + digit_lookalike + lines[1][21:]
+    listing = "\n".join([lines[0], mangled, lines[2]])
+    assert parse_tles(listing) == []
+    with pytest.raises(TleError):
+        parse_tles(listing, strict=True)
+
+
 def test_blank_lines_and_trailing_whitespace_are_tolerated():
     messy = "\n\n" + ISS.replace("\n", "   \n") + "\n\n\n" + GEO + "\n"
     assert len(parse_tles(messy)) == 2

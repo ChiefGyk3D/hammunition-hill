@@ -133,6 +133,9 @@ class Observer:
 # --- elements ---------------------------------------------------------------
 
 
+_ASCII_DIGITS = frozenset("0123456789")
+
+
 def tle_checksum(line: str) -> int:
     """The modulo-10 sum every TLE line ends with.
 
@@ -143,7 +146,9 @@ def tle_checksum(line: str) -> int:
     """
     total = 0
     for char in line[:68]:
-        if char.isdigit():
+        # ASCII digits only: `str.isdigit` is also true of "\u00b2" and "\u24fc",
+        # which `int` cannot read (found by fuzz/fuzz_tle.py).
+        if char in _ASCII_DIGITS:
             total += int(char)
         elif char == "-":
             total += 1
@@ -156,7 +161,7 @@ def validate_line(line: str, expected_number: int) -> None:
     if line[0] != str(expected_number):
         raise TleError(f"line {expected_number} starts with {line[0]!r}")
     stated = line[68]
-    if not stated.isdigit():
+    if stated not in _ASCII_DIGITS:
         raise TleError(f"line {expected_number} has no checksum digit")
     computed = tle_checksum(line)
     if int(stated) != computed:
