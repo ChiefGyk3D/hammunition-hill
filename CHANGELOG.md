@@ -22,6 +22,28 @@ saying so.
   and CI install from hash-checked locks (`requirements/`) on digest-pinned
   base images, and the repository gains `SECURITY.md`.
 
+### Added
+
+- **Atheris fuzz targets for the parsers** (`fuzz/`), run on every pull request
+  for 30 s each and weekly for 600 s each by the shared GYST `python-fuzz.yml`
+  (`fuzz` in `ci.yml`, and in `all-green`'s `needs`): the RBN and DX cluster
+  streams, the gpsd JSON and NMEA lines, the FCC ULS importer, the HamQTH and
+  QRZ XML, the NOAA SWPC, scales, alerts, HamQSL and ionosonde feeds, and the
+  Celestrak element sets. `tests/test_fuzz_targets.py` keeps them honest in the
+  ordinary suite.
+
+### Fixed
+
+- **A Unicode digit in an element set no longer crashes the parser.**
+  `tle_checksum` summed `int(char)` for every `char.isdigit()`, which is also
+  true of `²` and `⓼`; `parse_tles` raised `ValueError` out of the Celestrak
+  fetch instead of skipping that one satellite. Found by the new fuzz target.
+- **The SWPC feeds answer a wrong shape with `FetchError`.** Valid JSON that was
+  not the feed (`null`, a number, a list of non-objects, a non-numeric `Kp` or
+  `flux`) raised `TypeError`, `AttributeError` or `ValueError` out of `fetch`;
+  rows that cannot be read are skipped and a feed with none left is a
+  `FetchError`. Found by the new fuzz target.
+
 ## [1.2.0] — 2026-10-04
 
 ### Added

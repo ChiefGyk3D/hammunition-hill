@@ -39,6 +39,7 @@ of its own.
 | Job | Catches |
 |---|---|
 | `ci` (shared) | `ruff check` and `ruff format --check`; pytest on 3.11–3.13 on x86, ARM and macOS; the shipped example config rotting; the collector→snapshot→HTTP loop breaking; a container that builds but does not serve; workflow lint |
+| `fuzz` | *(shared `python-fuzz.yml`)* a parser that crashes, hangs or raises something other than its own error on input a stranger's server could send; 30 s per target on a pull request, 600 s weekly |
 | `frontend` | a panel that throws, or the browser reaching a host it should not |
 | `debian` | a `.deb` that builds but does not install and serve |
 | `upstreams` | *(weekly)* an upstream host disappearing |
@@ -49,7 +50,7 @@ of its own.
 ARM is in the matrix because a Raspberry Pi is the primary deployment target,
 not an afterthought.
 
-`all-green` needs `ci` and the other local jobs; branch protection requires it
+`all-green` needs `ci`, `fuzz` and the other local jobs; branch protection requires it
 beside the shared `ci / CI green`.
 
 ### The workflows themselves are tested
@@ -79,6 +80,34 @@ payloads, in both spacings, rather than trusting a reimplementation of it.
 If you add a job, add it to `needs` — the test will tell you if you forget. If
 it is deliberately outside the gate, add it to `UNGATED` there with the reason,
 and it must be gated to `schedule`/`workflow_dispatch` or the next test fails.
+
+## Fuzzing
+
+The parsers that read text from outside — the RBN and DX cluster streams, the
+gpsd and NMEA lines, the FCC ULS import, the HamQTH and QRZ XML, the NOAA and
+HamQSL feeds, and the Celestrak element sets — each have an
+[Atheris](https://github.com/google/atheris) target in `fuzz/fuzz_<thing>.py`,
+and CI's `fuzz` job runs them through the shared `python-fuzz.yml`. A target
+drives the real code (the read loops, `fetch` over an `httpx.MockTransport`, the
+importer on a zip it builds in a temp directory) and catches only the error the
+parser documents, so anything else it raises is a bug.
+
+To run one locally, in a venv with the project and Atheris (CPython 3.12 to
+3.14, x86_64):
+
+```bash
+pip install -e ".[satellites]" atheris==3.1.0
+nice -n 19 python fuzz/fuzz_rbn.py -max_total_time=60 -max_len=4096
+```
+
+A crash prints the traceback and writes `crash-<sha>` next to where you ran it
+(in CI it is the `fuzz-findings` artifact on the run). That file is the input
+that caused it: turn its bytes into an ordinary pytest test beside the
+parser's own tests, watch it fail, fix the parser at the cause, and keep the
+test. `tests/test_fuzz_targets.py` calls every target on its `SEEDS` and some
+random bytes in the normal suite, with a stand-in for Atheris where it is not
+installed, so a target cannot rot unnoticed; a new parser gets a target the
+same way (`fuzz_*.py`, `SEEDS`, `TestOneInput`).
 
 ## Things that will fail review
 

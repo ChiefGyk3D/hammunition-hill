@@ -392,17 +392,21 @@ def test_the_shared_workflows_are_pinned_to_a_commit_not_a_tag_object():
 
     GitHub happens to resolve one, Dependabot would not, and a reviewer cannot
     tell which they are looking at. The pin must be the peeled commit.
+
+    One commit per shared workflow: two calls to the same workflow at different
+    commits mean a half-finished bump. Different workflows may sit at different
+    releases, since a release adds a workflow (python-fuzz.yml arrived in
+    v1.10.0) without every caller being re-verified against the rest.
     """
-    pins = set()
+    pins: dict[str, set[str]] = {}
     for path in WORKFLOW_FILES:
         for match in re.finditer(
-            rf"uses:\s*{re.escape(GYST)}\S+@([0-9a-f]{{40}})", path.read_text()
+            rf"uses:\s*{re.escape(GYST)}(\S+?)@([0-9a-f]{{40}})", path.read_text()
         ):
-            pins.add(match.group(1))
+            pins.setdefault(match.group(1), set()).add(match.group(2))
     assert pins, "no workflow calls the shared GYST workflows any more"
-    assert len(pins) == 1, (
-        f"the GYST calls are pinned to {len(pins)} different commits: {sorted(pins)}"
-    )
+    split = {name: sorted(shas) for name, shas in pins.items() if len(shas) != 1}
+    assert not split, f"a shared workflow is pinned to more than one commit: {split}"
 
 
 def test_the_readme_lists_the_required_checks():

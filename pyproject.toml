@@ -89,6 +89,9 @@ ignore = ["S104"]  # binding 0.0.0.0 is a deliberate, flag-gated choice
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["S101"]
+# Fuzz targets keep their seed inputs as literal bytes, one document per line, and
+# import the code under test inside `atheris.instrument_imports()`, after code.
+"fuzz/*" = ["E501", "E402"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
