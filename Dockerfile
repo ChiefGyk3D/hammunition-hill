@@ -21,18 +21,28 @@
 # aimed at bare-metal installs. Set data_dir = "/config/data" or leave it
 # defaulted; it is derived from the config file's directory.
 
-FROM python:3.13-slim AS build
+# Both stages are pinned by digest, and every pip install below is hash-checked
+# from requirements/ (compiled with `uv pip compile --generate-hashes`; the
+# command is the first lines of each lock). Dependabot moves the digest and the
+# lock files.
+FROM python:3.13-slim@sha256:3dd7cc108ec1493442514f5c2a871af6af0ec31d768ff6e378a93340c3b3db5f AS build
 WORKDIR /src
+COPY requirements/build.txt ./requirements/build.txt
+RUN pip install --no-cache-dir --require-hashes -r requirements/build.txt
 COPY pyproject.toml README.md ./
 COPY src ./src
 COPY web ./web
-RUN pip install --no-cache-dir build && python -m build --wheel -o /dist
+RUN python -m build --no-isolation --wheel -o /dist
 
-FROM python:3.13-slim
+FROM python:3.13-slim@sha256:3dd7cc108ec1493442514f5c2a871af6af0ec31d768ff6e378a93340c3b3db5f
 # The wheel carries web/ and the question pools; nothing else from the
-# repository is needed at runtime.
+# repository is needed at runtime. Dependencies (sgp4 included) come from the
+# hash-checked lock, the wheel itself without a second resolution.
+COPY requirements/runtime.txt /tmp/runtime.txt
 COPY --from=build /dist/*.whl /tmp/
-RUN pip install --no-cache-dir /tmp/*.whl "sgp4>=2.20" && rm /tmp/*.whl
+RUN pip install --no-cache-dir --require-hashes -r /tmp/runtime.txt \
+    && pip install --no-cache-dir --no-deps /tmp/*.whl \
+    && rm /tmp/*.whl /tmp/runtime.txt
 
 # An unprivileged user, a config mount point, and nothing writable but data.
 RUN useradd --system --create-home --shell /usr/sbin/nologin hamhill \

@@ -136,7 +136,9 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: "22"
-      - run: pip install --disable-pip-version-check .
+      - run: |
+          pip install --disable-pip-version-check --require-hashes -r requirements/runtime.txt
+          pip install --disable-pip-version-check --no-deps .
       - name: install playwright and chromium
         # Both are needed and they are different things: `npm ci` puts the
         # module, at the version and hash package-lock.json pins, where the
@@ -239,7 +241,9 @@ jobs:
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version: "3.13"
-      - run: pip install --disable-pip-version-check .
+      - run: |
+          pip install --disable-pip-version-check --require-hashes -r requirements/runtime.txt
+          pip install --disable-pip-version-check --no-deps .
       - name: fetch and parse every source in the example config
         # --fetch, not a bare check: resolving a name proves DNS works, which
         # is not the thing that rots. An upstream keeps its hostname and its

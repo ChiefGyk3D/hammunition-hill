@@ -13,6 +13,16 @@ updates:
       python-dependencies:
         patterns: ['*']
 
+  # The hash-pinned locks the Dockerfile and the CI jobs install from
+  # (requirements/*.txt, compiled by uv from pyproject.toml and build.in).
+  - package-ecosystem: pip
+    directory: /requirements
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5
+
   - package-ecosystem: github-actions
     directory: /
     schedule:

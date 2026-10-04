@@ -12,6 +12,16 @@ saying so.
 
 ## [Unreleased]
 
+### Security
+
+- Security and quality sweep of the CodeQL, Semgrep and Scorecard findings: the
+  satellite sub-point radius uses `math.hypot` (the naive form overflowed), the
+  ULS lookup log line carries a sanitised callsign, the CSP tests parse the
+  directive instead of matching a substring, the session-XML provider hooks
+  raise `NotImplementedError` rather than returning `None`, the Dockerfile
+  and CI install from hash-checked locks (`requirements/`) on digest-pinned
+  base images, and the repository gains `SECURITY.md`.
+
 ## [1.2.0] — 2026-10-04
 
 ### Added
