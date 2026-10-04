@@ -59,7 +59,7 @@ things stand:
 |---|---|
 | Collector, snapshot architecture, static server | ✅ working |
 | Egress allowlist, CSP, path handling | ✅ working |
-| Panels | ✅ 34 across 7 dashboards |
+| Panels | ✅ 35 across 7 dashboards |
 | Source kinds | ✅ 14 polled, 6 stream, 1 file |
 | Space weather dials | ✅ 8 scales |
 | Map — 3D globe / 2D flat / azimuthal equidistant, greyline, spots, aurora, path plotting | ✅ working |
@@ -86,6 +86,7 @@ things stand:
 | CW trainer — Koch, callsigns, QSO simulator, quiz | ✅ working |
 | Shack tools — antenna, feedline, SWR, Ohm's law, dB, wire, battery | ✅ working |
 | Satellites — cached TLEs, SGP4 passes, Doppler | ✅ working, optional extra |
+| Repeaters — Hammunition's layers with distance and bearing, tier 0 | ✅ working, needs the engine |
 | RBN — who is hearing you, and band activity | ✅ working, off by default |
 | PSK Reporter + WSPR — who decoded your digital signal, with distance | ✅ working, off by default |
 | DX Path — 24-hour point-to-point MUF chart (MINIMUF 3.5) | ✅ working |
@@ -126,6 +127,7 @@ hardware finds it faster than we can.
 | **[Shack tools](docs/TOOLS.md)** | Antenna cut chart, feedline loss, SWR, Ohm's law, dB, voltage drop, battery runtime, grid paths. |
 | **[Logbook](docs/LOGBOOK.md)** | Logging contacts, the ADIF file it writes, and why it is off by default. |
 | **[Satellites](docs/SATELLITES.md)** | Pass prediction computed here from cached elements, and why the propagator is the one borrowed thing. |
+| **[Repeaters](docs/REPEATERS.md)** | The engine's repeater layers on the table and the map, and the rule that keeps RepeaterBook's rows on this machine. |
 | **[Reverse Beacon](docs/RBN.md)** | Who is hearing you with an SNR, band activity, and how a few thousand spots a minute stay bounded. |
 | **[Metrics](docs/METRICS.md)** | The Prometheus endpoint, what it exports, and why nothing is labelled by callsign. |
 | **[Licence exam](docs/EXAM.md)** | Practising from the official pools, how they are kept honest, and the rule that makes a practice exam real. |

@@ -106,3 +106,18 @@ def _no_outbound_network(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(socket, "socket", GuardedSocket)
     monkeypatch.setattr(socket, "getaddrinfo", guarded_getaddrinfo)
     monkeypatch.setattr(socket, "create_connection", guarded_create_connection)
+
+
+@pytest.fixture(autouse=True)
+def _no_real_engine(monkeypatch: pytest.MonkeyPatch) -> None:
+    """No test may run the real Hammunition engine on the machine it runs on.
+
+    The repeaters collector asks that engine for the operator's own layers and
+    station, which on a development machine is real data. A test that reaches
+    for it would read a station it has no business with, so by default the
+    engine is simply not found. Tests that need one pass a stub or a fake
+    executable in a temporary directory.
+    """
+    from hammunition_hill import repeaters
+
+    monkeypatch.setattr(repeaters, "find_engine", lambda: None)

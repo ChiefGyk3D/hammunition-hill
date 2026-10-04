@@ -24,6 +24,7 @@
         "map",
         "spots",
         "globes",
+        "repeaters",
         "pathmuf"
       ]
     },
@@ -87,6 +88,7 @@
       "panels": [
         "wxalerts",
         "gps",
+        "repeaters",
         "sunmoon",
         "clock",
         "imagery"

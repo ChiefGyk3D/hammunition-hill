@@ -7,7 +7,8 @@
     "cluster",
     "pota",
     "sota",
-    "aurora"
+    "aurora",
+    "repeaters"
   ],
   "embed_hosts": [],
   "span": 2,

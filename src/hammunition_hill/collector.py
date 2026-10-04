@@ -19,6 +19,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import random
+from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
 
@@ -636,6 +637,52 @@ async def _satellites_loop(config: Config, enricher: Enricher) -> None:
         await asyncio.sleep(SATELLITES_REFRESH_SECONDS)
 
 
+# --- repeaters (tier 0) ---------------------------------------------------
+# The engine's layers change when the operator imports or fetches one, which is
+# minutes-to-days, and each cycle runs two short commands. Ten minutes is what
+# a person who has just imported a file will wait for, and the panel says when
+# it was read.
+REPEATERS_REFRESH_SECONDS = 600
+
+
+def publish_repeaters(
+    config: Config,
+    *,
+    collect_fn: Callable[[], dict[str, Any]] | None = None,
+    fallback_latlon: tuple[float, float] | None = None,
+) -> Snapshot:
+    """Ask the engine once and write the snapshot. Never raises.
+
+    ``collect_fn`` is the seam tests use; production passes nothing and gets
+    :func:`hammunition_hill.repeaters.collect`, which runs the engine's two
+    read-only commands. A failure keeps the last good rows under the error.
+    """
+    from .repeaters import collect
+
+    cfg = SourceConfig(id="repeaters", kind="repeaters", url="")
+    stale = REPEATERS_REFRESH_SECONDS * STALE_MULTIPLIER
+    try:
+        data = (collect_fn or (lambda: collect(fallback_latlon=fallback_latlon)))()
+        return _write(config, cfg, data, stale)
+    except Exception as exc:  # noqa: BLE001 - an engine fault must not end the run
+        reason = f"{type(exc).__name__}: {exc}"
+        log.warning("repeaters failed: %s", reason)
+        return _write_failure(config, cfg, reason, stale)
+
+
+async def _repeaters_loop(config: Config, enricher: Enricher) -> None:
+    """Re-read the engine's repeater layers on a schedule.
+
+    In a thread: the engine is a subprocess and blocking on it would stall
+    every source. No network is involved at any point.
+    """
+    while True:
+        station = enricher.station
+        fallback = (station.lat, station.lon) if station.located else None
+        await asyncio.to_thread(publish_repeaters, config, fallback_latlon=fallback)
+        await asyncio.sleep(REPEATERS_REFRESH_SECONDS)
+
+
 # --- entry point ----------------------------------------------------------
 async def run_collector(config: Config, guard: EgressGuard, enricher: Enricher) -> None:
     """Run every source until cancelled.
@@ -656,7 +703,11 @@ async def run_collector(config: Config, guard: EgressGuard, enricher: Enricher) 
             "(clock, band plan, CW reference, callsign lookup, beacons)"
         )
         # The snapshots those panels read are written at startup, so there is
-        # nothing to schedule -- just stay up.
+        # nothing to schedule -- just stay up. The repeaters panel is the one
+        # tier 0 panel with a loop of its own: it reads the engine, which the
+        # operator can change at any time, and it touches no network.
+        if config.repeaters.enabled:
+            await _repeaters_loop(config, enricher)
         await asyncio.Event().wait()
         return
 
@@ -691,6 +742,9 @@ async def run_collector(config: Config, guard: EgressGuard, enricher: Enricher) 
 
             group.create_task(_propagation_loop(config, enricher), name="propagation")
             group.create_task(_satellites_loop(config, enricher), name="satellites")
+
+            if config.repeaters.enabled:
+                group.create_task(_repeaters_loop(config, enricher), name="repeaters")
 
             if config.lookup.enabled:
                 group.create_task(_lookup_loop(client, guard, config, enricher), name="lookup")

@@ -586,6 +586,23 @@ lines of orbital mechanics that could not be verified to the same standard.
 
 ---
 
+## `[repeaters]`
+
+| Option | Default | Meaning |
+|---|---|---|
+| `enabled` | `true` | Run the repeaters collector: two read-only Hammunition commands every ten minutes. |
+
+```toml
+[repeaters]
+enabled = true
+```
+
+Tier 0: no network at all. On a machine without the engine the collector finds
+no executable and the panel says how to get repeaters. `false` stops the
+commands from being run. See [REPEATERS.md](REPEATERS.md).
+
+---
+
 ## `[metrics]`
 
 | Option | Default | Meaning |

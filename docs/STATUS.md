@@ -26,7 +26,7 @@ have. Where the two disagree, this page is the one kept current.
 |---|---|
 | Collector, snapshot architecture, static server | ✅ working |
 | Egress allowlist, CSP, path handling | ✅ working |
-| Panels | ✅ 34 across 7 dashboards |
+| Panels | ✅ 35 across 7 dashboards |
 | Source kinds | ✅ 14 polled, 6 stream, 1 file |
 | Space weather dials | ✅ 8 scales |
 | Your log driving spot colouring | ✅ working |
@@ -101,20 +101,21 @@ The parts everything else sits on.
 | RBN | ✅ | Its own line parser, aggregated by band and mode. Bounded so a busy night cannot grow memory without limit |
 | PSK Reporter | ✅ | Reception reports of *you*, polled from the retrieval API. Your callsign is the query and the config says so |
 | WSPR (wspr.live) | ✅ | Who decoded your beacon, with SNR, power and distance. Same honesty note as PSK Reporter |
+| Repeaters | ✅ | Tier 0. The local engine's repeater layers as a table and a map layer, with distance and bearing from your grid square, source badges, the credits printed with the data, and filters (band, mode, source, within N km) in the browser. RepeaterBook rows are served to this machine's own page only and never exported — see [REPEATERS.md](REPEATERS.md). Rendered against fixture data; not yet run against a real station's layers |
 | Satellite passes | ✅ | Cached TLEs, SGP4 when the optional extra is installed, look angles and Doppler. Passes found by bisection, not by scanning |
 | WWFF / WWBOTA | ❌ | Same shape as POTA/SOTA |
-| Repeater directory | ❌ | RepeaterBook's export API answered 401 on 2026-09-13 — it wants a key and an account now. Route: an offline import like `fcc-import`, so the field machine has repeaters with the WAN down |
+| Repeater directory | ✅ | Read from the layers Hammunition holds, offline: see Repeaters below. Hill fetches nothing from RepeaterBook (its API answered 401 on 2026-09-13 and wants a key); the engine imports your export or fetches with your own token |
 | GPS (gpsd / NMEA) | ✅ | Auto grid square and a clock check when portable. Published at Maidenhead precision, never a raw fix — see [GPS.md](GPS.md) |
 
 ## Panels
 
-34 panels, 7 dashboards: **Home**, **Map**, **Space Weather**, **Operating**,
+35 panels, 7 dashboards: **Home**, **Map**, **Space Weather**, **Operating**,
 **Toolbox**, **Activity**, **Field & Weather**. Regroup them by editing
 `web/panels/index.json`.
 
-Thirteen are **tier 0** — they work with the internet unplugged: `bandplan`,
+Fourteen are **tier 0** — they work with the internet unplugged: `bandplan`,
 `beacons`, `callsign`, `clock`, `cw`, `exam`, `gps`, `logbook`, `memories`,
-`meteors`, `reference`, `sunmoon`, `tools`. Twenty are tier 1. One is tier 2
+`meteors`, `reference`, `repeaters`, `sunmoon`, `tools`. Twenty are tier 1. One is tier 2
 (`imagery`).
 
 | Feature | Status | Notes |

@@ -197,6 +197,18 @@ class SatellitesConfig:
 
 
 @dataclass(frozen=True)
+class RepeatersConfig:
+    """The repeaters panel's collector (tier 0: it asks the engine, never the net).
+
+    On by default because the cost of being on is one lookup for the engine's
+    executable per cycle on a machine without it. Off stops the collector
+    running the engine's two read-only commands at all.
+    """
+
+    enabled: bool = True
+
+
+@dataclass(frozen=True)
 class Config:
     server: ServerConfig
     sources: tuple[SourceConfig, ...]
@@ -211,6 +223,7 @@ class Config:
     imagery: tuple[ImageryTile, ...] = ()
     satellites: SatellitesConfig = field(default_factory=SatellitesConfig)
     metrics: MetricsConfig = field(default_factory=MetricsConfig)
+    repeaters: RepeatersConfig = field(default_factory=RepeatersConfig)
 
     def primary_logbook(self) -> Any | None:
         """The book that drives needed-slot colouring."""
@@ -403,6 +416,11 @@ def parse_config(raw: dict[str, Any], *, base_dir: Path) -> Config:
         )
     sat_cfg = SatellitesConfig(min_elevation=min_elevation)
 
+    repeaters_tbl = raw.get("repeaters", {})
+    if not isinstance(repeaters_tbl, dict):
+        raise ConfigError("[repeaters] must be a table")
+    repeaters_cfg = RepeatersConfig(enabled=bool(repeaters_tbl.get("enabled", True)))
+
     logging_tbl = raw.get("logging", {})
     if not isinstance(logging_tbl, dict):
         raise ConfigError("[logging] must be a table")
@@ -532,6 +550,7 @@ def parse_config(raw: dict[str, Any], *, base_dir: Path) -> Config:
         logging=log_cfg,
         satellites=sat_cfg,
         metrics=metrics_cfg,
+        repeaters=repeaters_cfg,
         logbooks=tuple(books),
         imagery=tuple(tiles),
     )

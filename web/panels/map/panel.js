@@ -30,6 +30,7 @@ import {
   unproject,
 } from "../../lib/globe.js";
 import { bandColor } from "../../lib/bandcolors.js";
+import { DEFAULT_FILTERS, filterRows } from "../../lib/repeaters.js";
 
 const state = {
   lat0: null,
@@ -44,6 +45,8 @@ const state = {
   layers: recall("map.layers", {
     greyline: true, aurora: true, spots: true, arcs: true,
     parks: true, graticule: true, labels: true,
+    // Off until asked for: a state's worth of repeaters is a lot of dots.
+    repeaters: false,
   }),
   // The plotted path's far end, a Maidenhead grid. Persisted: an operator
   // planning a sked wants the same target tomorrow.
@@ -59,6 +62,9 @@ const state = {
   view: null,
   rerender: null,
 };
+
+// Nearest first, so the cap drops the farthest.
+const REPEATER_MARKERS = 2000;
 
 function css(name, fallback) {
   const value = getComputedStyle(document.body).getPropertyValue(name).trim();
@@ -230,6 +236,23 @@ function draw(canvas, data, station) {
     }
   }
 
+  // The repeaters panel's rows, filtered by what is set there (same module, same
+  // saved filters, so the two views never disagree about "within 50 km"). They
+  // come from the repeaters snapshot, which is already free of anything this
+  // viewer may not see.
+  if (state.layers.repeaters) {
+    const filters = {
+      band: recall("repeaters.band", DEFAULT_FILTERS.band),
+      mode: recall("repeaters.mode", DEFAULT_FILTERS.mode),
+      source: recall("repeaters.source", DEFAULT_FILTERS.source),
+      withinKm: recall("repeaters.withinKm", DEFAULT_FILTERS.withinKm),
+    };
+    const rows = filterRows(data.repeaters?.data?.rows ?? [], filters);
+    for (const row of rows.slice(0, REPEATER_MARKERS)) {
+      drawMarker(ctx, row.lat, row.lon, view, { color: bandColor(row.band), radius: 2.2 });
+    }
+  }
+
   if (home) {
     drawMarker(ctx, home.lat, home.lon, view, { color: accent, radius: 4, ring: ink });
   }
@@ -257,7 +280,7 @@ function layerRow(el, onToggle) {
   const row = el("div", "chips");
   const labels = {
     greyline: "GREYLINE", aurora: "AURORA", spots: "SPOTS", arcs: "ARCS",
-    parks: "PARKS", graticule: "GRID", labels: "LABEL",
+    parks: "PARKS", repeaters: "RPTR", graticule: "GRID", labels: "LABEL",
   };
   for (const [key, label] of Object.entries(labels)) {
     const chip = el("button", "chip", label);
