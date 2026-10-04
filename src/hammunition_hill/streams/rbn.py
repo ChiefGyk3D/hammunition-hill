@@ -248,6 +248,8 @@ class RbnStream:
                 try:
                     await writer.wait_closed()
                 except (TimeoutError, OSError):
+                    # The socket is being discarded; a peer that will not finish
+                    # the close handshake has nothing left to tell us.
                     pass
 
         await with_reconnect(cfg.id, connect)

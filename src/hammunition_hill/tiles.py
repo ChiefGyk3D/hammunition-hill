@@ -130,6 +130,8 @@ def write_tile_failure(data_dir: Path, tile_id: str, reason: str) -> None:
     try:
         existing = json.loads((directory / f"{tile_id}.json").read_text(encoding="utf-8"))
     except (OSError, ValueError):
+        # No earlier record, or an unreadable one: the failure is written
+        # onto an empty record instead, which is what `existing` already is.
         pass
     existing["error"] = reason
     existing["failed_at"] = datetime.now(UTC).isoformat()

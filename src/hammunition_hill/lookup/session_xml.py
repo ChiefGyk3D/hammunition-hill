@@ -77,10 +77,17 @@ class _SessionXmlProvider:
         self._session: str | None = None
 
     # --- subclass hooks --------------------------------------------------
-    def _login_request(self) -> tuple[str, dict[str, str]]: ...
-    def _session_from(self, root: Any) -> str | None: ...
-    def _query_request(self, session: str, callsign: str) -> tuple[str, dict[str, str]]: ...
-    def _result_from(self, root: Any, callsign: str) -> LookupResult | None: ...
+    def _login_request(self) -> tuple[str, dict[str, str]]:
+        raise NotImplementedError
+
+    def _session_from(self, root: Any) -> str | None:
+        raise NotImplementedError
+
+    def _query_request(self, session: str, callsign: str) -> tuple[str, dict[str, str]]:
+        raise NotImplementedError
+
+    def _result_from(self, root: Any, callsign: str) -> LookupResult | None:
+        raise NotImplementedError
 
     # --- shared ----------------------------------------------------------
     async def _parse(self, client: httpx.AsyncClient, url: str, params: dict[str, str]) -> Any:

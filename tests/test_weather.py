@@ -8,6 +8,7 @@ import dataclasses
 
 import httpx
 import pytest
+from csp import csp_sources
 
 from hammunition_hill.config import ConfigError, ImageryTile, parse_config
 from hammunition_hill.server import build_csp
@@ -303,8 +304,9 @@ def test_csp_hosts_derived_from_tiles(tmp_path):
     forgotten [embeds] entry used to give a blank square and a console message.
     """
     config = parse_config(base_cfg(imagery=[tile()]), base_dir=tmp_path)
-    assert "radar.weather.gov" in config.csp_hosts()
-    assert "https://radar.weather.gov" in build_csp(config.embed_hosts, config.csp_hosts())
+    assert {"radar.weather.gov"} <= set(config.csp_hosts())
+    policy = build_csp(config.embed_hosts, config.csp_hosts())
+    assert {"https://radar.weather.gov"} <= set(csp_sources(policy, "img-src"))
 
 
 def test_imagery_host_reaches_img_src_only(tmp_path):
@@ -315,11 +317,8 @@ def test_imagery_host_reaches_img_src_only(tmp_path):
     """
     config = parse_config(base_cfg(imagery=[tile()]), base_dir=tmp_path)
     policy = build_csp(config.embed_hosts, config.csp_hosts())
-    directives = dict(
-        (part.split(" ", 1) + [""])[:2] for part in (d.strip() for d in policy.split(";"))
-    )
-    assert "https://radar.weather.gov" in directives["img-src"]
-    assert directives["frame-src"] == "'none'"
+    assert {"https://radar.weather.gov"} <= set(csp_sources(policy, "img-src"))
+    assert csp_sources(policy, "frame-src") == ["'none'"]
 
 
 def test_an_embed_host_still_reaches_both(tmp_path):
@@ -327,8 +326,9 @@ def test_an_embed_host_still_reaches_both(tmp_path):
         base_cfg(embeds={"allow_hosts": ["www.hamqsl.com"]}, imagery=[tile()]), base_dir=tmp_path
     )
     policy = build_csp(config.embed_hosts, config.csp_hosts())
-    assert "https://www.hamqsl.com" in policy.split("frame-src")[1]
-    assert "https://radar.weather.gov" not in policy.split("frame-src")[1]
+    assert {"https://www.hamqsl.com"} <= set(csp_sources(policy, "frame-src"))
+    assert {"https://www.hamqsl.com"} <= set(csp_sources(policy, "img-src"))
+    assert {"https://radar.weather.gov"}.isdisjoint(csp_sources(policy, "frame-src"))
 
 
 def test_imagery_does_not_widen_the_collector_allowlist(tmp_path):
@@ -340,8 +340,8 @@ def test_imagery_does_not_widen_the_collector_allowlist(tmp_path):
     """
     config = parse_config(base_cfg(imagery=[tile()]), base_dir=tmp_path)
     allowed, _ = config.allowlist()
-    assert "radar.weather.gov" not in allowed
-    assert "radar.weather.gov" in config.csp_hosts()
+    assert {"radar.weather.gov"}.isdisjoint(allowed)
+    assert {"radar.weather.gov"} <= set(config.csp_hosts())
 
 
 def test_imagery_tile_is_immutable():

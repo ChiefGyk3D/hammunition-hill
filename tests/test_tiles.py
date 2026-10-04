@@ -173,13 +173,13 @@ def test_an_opaque_host_moves_from_the_csp_to_the_allowlist(tmp_path):
     """
     direct = make_config(tmp_path, "https://tiles.example/x.png", mode="direct")
     allowed, _ = direct.allowlist()
-    assert "tiles.example" not in allowed
-    assert "tiles.example" in direct.csp_hosts()
+    assert {"tiles.example"}.isdisjoint(allowed)
+    assert {"tiles.example"} <= set(direct.csp_hosts())
 
     opaque = make_config(tmp_path, "https://tiles.example/x.png", mode="opaque")
     allowed, _ = opaque.allowlist()
-    assert "tiles.example" in allowed
-    assert "tiles.example" not in opaque.csp_hosts()
+    assert {"tiles.example"} <= set(allowed)
+    assert {"tiles.example"}.isdisjoint(opaque.csp_hosts())
 
 
 def test_an_unknown_mode_is_refused_with_both_options(tmp_path):

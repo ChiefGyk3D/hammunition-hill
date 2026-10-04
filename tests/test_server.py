@@ -10,6 +10,7 @@ import urllib.error
 import urllib.request
 
 import pytest
+from csp import csp_sources
 
 from hammunition_hill.config import Config, ServerConfig
 from hammunition_hill.server import build_csp, build_server
@@ -175,7 +176,8 @@ def test_csp_locks_everything_down_by_default():
 
 def test_csp_admits_only_declared_embed_hosts():
     policy = build_csp(("radar.weather.gov",))
-    assert "https://radar.weather.gov" in policy
+    assert {"https://radar.weather.gov"} <= set(csp_sources(policy, "img-src"))
+    assert {"https://radar.weather.gov"} <= set(csp_sources(policy, "frame-src"))
     # An embed host must never widen script or connect.
     assert "script-src 'self';" in policy
     assert "connect-src 'self';" in policy

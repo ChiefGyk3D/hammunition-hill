@@ -324,8 +324,6 @@ async def test_a_tier_zero_config_keeps_serving(tmp_path):
     Found by running the CW panel, which is the first genuinely useful
     zero-source configuration this project has had.
     """
-    import asyncio
-
     from hammunition_hill.collector import run_collector
     from hammunition_hill.config import Config, ServerConfig
     from hammunition_hill.egress import EgressGuard

@@ -39,6 +39,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
+from hammunition_hill import satellites
 from hammunition_hill.satellites import (
     DEFAULT_MIN_ELEVATION,
     EARTH_RADIUS_KM,
@@ -558,3 +559,12 @@ def test_a_position_needs_no_network():
     the pass list is derived rather than fetched."""
     tle = parse_tles(ISS, strict=True)[0]
     assert position_at(tle, WHEN)
+
+
+def test_the_subsatellite_radius_does_not_overflow(monkeypatch):
+    """x*x + y*y overflows a double long before the radius does; hypot does not."""
+    monkeypatch.setattr(satellites, "position_at", lambda tle, moment: (1e200, 1e200, 0.0))
+    lat, lon, altitude = subsatellite_point(object(), WHEN)  # type: ignore[arg-type]
+    assert math.isfinite(altitude)
+    assert lat == pytest.approx(0.0, abs=1e-6)
+    assert lon == pytest.approx(45.0)

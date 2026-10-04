@@ -102,6 +102,7 @@ class RbnStub(socketserver.StreamRequestHandler):
             # for the length of the run.
             time.sleep(120)
         except (BrokenPipeError, ConnectionResetError, OSError):
+            # The browser closed the stub connection at the end of the run.
             pass
 
 
@@ -128,6 +129,7 @@ class ClusterStub(socketserver.StreamRequestHandler):
             self.wfile.flush()
             time.sleep(120)
         except (BrokenPipeError, ConnectionResetError, OSError):
+            # The browser closed the stub connection at the end of the run.
             pass
 
 
