@@ -96,7 +96,8 @@ To run one locally, in a venv with the project and Atheris (CPython 3.12 to
 3.14, x86_64):
 
 ```bash
-pip install -e ".[satellites]" atheris==3.1.0
+pip install --require-hashes -r requirements/runtime.txt
+pip install --no-deps -e . atheris==3.1.0
 nice -n 19 python fuzz/fuzz_rbn.py -max_total_time=60 -max_len=4096
 ```
 

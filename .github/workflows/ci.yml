@@ -122,9 +122,11 @@ jobs:
       seconds-per-target: ${{ github.event_name == 'schedule' && 600 || 30 }}
       # Seven targets run one after another: 7 x 600 s is 70 minutes of fuzzing.
       timeout-minutes: ${{ github.event_name == 'schedule' && 90 || 30 }}
-      # The satellites extra, so the element-set target also reaches the
-      # propagator rather than stopping at the parser.
-      install-command: pip install --disable-pip-version-check -e ".[satellites]"
+      # The hash-checked runtime lock (it includes the satellites extra, so the
+      # element-set target also reaches the propagator), then the project itself.
+      install-command: |
+        pip install --disable-pip-version-check --require-hashes -r requirements/runtime.txt
+        pip install --disable-pip-version-check --no-deps -e .
       egress-policy: block
 
   shell:
