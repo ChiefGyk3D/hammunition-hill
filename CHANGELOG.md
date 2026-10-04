@@ -32,6 +32,10 @@ saying so.
   Celestrak element sets. `tests/test_fuzz_targets.py` keeps them honest in the
   ordinary suite.
 
+### Changed
+
+- **Every GYST caller moves from v1.6.3 to v1.10.0** (one pin, as the pin test requires). No input the callers pass was renamed or removed. New defaults now apply: Snyk runs weekly, the Semgrep job's egress is `block`, and `container-release` runs hadolint, requires a non-root image and fails on Trivy findings that have a fix.
+
 ### Fixed
 
 - **A Unicode digit in an element set no longer crashes the parser.**
