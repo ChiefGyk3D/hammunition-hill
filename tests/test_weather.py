@@ -304,9 +304,9 @@ def test_csp_hosts_derived_from_tiles(tmp_path):
     forgotten [embeds] entry used to give a blank square and a console message.
     """
     config = parse_config(base_cfg(imagery=[tile()]), base_dir=tmp_path)
-    assert "radar.weather.gov" in set(config.csp_hosts())
+    assert {"radar.weather.gov"} <= set(config.csp_hosts())
     policy = build_csp(config.embed_hosts, config.csp_hosts())
-    assert "https://radar.weather.gov" in csp_sources(policy, "img-src")
+    assert {"https://radar.weather.gov"} <= set(csp_sources(policy, "img-src"))
 
 
 def test_imagery_host_reaches_img_src_only(tmp_path):
@@ -317,7 +317,7 @@ def test_imagery_host_reaches_img_src_only(tmp_path):
     """
     config = parse_config(base_cfg(imagery=[tile()]), base_dir=tmp_path)
     policy = build_csp(config.embed_hosts, config.csp_hosts())
-    assert "https://radar.weather.gov" in csp_sources(policy, "img-src")
+    assert {"https://radar.weather.gov"} <= set(csp_sources(policy, "img-src"))
     assert csp_sources(policy, "frame-src") == ["'none'"]
 
 
@@ -326,9 +326,9 @@ def test_an_embed_host_still_reaches_both(tmp_path):
         base_cfg(embeds={"allow_hosts": ["www.hamqsl.com"]}, imagery=[tile()]), base_dir=tmp_path
     )
     policy = build_csp(config.embed_hosts, config.csp_hosts())
-    assert "https://www.hamqsl.com" in csp_sources(policy, "frame-src")
-    assert "https://www.hamqsl.com" in csp_sources(policy, "img-src")
-    assert "https://radar.weather.gov" not in csp_sources(policy, "frame-src")
+    assert {"https://www.hamqsl.com"} <= set(csp_sources(policy, "frame-src"))
+    assert {"https://www.hamqsl.com"} <= set(csp_sources(policy, "img-src"))
+    assert {"https://radar.weather.gov"}.isdisjoint(csp_sources(policy, "frame-src"))
 
 
 def test_imagery_does_not_widen_the_collector_allowlist(tmp_path):
@@ -340,8 +340,8 @@ def test_imagery_does_not_widen_the_collector_allowlist(tmp_path):
     """
     config = parse_config(base_cfg(imagery=[tile()]), base_dir=tmp_path)
     allowed, _ = config.allowlist()
-    assert "radar.weather.gov" not in allowed
-    assert "radar.weather.gov" in set(config.csp_hosts())
+    assert {"radar.weather.gov"}.isdisjoint(allowed)
+    assert {"radar.weather.gov"} <= set(config.csp_hosts())
 
 
 def test_imagery_tile_is_immutable():

@@ -570,7 +570,7 @@ def test_a_failed_lookup_logs_the_callsign_on_one_line(tmp_path, caplog):
     db = tmp_path / "uls.sqlite"
     db.write_bytes(b"this is not a sqlite database" * 20)
     with caplog.at_level("WARNING", logger="hammunition_hill.lookup.uls"):
-        assert UlsIndex(db).lookup("K0ABC\nWARNING forged\r\x1b[31m") is None
+        assert UlsIndex(db).lookup("K0ABC\r\nWARNING forged\x1b[31m") is None
     message = caplog.records[-1].getMessage()
     assert "K0ABC" in message
     assert not any(c in message for c in "\n\r\x1b")

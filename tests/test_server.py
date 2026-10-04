@@ -176,8 +176,8 @@ def test_csp_locks_everything_down_by_default():
 
 def test_csp_admits_only_declared_embed_hosts():
     policy = build_csp(("radar.weather.gov",))
-    assert "https://radar.weather.gov" in csp_sources(policy, "img-src")
-    assert "https://radar.weather.gov" in csp_sources(policy, "frame-src")
+    assert {"https://radar.weather.gov"} <= set(csp_sources(policy, "img-src"))
+    assert {"https://radar.weather.gov"} <= set(csp_sources(policy, "frame-src"))
     # An embed host must never widen script or connect.
     assert "script-src 'self';" in policy
     assert "connect-src 'self';" in policy

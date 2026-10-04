@@ -40,9 +40,19 @@ FROM python:3.13-slim@sha256:3dd7cc108ec1493442514f5c2a871af6af0ec31d768ff6e378a
 # hash-checked lock, the wheel itself without a second resolution.
 COPY requirements/runtime.txt /tmp/runtime.txt
 COPY --from=build /dist/*.whl /tmp/
+# pip is removed once the install is done: nothing needs it at runtime, and its
+# vendored urllib3 and msgpack are otherwise copies this image would ship and
+# could not update. libpcre2 is upgraded in place because the base image's
+# digest still carries the version before Debian's security fix; the digest is
+# the pin for everything else (the apt line cannot be version-pinned while the
+# fix is newer than the base).
 RUN pip install --no-cache-dir --require-hashes -r /tmp/runtime.txt \
     && pip install --no-cache-dir --no-deps /tmp/*.whl \
-    && rm /tmp/*.whl /tmp/runtime.txt
+    && pip uninstall -y pip \
+    && rm /tmp/*.whl /tmp/runtime.txt \
+    && apt-get update -qq \
+    && apt-get install -y --no-install-recommends --only-upgrade libpcre2-8-0 \
+    && rm -rf /var/lib/apt/lists/*
 
 # An unprivileged user, a config mount point, and nothing writable but data.
 RUN useradd --system --create-home --shell /usr/sbin/nologin hamhill \
