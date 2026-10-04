@@ -58,6 +58,22 @@ ENGINE_TIMEOUT_SECONDS = 20.0
 # panel can say so. 6000 rows is roughly 1.5 MB.
 MAX_ROWS = 6000
 
+# The engine's mode vocabulary, in its order (Hammunition's `repeaters.MODES`),
+# and the digital details a source may supply. Anything else in a document is
+# dropped: a front end shows what the engine promises, not what it happens to
+# print.
+MODES: tuple[str, ...] = ("FM", "DMR", "D-STAR", "YSF", "P25", "NXDN", "M17", "TETRA", "ATV")
+DIGITAL_KEYS: tuple[str, ...] = (
+    "dmr_color_code",
+    "dmr_network",
+    "dmr_id",
+    "dstar_module",
+    "dstar_gateway",
+    "ysf_dgid",
+    "p25_nac",
+    "nxdn_ran",
+)
+
 # Stored per row. Notes, labels, status and update dates are in the engine's
 # document and not on this panel: carrying them would only make the file the
 # browser polls larger.
@@ -152,6 +168,8 @@ def unavailable(reason: str) -> dict[str, Any]:
         "skipped": [],
         "rows": [],
         "bands": [],
+        "modes": [],
+        "has_modes": False,
         "merged": 0,
         "credits": [],
         "truncated": 0,
@@ -178,6 +196,25 @@ def _station_point(
     return None, fallback_latlon
 
 
+def _modes_of(value: Any) -> list[str]:
+    """The vocabulary's modes in the engine's order; nothing else, never a guess."""
+    if not isinstance(value, list):
+        return []
+    named = {m for m in value if isinstance(m, str)}
+    return [m for m in MODES if m in named]
+
+
+def _digital_of(value: Any) -> dict[str, str]:
+    """Only the documented keys, only non-empty strings."""
+    if not isinstance(value, Mapping):
+        return {}
+    return {
+        key: value[key].strip()
+        for key in DIGITAL_KEYS
+        if isinstance(value.get(key), str) and value[key].strip()
+    }
+
+
 def _row_of(raw: Mapping[str, Any], origin: tuple[float, float] | None) -> dict[str, Any] | None:
     try:
         lat, lon = float(raw["lat"]), float(raw["lon"])
@@ -189,6 +226,8 @@ def _row_of(raw: Mapping[str, Any], origin: tuple[float, float] | None) -> dict[
     row["also"] = [str(a) for a in raw.get("also") or []]
     row["personal_use"] = bool(raw.get("personal_use"))
     row["band"] = band_for_hz(row["output_hz"])
+    row["modes"] = _modes_of(raw.get("modes"))
+    row["digital"] = _digital_of(raw.get("digital"))
     if origin is None:
         row["km"] = None
         row["bearing"] = None
@@ -239,6 +278,13 @@ def build_data(
 
     present = {r["band"] for r in rows if r["band"]}
     bands = [b for b in BAND_ORDER if b in present]
+    modes_present = {m for r in rows for m in r["modes"]}
+    # An engine that predates the vocabulary prints neither `centre` nor a
+    # `modes` list on its rows; the panel then hides the chips and says so.
+    has_modes = "centre" in listing or any(
+        isinstance(raw, Mapping) and isinstance(raw.get("modes"), list)
+        for raw in listing.get("rows") or []
+    )
 
     return {
         "available": True,
@@ -266,6 +312,8 @@ def build_data(
         "skipped": skipped,
         "rows": rows,
         "bands": bands,
+        "modes": [m for m in MODES if m in modes_present],
+        "has_modes": has_modes,
         "merged": int(listing.get("merged") or 0),
         "credits": [str(c) for c in listing.get("credits") or []],
         "truncated": truncated,
@@ -372,4 +420,7 @@ def public_data(data: Any) -> dict[str, Any]:
     # The bands present are those of the rows kept.
     present = {r.get("band") for r in kept if isinstance(r, dict)}
     out["bands"] = [b for b in BAND_ORDER if b in present]
+    modes_present = {m for r in kept if isinstance(r, dict) for m in r.get("modes") or []}
+    out["modes"] = [m for m in MODES if m in modes_present]
+    out["has_modes"] = bool(out.get("has_modes"))
     return out

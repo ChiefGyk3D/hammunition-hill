@@ -15,7 +15,7 @@
 // that fetched them; the server withholds them from every other host, and a
 // file-saving button would be a way around that. tests/test_repeaters.py holds it.
 
-import { recall, relativeAge, remember } from "../../lib/format.js";
+import { relativeAge } from "../../lib/format.js";
 import { bandColor } from "../../lib/bandcolors.js";
 import {
   CENTRE_EVENT,
@@ -23,26 +23,48 @@ import {
   bearingLabel,
   clearCentre,
   coverageNote,
+  digitalDetails,
   facets,
   filterRows,
   kmLabel,
   loadCentre,
+  loadFilters,
   mhz,
+  modeText,
   offsetLabel,
   parseCentre,
   saveCentre,
+  saveFilters,
+  shortcutModes,
+  toggle,
   withCentre,
 } from "../../lib/repeaters.js";
 
 const MAX_ROWS = 60;
 const KM_STEPS = [25, 50, 100, 250];
 
-const state = {
-  band: recall("repeaters.band", DEFAULT_FILTERS.band),
-  mode: recall("repeaters.mode", DEFAULT_FILTERS.mode),
-  source: recall("repeaters.source", DEFAULT_FILTERS.source),
-  withinKm: recall("repeaters.withinKm", DEFAULT_FILTERS.withinKm),
-};
+// Bands and modes are lists (multi-select); source and distance are single. All
+// of it is remembered in this browser as one object, which the map's RPTR layer
+// reads too, so the table and the dots never disagree.
+const state = { ...DEFAULT_FILTERS };
+{
+  const store = (() => {
+    try {
+      return window.localStorage;
+    } catch {
+      return null;
+    }
+  })();
+  if (store) Object.assign(state, loadFilters(store));
+}
+
+function persist() {
+  try {
+    saveFilters(window.localStorage, state);
+  } catch {
+    // Not remembered; still in effect for this view.
+  }
+}
 
 // The chosen centre lives in localStorage and nowhere else; the map panel sets
 // it too (a click or long press), so both announce a change with an event and
@@ -115,22 +137,72 @@ function centreRow(el, payload, chosen) {
   return row;
 }
 
+function chip(el, text, on, onClick, title = "") {
+  const node = el("button", "chip", text);
+  node.type = "button";
+  if (on) node.classList.add("on");
+  node.setAttribute("aria-pressed", String(on));
+  if (title) node.title = title;
+  node.addEventListener("click", onClick);
+  return node;
+}
+
+// One value at a time: source and "within". ALL clears it.
 function chipRow(el, label, key, options, rerender, allLabel = "ALL") {
   const row = el("div", "rp-filter");
   row.append(el("span", "rp-filter-label", label));
   const chips = el("div", "chips");
   for (const [option, text] of [[null, allLabel], ...options]) {
-    const chip = el("button", "chip", text);
-    chip.type = "button";
-    const on = state[key] === option;
-    if (on) chip.classList.add("on");
-    chip.setAttribute("aria-pressed", String(on));
-    chip.addEventListener("click", () => {
-      state[key] = option;
-      remember(`repeaters.${key}`, option);
+    chips.append(
+      chip(el, text, state[key] === option, () => {
+        state[key] = option;
+        persist();
+        rerender();
+      }),
+    );
+  }
+  row.append(chips);
+  return row;
+}
+
+// Any number at once: bands and modes, each chip with how many rows have it.
+// ALL clears the list. `extra` are shortcut chips placed after the list.
+function multiRow(el, label, key, options, counts, rerender, extra = []) {
+  const row = el("div", "rp-filter");
+  row.append(el("span", "rp-filter-label", label));
+  const chips = el("div", "chips");
+  chips.append(
+    chip(el, "ALL", state[key].length === 0, () => {
+      state[key] = [];
+      persist();
       rerender();
-    });
-    chips.append(chip);
+    }),
+  );
+  for (const option of options) {
+    chips.append(
+      chip(
+        el,
+        `${option} ${counts[option] ?? 0}`,
+        state[key].includes(option),
+        () => {
+          state[key] = toggle(state[key], option);
+          persist();
+          rerender();
+        },
+        `${counts[option] ?? 0} repeater${counts[option] === 1 ? "" : "s"}`,
+      ),
+    );
+  }
+  for (const [text, modes, title] of extra) {
+    const same = modes.length > 0 && modes.length === state[key].length &&
+      modes.every((m) => state[key].includes(m));
+    chips.append(
+      chip(el, text, same, () => {
+        state[key] = same ? [] : [...modes];
+        persist();
+        rerender();
+      }, title),
+    );
   }
   row.append(chips);
   return row;
@@ -160,12 +232,16 @@ function tableRow(el, row) {
     el("span", "rp-out", mhz(row.output_hz)),
     el("span", "rp-off", offsetLabel(row.offset_hz)),
     el("span", "rp-tone", row.tone || "—"),
-    el("span", "rp-mode", row.mode || "—"),
+    el("span", "rp-mode", modeText(row) || "—"),
     el("span", "rp-place", row.place || ""),
     el("span", "rp-dist", row.km === null || row.km === undefined ? "—" : kmLabel(row.km)),
     el("span", "rp-brg", bearingLabel(row.bearing)),
   );
   line.append(sourceBadges(el, row));
+  // What an operator keys in, in plain words, under the row: a colour code, a
+  // module, a DG-ID. Nothing is drawn for a detail the source did not supply.
+  const details = digitalDetails(row);
+  if (details.length) line.append(el("span", "rp-detail", details.join(" · ")));
   return line;
 }
 
@@ -209,8 +285,15 @@ export function render(root, { data, el }) {
 
   // A saved filter for a band, mode or source this machine no longer has would
   // hide every row with nothing on screen to un-set it. Drop it quietly.
-  if (state.band && !offered.bands.includes(state.band)) state.band = null;
-  if (state.mode && !offered.modes.includes(state.mode)) state.mode = null;
+  const kept = {
+    bands: state.bands.filter((b) => offered.bands.includes(b)),
+    modes: state.modes.filter((m) => offered.modes.includes(m)),
+  };
+  if (kept.bands.length !== state.bands.length || kept.modes.length !== state.modes.length) {
+    state.bands = kept.bands;
+    state.modes = kept.modes;
+    persist();
+  }
   if (state.source && !offered.sources.includes(state.source)) state.source = null;
 
   const parts = [];
@@ -218,9 +301,25 @@ export function render(root, { data, el }) {
   const filters = el("div", "rp-filters");
   filters.append(centreRow(el, payload, chosen));
   if (centreError) filters.append(el("p", "error", centreError));
+  filters.append(multiRow(el, "BAND", "bands", offered.bands, offered.bandCounts, rerender));
+  if (payload.has_modes) {
+    filters.append(
+      multiRow(el, "MODE", "modes", offered.modes, offered.modeCounts, rerender, [
+        ["DIGITAL", shortcutModes("digital", offered.modes), "every digital mode on offer"],
+        ["ANALOG", shortcutModes("analog", offered.modes), "FM and analog TV"],
+      ]),
+    );
+  } else {
+    // An engine that predates the mode vocabulary: the table still works, and
+    // the one thing missing says what to do about it.
+    const row = el("div", "rp-filter");
+    row.append(
+      el("span", "rp-filter-label", "MODE"),
+      el("span", "rp-note rp-nomodes", "update the engine for mode filters"),
+    );
+    filters.append(row);
+  }
   filters.append(
-    chipRow(el, "BAND", "band", offered.bands.map((b) => [b, b]), rerender),
-    chipRow(el, "MODE", "mode", offered.modes.map((m) => [m, m]), rerender),
     chipRow(el, "SOURCE", "source", offered.sources.map((s) => [s, s]), rerender),
   );
   if (measured) {

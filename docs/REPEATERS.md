@@ -32,7 +32,52 @@ badge per source. A repeater two sources agree on carries a dashed badge for the
 second. Rows are nearest first.
 
 Filters are in your browser and nothing you filter for is sent anywhere: band,
-mode, source, and "within N km".
+mode, source, and "within N km". Bands and modes are covered next.
+
+## Filtering by mode and band, and what the details mean
+
+There is one chip per band and one per mode **that is in your snapshot**, each
+with its count. Bands run low to high; modes follow the engine's vocabulary:
+`FM`, `DMR`, `D-STAR`, `YSF`, `P25`, `NXDN`, `M17`, `TETRA`, `ATV`. They are
+multi-select: pick DMR and YSF and you get repeaters that speak either. A band
+chip and a mode chip together narrow the list (70 cm **and** DMR), and both
+compose with SOURCE and WITHIN. ALL clears a row. A repeater on two modes counts
+under both, so the mode counts can add up to more than the number of repeaters.
+
+**DIGITAL** selects every digital mode on offer (everything but FM and ATV);
+**ANALOG** selects FM and ATV. They are shortcuts for those chips, so a repeater
+that speaks FM and DMR appears under either. Press one again to clear it. A
+repeater whose source did not say what it speaks (no modes) appears with no mode
+chip selected and under none of them: guessing FM for it would be inventing data.
+
+Under a row you will see the details an operator keys in, in plain words, and
+only the ones the source supplied:
+
+| shown | means |
+|---|---|
+| `DMR CC 1, Brandmeister, ID 3100` | colour code, network, repeater DMR ID |
+| `D-STAR module B, gateway W1XYZ G` | module letter and gateway |
+| `YSF DG-ID 00` | Yaesu System Fusion digital group ID |
+| `P25 NAC 293` | network access code |
+| `NXDN RAN 1` | radio access number |
+
+A detail the source did not give is not shown: no dash, no zero. A RepeaterBook
+row, for instance, often has a colour code and no network.
+
+**Version floor.** The mode, band and digital fields arrived in Hammunition with
+the `repeaters-list` mode vocabulary (PR #316, 2026-10-04). Against an older engine
+the table, centre and every other filter still work; the MODE row says "update
+the engine for mode filters" and the chips and details are absent. Hill tells the
+two apart by the document: a document with `centre`, or rows with `modes`, is the
+new one. The chips and the shortcuts are remembered in this browser with the other
+filters, and the map's RPTR layer draws what they select.
+
+**First paint.** The engine measures from your grid square by default and the
+collector sorts nearest first itself, so the table is ordered before the page
+does any arithmetic; Hill does not pass `--near`, which would only repeat the
+station's own value. The engine's `--within`, `--band` and `--mode` are not used
+either: the page filters in the browser, so nothing you filter for reaches a
+command line.
 
 ## Choosing the centre
 
@@ -127,6 +172,9 @@ false` ([CONFIGURATION.md](CONFIGURATION.md)).
   formula (`tests/test_repeaters.py`), and the browser's recomputation against the
   same two (`tests/test_repeaters_js.py`). The map click and long press were not
   exercised with a pointer, only the logic behind them. The page was rendered in headless Chromium
-  against fixture data. It has not been run against a real station's layers by
+  against fixture data, including the mode chips, both shortcuts and an engine
+  that predates the vocabulary. The map's RPTR dots were not drawn with a mode
+  chip selected; that path shares the table's filter code and its test, nothing
+  more. It has not been run against a real station's layers by
   the author of the panel, and no real station value is used anywhere in the
   tests.

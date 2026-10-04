@@ -582,3 +582,80 @@ def test_the_repeaters_table_is_on_by_default_and_can_be_turned_off(tmp_path):
     assert load("[repeaters]\nenabled = false\n").repeaters.enabled is False
     with pytest.raises(ConfigError, match="repeaters"):
         load("repeaters = 3\n")
+
+
+# --- modes, bands and digital details (hammunition-hill #84) -----------------
+def test_the_mode_vocabulary_is_stored_per_row_in_the_engines_order():
+    data = build(docs.modes_listing_document())
+    assert row(data, "W1EEE")["modes"] == ["FM", "D-STAR"]
+    assert row(data, "W1DDD")["modes"] == ["DMR"]
+    assert data["has_modes"] is True
+    # Every mode of the vocabulary is present in the fixture, in vocabulary order.
+    assert data["modes"] == list(repeaters.MODES)
+
+
+def test_digital_details_are_carried_for_every_key():
+    data = build(docs.modes_listing_document())
+    assert row(data, "W1DDD")["digital"] == {
+        "dmr_color_code": "1",
+        "dmr_network": "Brandmeister",
+    }
+    assert row(data, "W1EEE")["digital"] == {"dstar_module": "B", "dstar_gateway": "W1EEE G"}
+    assert row(data, "W1FFF")["digital"] == {"ysf_dgid": "00"}
+    assert row(data, "W1GGG")["digital"] == {"p25_nac": "293"}
+    assert row(data, "W1HHH")["digital"] == {"nxdn_ran": "1"}
+    assert row(data, "W1LLL")["digital"] == {"dmr_color_code": "3", "dmr_id": "310999"}
+    assert row(data, "W1AAA")["digital"] == {}
+
+
+def test_the_fixture_has_every_mode_and_at_least_three_bands():
+    data = build(docs.modes_listing_document())
+    assert len(data["bands"]) >= 3
+    assert {m for r in data["rows"] for m in r["modes"]} == set(repeaters.MODES)
+
+
+def test_only_the_vocabulary_and_the_documented_digital_keys_are_stored():
+    listing = docs.modes_listing_document()
+    target = next(r for r in listing["rows"] if r["callsign"] == "W1DDD")
+    target["modes"] = ["DMR", "FANCY"]
+    target["digital"] = {"dmr_color_code": "1", "secret": "x", "dmr_id": 7, "ysf_dgid": ""}
+    stored = row(build(listing), "W1DDD")
+    assert stored["modes"] == ["DMR"]
+    assert stored["digital"] == {"dmr_color_code": "1"}
+
+
+def test_an_engine_that_predates_the_vocabulary_is_read_without_mode_filters():
+    data = build(docs.legacy_listing_document())
+    assert data["available"] is True
+    assert data["has_modes"] is False
+    assert data["modes"] == []
+    assert all(r["modes"] == [] and r["digital"] == {} for r in data["rows"])
+    # The free text still shows, and the collector's own distance still stands.
+    assert row(data, "W1DDD")["mode"] == "DMR"
+    assert row(data, "W1CCC")["km"] is not None
+
+
+def test_the_modern_document_changes_no_distance():
+    modern, legacy = build(), build(docs.legacy_listing_document())
+    assert [r["km"] for r in modern["rows"]] == [r["km"] for r in legacy["rows"]]
+
+
+def test_the_public_view_lists_only_the_modes_of_the_rows_it_keeps():
+    listing = docs.modes_listing_document()
+    data = build(listing)
+    assert "DMR" in data["modes"]
+    for r in listing["rows"]:
+        # Make DMR RepeaterBook's alone: the public view then has none left.
+        if "DMR" in r["modes"]:
+            r["personal_use"] = True
+    public = repeaters.public_data(build(listing))
+    assert "DMR" not in public["modes"]
+    assert public["has_modes"] is True
+    assert "D-STAR" in public["modes"]
+
+
+def test_the_collector_still_asks_for_the_same_two_commands_with_no_near():
+    # The engine measures from the station's grid square by default, and the
+    # collector sorts nearest first itself, so the first paint is ordered
+    # without passing --near (which would only repeat the station's own value).
+    assert repeaters.LIST_ARGV == ("maps", "repeaters", "list", "--json")

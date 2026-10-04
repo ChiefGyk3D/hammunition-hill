@@ -1273,7 +1273,7 @@ table.meteors td { padding: 2px 6px 2px 0; vertical-align: baseline; }
 .rp-list { display: grid; gap: 2px; }
 .rp-row {
   display: grid;
-  grid-template-columns: 76px 64px 56px 44px 44px minmax(0, 1fr) 62px 62px 188px;
+  grid-template-columns: 76px 64px 56px 44px 78px minmax(0, 1fr) 62px 62px 188px;
   gap: 8px; align-items: baseline; font-family: var(--mono); font-size: 11px;
   padding: 3px 6px;
 }
@@ -1304,3 +1304,5 @@ table.meteors td { padding: 2px 6px 2px 0; vertical-align: baseline; }
 .rp-centre { font-family: var(--mono); font-size: 11px; color: var(--ink); }
 .rp-centre-input { width: 190px; font-size: 11px; padding: 3px 6px; }
 .rp-coverage { color: var(--fair); }
+.rp-detail { grid-column: 1 / -1; color: var(--muted); padding-left: 8px; }
+.rp-nomodes { margin: 0; }

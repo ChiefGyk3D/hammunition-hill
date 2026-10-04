@@ -26,6 +26,15 @@ saying so.
   it (remembered in the browser only, distances recomputed there), and a centre
   far from every row says the data is only what was imported. `[repeaters] enabled`.
   See [docs/REPEATERS.md](docs/REPEATERS.md).
+- **Repeaters by mode and band**, closing #84. One multi-select chip per mode
+  (FM, DMR, D-STAR, YSF, P25, NXDN, M17, TETRA, ATV) and per band present, each
+  with its count, plus DIGITAL and ANALOG shortcuts, composing with the centre,
+  source and within-km filters and remembered in the browser. Rows show the
+  details an operator keys in (DMR colour code and network, D-STAR module, YSF
+  DG-ID, P25 NAC, NXDN RAN) and nothing for a detail the source did not supply.
+  Reads the engine's `modes`, `digital` fields (Hammunition #316); an older
+  engine still works, without chips, and the MODE row says to update it. The
+  map's RPTR layer follows the same filters.
 
 ### Changed
 

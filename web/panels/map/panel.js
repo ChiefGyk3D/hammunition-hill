@@ -36,6 +36,7 @@ import {
   centreFromPoint,
   filterRows,
   loadCentre,
+  loadFilters,
   saveCentre,
   withCentre,
 } from "../../lib/repeaters.js";
@@ -283,12 +284,12 @@ function draw(canvas, data, station) {
   // come from the repeaters snapshot, which is already free of anything this
   // viewer may not see.
   if (state.layers.repeaters) {
-    const filters = {
-      band: recall("repeaters.band", DEFAULT_FILTERS.band),
-      mode: recall("repeaters.mode", DEFAULT_FILTERS.mode),
-      source: recall("repeaters.source", DEFAULT_FILTERS.source),
-      withinKm: recall("repeaters.withinKm", DEFAULT_FILTERS.withinKm),
-    };
+    let filters = DEFAULT_FILTERS;
+    try {
+      filters = loadFilters(window.localStorage);
+    } catch {
+      // Blocked storage: no filters, as for a first visit.
+    }
     // Measured from the chosen centre when there is one, so "within 50 km"
     // means the same on the map as in the table.
     const centre = chosenCentre();

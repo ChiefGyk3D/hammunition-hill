@@ -10,9 +10,16 @@
 // against a real snapshot, and so the map's repeater layer filters with the
 // same code the table does -- two copies of "within N km" would disagree.
 
+// The engine's mode vocabulary, in its order (Hammunition's repeaters.MODES).
+// Digital is everything that is not analog: the shortcut chips select by these.
+export const MODES = Object.freeze(
+  ["FM", "DMR", "D-STAR", "YSF", "P25", "NXDN", "M17", "TETRA", "ATV"]);
+export const ANALOG_MODES = Object.freeze(["FM", "ATV"]);
+export const DIGITAL_MODES = Object.freeze(MODES.filter((m) => !ANALOG_MODES.includes(m)));
+
 export const DEFAULT_FILTERS = Object.freeze({
-  band: null,
-  mode: null,
+  bands: Object.freeze([]),
+  modes: Object.freeze([]),
   source: null,
   withinKm: null,
 });
@@ -22,13 +29,21 @@ const COMPASS = [
   "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW",
 ];
 
-/** The rows that pass every filter that is set. Never mutates its input. */
+/**
+ * The rows that pass every filter that is set. Never mutates its input.
+ * Several bands or modes are an OR within themselves (a row on any chosen band,
+ * speaking any chosen mode) and an AND with each other and with source and
+ * distance. A row whose modes are unknown passes no mode chip: saying it speaks
+ * DMR on no evidence is the one thing a mode filter must not do.
+ */
 export function filterRows(rows, filters = DEFAULT_FILTERS) {
-  const { band, mode, source, withinKm } = { ...DEFAULT_FILTERS, ...filters };
+  const { bands, modes, source, withinKm } = { ...DEFAULT_FILTERS, ...filters };
   const limit = Number.isFinite(withinKm) && withinKm > 0 ? withinKm : null;
+  const wantBands = Array.isArray(bands) && bands.length ? bands : null;
+  const wantModes = Array.isArray(modes) && modes.length ? modes : null;
   return rows.filter((row) => {
-    if (band && row.band !== band) return false;
-    if (mode && row.mode !== mode) return false;
+    if (wantBands && !wantBands.includes(row.band)) return false;
+    if (wantModes && !(row.modes ?? []).some((m) => wantModes.includes(m))) return false;
     if (source && row.source !== source && !(row.also ?? []).includes(source)) return false;
     // A distance limit cannot be met by a row with no distance. Showing it
     // anyway would claim a repeater is near on no evidence.
@@ -37,31 +52,128 @@ export function filterRows(rows, filters = DEFAULT_FILTERS) {
   });
 }
 
-/** What the filter rows offer: only what is present, bands low to high. */
+/**
+ * What the filter rows offer: only what is present. Bands low to high, modes in
+ * the vocabulary's order, each with how many rows have it (a row on two modes
+ * counts under both). A snapshot from an engine without the vocabulary has no
+ * modes, so no mode chips.
+ */
 export function facets(rows) {
-  const bandOrder = [];
-  const modes = new Map();
+  const bandCounts = {};
+  const modeCounts = {};
   const sources = new Set();
   for (const row of rows) {
-    if (row.band && !bandOrder.includes(row.band)) bandOrder.push(row.band);
-    if (row.mode) modes.set(row.mode, (modes.get(row.mode) ?? 0) + 1);
+    if (row.band) bandCounts[row.band] = (bandCounts[row.band] ?? 0) + 1;
+    for (const mode of row.modes ?? []) modeCounts[mode] = (modeCounts[mode] ?? 0) + 1;
     if (row.source) sources.add(row.source);
     for (const also of row.also ?? []) sources.add(also);
   }
+  const bands = Object.keys(bandCounts).sort((a, b) => bandWeight(a) - bandWeight(b));
+  const modes = MODES.filter((m) => modeCounts[m]);
   return {
-    bands: bandOrder.sort((a, b) => bandWeight(a) - bandWeight(b)),
-    modes: [...modes.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([m]) => m),
+    bands,
+    modes,
     sources: [...sources].sort(),
+    bandCounts: Object.fromEntries(bands.map((b) => [b, bandCounts[b]])),
+    modeCounts: Object.fromEntries(modes.map((m) => [m, modeCounts[m]])),
   };
+}
+
+/** The mode chips a "digital" or "analog" shortcut selects, of those on offer. */
+export function shortcutModes(kind, offered) {
+  const set = kind === "digital" ? DIGITAL_MODES : kind === "analog" ? ANALOG_MODES : [];
+  return offered.filter((m) => set.includes(m));
+}
+
+/** `list` with `value` added or removed, in a new array. */
+export function toggle(list, value) {
+  return list.includes(value) ? list.filter((v) => v !== value) : [...list, value];
+}
+
+/** What the mode column says: the vocabulary's modes, else the source's own words. */
+export function modeText(row) {
+  if (Array.isArray(row?.modes) && row.modes.length) return row.modes.join(", ");
+  return typeof row?.mode === "string" ? row.mode : "";
+}
+
+const clean = (v) => (typeof v === "string" && v.trim() ? v.trim() : null);
+
+/**
+ * The digital details a source supplied, one plain-words string per mode:
+ * "DMR CC 1, Brandmeister", "D-STAR module B", "YSF DG-ID 00". Only what is
+ * present: an absent detail is absent, never a dash or a zero.
+ */
+export function digitalDetails(row) {
+  const d = row?.digital;
+  if (!d || typeof d !== "object" || Array.isArray(d)) return [];
+  const out = [];
+  const dmr = [
+    clean(d.dmr_color_code) && `CC ${clean(d.dmr_color_code)}`,
+    clean(d.dmr_network),
+    clean(d.dmr_id) && `ID ${clean(d.dmr_id)}`,
+  ].filter(Boolean);
+  if (dmr.length) out.push(`DMR ${dmr.join(", ")}`);
+  const dstar = [
+    clean(d.dstar_module) && `module ${clean(d.dstar_module)}`,
+    clean(d.dstar_gateway) && `gateway ${clean(d.dstar_gateway)}`,
+  ].filter(Boolean);
+  if (dstar.length) out.push(`D-STAR ${dstar.join(", ")}`);
+  if (clean(d.ysf_dgid)) out.push(`YSF DG-ID ${clean(d.ysf_dgid)}`);
+  if (clean(d.p25_nac)) out.push(`P25 NAC ${clean(d.p25_nac)}`);
+  if (clean(d.nxdn_ran)) out.push(`NXDN RAN ${clean(d.nxdn_ran)}`);
+  return out;
 }
 
 // Wavelength order, long to short: the order operators read a band list in.
 const BANDS = ["2190m", "630m", "160m", "80m", "60m", "40m", "30m", "20m", "17m", "15m",
-  "12m", "10m", "6m", "4m", "2m", "1.25m", "70cm", "33cm", "23cm"];
+  "12m", "10m", "6m", "4m", "2m", "1.25m", "70cm", "33cm", "23cm", "13cm"];
 
 function bandWeight(band) {
   const at = BANDS.indexOf(band);
   return at === -1 ? BANDS.length : at;
+}
+
+// --- remembering the filters ------------------------------------------------
+// One object in localStorage, read field by field: a hand-edited or stale value
+// costs that field, never the panel. `storage` is localStorage in the browser
+// and a stand-in in tests; the panel and the map's RPTR layer both read it, so
+// the two never disagree about what is filtered.
+
+export const FILTERS_KEY = "hh.repeaters.filters";
+const MAX_CHIPS = 20;
+
+const strings = (value, allowed) =>
+  Array.isArray(value)
+    ? [...new Set(value.filter((v) => typeof v === "string" && v.length <= 8 &&
+        (allowed ? allowed.includes(v) : /^[0-9.]+(m|cm)$/.test(v))))].slice(0, MAX_CHIPS)
+    : [];
+
+export function sanitizeFilters(raw) {
+  const r = raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
+  return {
+    bands: strings(r.bands, null),
+    modes: strings(r.modes, MODES),
+    source: typeof r.source === "string" && r.source.length > 0 && r.source.length <= 60
+      ? r.source : null,
+    withinKm: Number.isFinite(r.withinKm) && r.withinKm > 0 && r.withinKm <= 40000
+      ? r.withinKm : null,
+  };
+}
+
+export function loadFilters(storage) {
+  try {
+    return sanitizeFilters(JSON.parse(storage.getItem(FILTERS_KEY)));
+  } catch {
+    return sanitizeFilters(null);
+  }
+}
+
+export function saveFilters(storage, filters) {
+  try {
+    storage.setItem(FILTERS_KEY, JSON.stringify(sanitizeFilters(filters)));
+  } catch {
+    // Not remembered; still in effect for this view.
+  }
 }
 
 /** 146940000 -> "146.940". Zero is "no frequency", not 0 MHz. */
