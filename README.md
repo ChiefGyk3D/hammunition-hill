@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/ChiefGyk3D/hammunition-hill/main/docs/images/logo.png"
+  <img src="https://raw.githubusercontent.com/Renegade-Penguin/hammunition-hill/main/docs/images/logo.png"
        alt="Hammunition Hill" width="360">
 </p>
 
@@ -8,12 +8,12 @@
 A ham radio dashboard that runs on your own machine, on your own network, and
 talks to nobody you did not name.
 
-Companion to [Hammunition](https://github.com/ChiefGyk3D/Hammunition), which
+Companion to [Hammunition](https://github.com/Renegade-Penguin/Hammunition), which
 turns a Debian-family install into an amateur radio, SDR, and RF workstation.
 Hammunition builds the shack computer; Hammunition Hill is what you put on the
 monitor above it — the high ground you watch the bands from.
 
-![The Home dashboard](https://raw.githubusercontent.com/ChiefGyk3D/hammunition-hill/main/docs/images/home.png)
+![The Home dashboard](https://raw.githubusercontent.com/Renegade-Penguin/hammunition-hill/main/docs/images/home.png)
 
 Six dashboards, twenty-eight panels, one machine. Nothing above was fetched by
 your browser from anyone else's server — the screenshots are taken by CI, from a
@@ -22,17 +22,17 @@ rather than what a designer drew.
 
 <table>
 <tr>
-<td width="33%"><a href="https://raw.githubusercontent.com/ChiefGyk3D/hammunition-hill/main/docs/images/map.png"><img src="https://raw.githubusercontent.com/ChiefGyk3D/hammunition-hill/main/docs/images/map.png" alt="Map"></a><br><b>Map</b> — 3D globe or 2D flat map, greyline, path plotting, spots coloured by your log</td>
-<td width="33%"><a href="https://raw.githubusercontent.com/ChiefGyk3D/hammunition-hill/main/docs/images/space-weather.png"><img src="https://raw.githubusercontent.com/ChiefGyk3D/hammunition-hill/main/docs/images/space-weather.png" alt="Space Weather"></a><br><b>Space Weather</b> — eight scales, MUF and D-layer absorption</td>
-<td width="33%"><a href="https://raw.githubusercontent.com/ChiefGyk3D/hammunition-hill/main/docs/images/operating.png"><img src="https://raw.githubusercontent.com/ChiefGyk3D/hammunition-hill/main/docs/images/operating.png" alt="Operating"></a><br><b>Operating</b> — band plan, NCDXF beacons, logbook, CW trainer</td>
+<td width="33%"><a href="https://raw.githubusercontent.com/Renegade-Penguin/hammunition-hill/main/docs/images/map.png"><img src="https://raw.githubusercontent.com/Renegade-Penguin/hammunition-hill/main/docs/images/map.png" alt="Map"></a><br><b>Map</b> — 3D globe or 2D flat map, greyline, path plotting, spots coloured by your log</td>
+<td width="33%"><a href="https://raw.githubusercontent.com/Renegade-Penguin/hammunition-hill/main/docs/images/space-weather.png"><img src="https://raw.githubusercontent.com/Renegade-Penguin/hammunition-hill/main/docs/images/space-weather.png" alt="Space Weather"></a><br><b>Space Weather</b> — eight scales, MUF and D-layer absorption</td>
+<td width="33%"><a href="https://raw.githubusercontent.com/Renegade-Penguin/hammunition-hill/main/docs/images/operating.png"><img src="https://raw.githubusercontent.com/Renegade-Penguin/hammunition-hill/main/docs/images/operating.png" alt="Operating"></a><br><b>Operating</b> — band plan, NCDXF beacons, logbook, CW trainer</td>
 </tr>
 <tr>
-<td><a href="https://raw.githubusercontent.com/ChiefGyk3D/hammunition-hill/main/docs/images/activity.png"><img src="https://raw.githubusercontent.com/ChiefGyk3D/hammunition-hill/main/docs/images/activity.png" alt="Activity"></a><br><b>Activity</b> — POTA and SOTA spots, contest calendar, news feed</td>
-<td><a href="https://raw.githubusercontent.com/ChiefGyk3D/hammunition-hill/main/docs/images/field-weather.png"><img src="https://raw.githubusercontent.com/ChiefGyk3D/hammunition-hill/main/docs/images/field-weather.png" alt="Field &amp; Weather"></a><br><b>Field &amp; Weather</b> — NWS alerts, GPS grid, radar and satellite imagery</td>
-<td><a href="https://raw.githubusercontent.com/ChiefGyk3D/hammunition-hill/main/docs/images/home.png"><img src="https://raw.githubusercontent.com/ChiefGyk3D/hammunition-hill/main/docs/images/home.png" alt="Home"></a><br><b>Home</b> — the summary you leave up on the wall</td>
+<td><a href="https://raw.githubusercontent.com/Renegade-Penguin/hammunition-hill/main/docs/images/activity.png"><img src="https://raw.githubusercontent.com/Renegade-Penguin/hammunition-hill/main/docs/images/activity.png" alt="Activity"></a><br><b>Activity</b> — POTA and SOTA spots, contest calendar, news feed</td>
+<td><a href="https://raw.githubusercontent.com/Renegade-Penguin/hammunition-hill/main/docs/images/field-weather.png"><img src="https://raw.githubusercontent.com/Renegade-Penguin/hammunition-hill/main/docs/images/field-weather.png" alt="Field &amp; Weather"></a><br><b>Field &amp; Weather</b> — NWS alerts, GPS grid, radar and satellite imagery</td>
+<td><a href="https://raw.githubusercontent.com/Renegade-Penguin/hammunition-hill/main/docs/images/home.png"><img src="https://raw.githubusercontent.com/Renegade-Penguin/hammunition-hill/main/docs/images/home.png" alt="Home"></a><br><b>Home</b> — the summary you leave up on the wall</td>
 </tr>
 <tr>
-<td><a href="https://raw.githubusercontent.com/ChiefGyk3D/hammunition-hill/main/docs/images/toolbox.png"><img src="https://raw.githubusercontent.com/ChiefGyk3D/hammunition-hill/main/docs/images/toolbox.png" alt="Toolbox"></a><br><b>Toolbox</b> — antenna and feedline calculators, references, band plan, exam practice</td>
+<td><a href="https://raw.githubusercontent.com/Renegade-Penguin/hammunition-hill/main/docs/images/toolbox.png"><img src="https://raw.githubusercontent.com/Renegade-Penguin/hammunition-hill/main/docs/images/toolbox.png" alt="Toolbox"></a><br><b>Toolbox</b> — antenna and feedline calculators, references, band plan, exam practice</td>
 <td></td>
 <td></td>
 </tr>
@@ -369,7 +369,7 @@ scriptable document on our own origin. See
 Requires Python 3.11 or newer.
 
 ```bash
-git clone https://github.com/ChiefGyk3D/hammunition-hill
+git clone https://github.com/Renegade-Penguin/hammunition-hill
 cd hammunition-hill
 python3 -m venv .venv && .venv/bin/pip install -e .
 
@@ -737,7 +737,7 @@ your logbook, your rig, or your antenna.
 
 ## Related projects
 
-- **[Hammunition](https://github.com/ChiefGyk3D/Hammunition)** — provisions the
+- **[Hammunition](https://github.com/Renegade-Penguin/Hammunition)** — provisions the
   workstation this runs on.
 - **[SolarStorm Scout](https://github.com/ChiefGyk3D/solarstorm_scout)** — posts
   NOAA space weather to Bluesky and Mastodon. Its propagation model is the
@@ -833,7 +833,7 @@ no-hardcoded-URLs rule holds even for the author's own links.
 Mozilla Public License 2.0 is weak, file-level copyleft: you can use this
 alongside proprietary code and consumers are not affected, but improvements to
 these files come back. It also matches
-[Hammunition](https://github.com/ChiefGyk3D/Hammunition),
+[Hammunition](https://github.com/Renegade-Penguin/Hammunition),
 [SolarStorm Scout](https://github.com/ChiefGyk3D/solarstorm_scout), and
 [Penguin Overlord](https://github.com/ChiefGyk3D/penguin-overlord), so logic can
 move between the four projects by copy-paste — no per-file licence bookkeeping,

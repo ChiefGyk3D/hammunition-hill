@@ -232,7 +232,7 @@ WEB_DIR_HELP = """
   the repository, not in the Python package. If you installed with pip alone,
   clone the repository instead:
 
-      git clone https://github.com/ChiefGyk3D/hammunition-hill
+      git clone https://github.com/Renegade-Penguin/hammunition-hill
       cd hammunition-hill && pip install -e .
 
   Or point [paths] web_dir at a checkout you already have.

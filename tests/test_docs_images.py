@@ -39,7 +39,7 @@ def slug(name: str) -> str:
 
 # Absolute links to this repository's own files, which is how the README has to
 # spell them -- see test_the_readme_links_images_absolutely below.
-RAW = "https://raw.githubusercontent.com/ChiefGyk3D/hammunition-hill/main/"
+RAW = "https://raw.githubusercontent.com/Renegade-Penguin/hammunition-hill/main/"
 
 
 def referenced_images(text: str) -> set[str]:

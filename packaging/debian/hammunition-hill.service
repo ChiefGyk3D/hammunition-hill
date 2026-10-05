@@ -8,7 +8,7 @@
 # is wrong.
 [Unit]
 Description=Hammunition Hill — local-first ham radio dashboard
-Documentation=https://github.com/ChiefGyk3D/hammunition-hill
+Documentation=https://github.com/Renegade-Penguin/hammunition-hill
 After=network-online.target
 Wants=network-online.target
 

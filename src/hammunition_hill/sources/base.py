@@ -14,7 +14,7 @@ from ..config import SourceConfig
 
 # Upstreams are free services run by volunteers and government agencies. Identify
 # ourselves so their operators can tell what is hitting them and reach us.
-USER_AGENT = "hammunition-hill/0.1 (+https://github.com/ChiefGyk3D/hammunition-hill)"
+USER_AGENT = "hammunition-hill/0.1 (+https://github.com/Renegade-Penguin/hammunition-hill)"
 
 # A response larger than this is a bug, a redirect to something unexpected, or a
 # hostile upstream. None of those should be allowed to fill a Pi's disk.
