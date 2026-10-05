@@ -2,7 +2,7 @@
 
 A ham radio dashboard that runs on your own machine, on your own network, and
 talks to nobody you did not name. Companion to
-[Hammunition](https://github.com/ChiefGyk3D/Hammunition).
+[Hammunition](https://github.com/Renegade-Penguin/Hammunition).
 
 Binary: `hamhill`. Python package: `hammunition_hill`. Licence: MPL-2.0.
 

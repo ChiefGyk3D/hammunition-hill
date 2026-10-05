@@ -37,7 +37,7 @@ def every_string(value):
 def test_about_names_the_essentials():
     about = about_payload()
     assert about["project"]["version"] == __version__
-    assert about["project"]["repo"] == "https://github.com/ChiefGyk3D/hammunition-hill"
+    assert about["project"]["repo"] == "https://github.com/Renegade-Penguin/hammunition-hill"
     assert about["author"]["support"]["url"] == "https://support.chiefgyk3d.com"
     assert len(about["author"]["socials"]) >= 10
 

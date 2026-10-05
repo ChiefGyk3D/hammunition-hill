@@ -45,7 +45,7 @@ one for anyone who might edit a panel or contribute.
 ### From the Debian package
 
 Download `hammunition-hill_<version>_all.deb` from the
-[releases page](https://github.com/ChiefGyk3D/hammunition-hill/releases), then:
+[releases page](https://github.com/Renegade-Penguin/hammunition-hill/releases), then:
 
 ```bash
 sudo apt install ./hammunition-hill_1.0.0_all.deb
@@ -90,7 +90,7 @@ To build it yourself from a checkout:
 ### From a clone
 
 ```bash
-git clone https://github.com/ChiefGyk3D/hammunition-hill
+git clone https://github.com/Renegade-Penguin/hammunition-hill
 cd hammunition-hill
 
 python3 -m venv .venv
@@ -120,13 +120,13 @@ python3 -m venv hamhill && hamhill/bin/pip install hammunition-hill
 The wheel carries the dashboard files and the question pools; with no checkout
 beside the config, the server serves the packaged copy. Write a `config.toml`
 (start from
-[config.example.toml](https://github.com/ChiefGyk3D/hammunition-hill/blob/main/config.example.toml))
+[config.example.toml](https://github.com/Renegade-Penguin/hammunition-hill/blob/main/config.example.toml))
 and `hamhill serve --config config.toml`.
 
 ### Docker
 
 ```bash
-docker build -t hammunition-hill https://github.com/ChiefGyk3D/hammunition-hill.git
+docker build -t hammunition-hill https://github.com/Renegade-Penguin/hammunition-hill.git
 docker run -d --name hamhill \
   -p 127.0.0.1:8073:8073 \
   -v ./config.toml:/config/config.toml:ro \

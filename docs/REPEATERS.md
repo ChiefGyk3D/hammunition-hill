@@ -1,6 +1,6 @@
 # Repeaters
 
-The repeater layers your [Hammunition](https://github.com/ChiefGyk3D/Hammunition)
+The repeater layers your [Hammunition](https://github.com/Renegade-Penguin/Hammunition)
 install holds, with distance and bearing from your grid square, as a table and
 as dots on the map.
 

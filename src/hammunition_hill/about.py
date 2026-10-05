@@ -58,8 +58,8 @@ def about_payload() -> dict[str, Any]:
             "name": "Hammunition Hill",
             "version": __version__,
             "license": "MPL-2.0",
-            "repo": "https://github.com/ChiefGyk3D/hammunition-hill",
-            "companion": "https://github.com/ChiefGyk3D/Hammunition",
+            "repo": "https://github.com/Renegade-Penguin/hammunition-hill",
+            "companion": "https://github.com/Renegade-Penguin/Hammunition",
             "tagline": (
                 "A ham radio dashboard that runs on your own machine, on your "
                 "own network, and talks to nobody you did not name."

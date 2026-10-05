@@ -111,7 +111,7 @@ Architecture: all
 Depends: python3 (>= 3.11), python3-httpx, python3-defusedxml, adduser
 Recommends: python3-sgp4
 Maintainer: ChiefGyk3D <19499446+ChiefGyk3D@users.noreply.github.com>
-Homepage: https://github.com/ChiefGyk3D/hammunition-hill
+Homepage: https://github.com/Renegade-Penguin/hammunition-hill
 Description: local-first ham radio dashboard
  Hammunition Hill polls the space weather, propagation, spotting and weather
  sources you name, writes JSON snapshots to disk, and serves them to a browser

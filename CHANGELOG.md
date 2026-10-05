@@ -12,6 +12,7 @@ saying so.
 
 ## [Unreleased]
 
+- The project moved from the `ChiefGyk3D` user to the `Renegade-Penguin` organization (Hammunition #359, epic #357): every suite repository URL, badge and link now points at the organization.
 - GYST callers to v1.12.0 (every input they pass exists in v1.12.0; v1.11.0 to v1.12.0 changed only `project-sync.yml`).
 
 ## [1.3.0] — 2026-10-04
