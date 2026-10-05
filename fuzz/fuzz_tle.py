@@ -81,12 +81,12 @@ def TestOneInput(data: bytes) -> None:
         try:
             parse_tles(text, strict=True)
         except TleError:
-            pass
+            pass  # the parser's own refusal is the contract; anything else propagates
     else:
         try:
             _support.fetch_with_body(TleSource(), _CFG, text.encode())
         except FetchError:
-            pass
+            pass  # the source's own refusal is the contract; anything else propagates
 
 
 if __name__ == "__main__":

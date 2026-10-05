@@ -73,7 +73,7 @@ def TestOneInput(data: bytes) -> None:
             provider._result_from(root, "N0CALL")
             provider._expired(root)
         except LookupFailure:
-            pass
+            pass  # the provider's own refusal is the contract; anything else propagates
 
 
 if __name__ == "__main__":

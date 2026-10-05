@@ -115,7 +115,7 @@ def TestOneInput(data: bytes) -> None:
     try:
         _support.fetch_with_body(source, cfg, body)
     except FetchError:
-        pass
+        pass  # the source's own refusal is the contract; anything else propagates
 
 
 if __name__ == "__main__":
