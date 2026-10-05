@@ -24,6 +24,13 @@ saying so.
 
 ### Added
 
+- **The repeaters panel follows Hammunition's active areas**, closing #87 (the
+  engine side is Hammunition #342). The collector keeps the active layers' rows
+  in `rows` and the other loaded areas' in `other_rows`; the panel gains AREAS
+  chips to add or drop an area for this browser session only (`localStorage`),
+  and the centre falls back to the first active area's middle when the station
+  is more than 300 km from it, saying so on the page. An engine without the
+  `active` field keeps today's behaviour with the chips hidden.
 - **Atheris fuzz targets for the parsers** (`fuzz/`), run on every pull request
   for 30 s each and weekly for 600 s each by the shared GYST `python-fuzz.yml`
   (`fuzz` in `ci.yml`, and in `all-green`'s `needs`): the RBN and DX cluster
@@ -38,6 +45,10 @@ saying so.
 
 ### Fixed
 
+- **A NOAA scales feed with a string where an object belongs no longer crashes the
+  fetch.** `NoaaScalesSource` called `.get` on a day or scale entry that was a
+  string; a day of the wrong type is now a `FetchError` and a scale entry of the
+  wrong type reads as zero. Found by the `fuzz_space_weather` target on #90.
 - **A checksum-valid element set with nonsense elements no longer reaches SGP4.** An epoch day of 1.1e11 makes the C propagator loop without returning, and `upcoming()` calls it inline from the collector, so one such set in a Celestrak listing would have frozen the dashboard. `parse_tles` now checks the epoch, angles, eccentricity and mean motion against their physical ranges. Found by the new fuzz target's first CI run (a hang, not a crash).
 - **A Unicode digit in an element set no longer crashes the parser.**
   `tle_checksum` summed `int(char)` for every `char.isdigit()`, which is also

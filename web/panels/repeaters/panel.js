@@ -20,6 +20,8 @@ import { bandColor } from "../../lib/bandcolors.js";
 import {
   CENTRE_EVENT,
   DEFAULT_FILTERS,
+  areaCutNote,
+  areaChips,
   bearingLabel,
   clearCentre,
   coverageNote,
@@ -27,17 +29,20 @@ import {
   facets,
   filterRows,
   kmLabel,
+  loadAreaChoice,
   loadCentre,
   loadFilters,
   mhz,
   modeText,
   offsetLabel,
   parseCentre,
+  saveAreaChoice,
   saveCentre,
   saveFilters,
   shortcutModes,
   toggle,
-  withCentre,
+  toggleArea,
+  viewRows,
 } from "../../lib/repeaters.js";
 
 const MAX_ROWS = 60;
@@ -85,7 +90,13 @@ function announce() {
   window.dispatchEvent(new CustomEvent(CENTRE_EVENT));
 }
 
-function centreRow(el, payload, chosen) {
+function setAreaChoice(choice) {
+  const store = storage();
+  if (store) saveAreaChoice(store, choice);
+  announce();
+}
+
+function centreRow(el, payload, chosen, fallback, choice) {
   const row = el("div", "rp-filter");
   row.append(el("span", "rp-filter-label", "CENTRE"));
   row.append(
@@ -94,7 +105,9 @@ function centreRow(el, payload, chosen) {
       "rp-centre",
       chosen
         ? `${chosen.kind === "grid" ? "grid " : "point "}${chosen.label}`
-        : payload.grid
+        : fallback
+          ? `area ${fallback.label}`
+          : payload.grid
           ? `station ${payload.grid}`
           : "no station set",
     ),
@@ -131,9 +144,56 @@ function centreRow(el, payload, chosen) {
     centreError = "";
     const store = storage();
     if (store) clearCentre(store);
-    announce();
+    // Pressing STATION is a choice: it must outlast the area default below.
+    setAreaChoice({ ...choice, station: true });
   });
   row.append(input, set, back);
+  if (choice.station && payload.has_areas) {
+    const area = el("button", "chip", "AREA");
+    area.type = "button";
+    area.title = "Measure from the middle of the first active area again, where the station is far from it";
+    area.addEventListener("click", () => setAreaChoice({ ...choice, station: false }));
+    row.append(area);
+  }
+  return row;
+}
+
+// The areas the engine has active, and the other loaded ones, as chips. A chip
+// changes what this browser shows, never the engine's list.
+function areaRow(el, payload, chips, choice) {
+  const row = el("div", "rp-filter");
+  row.append(el("span", "rp-filter-label", "AREAS"));
+  if (!payload.has_areas) {
+    row.append(
+      el("span", "rp-note rp-noareas", "update the engine for areas; every layer is shown"),
+    );
+    return row;
+  }
+  if (!chips.length) {
+    row.append(el("span", "rp-note", "no layer on this machine belongs to an area"));
+    return row;
+  }
+  const wrap = el("div", "chips");
+  for (const a of chips) {
+    wrap.append(
+      chip(
+        el,
+        `${a.area} ${a.rows}`,
+        a.on,
+        () => setAreaChoice(toggleArea(choice, a.area, payload)),
+        (a.engine ? "active in Hammunition" : "loaded, not active in Hammunition") +
+          (a.on === a.engine ? "" : "; changed for this browser"),
+      ),
+    );
+  }
+  row.append(wrap);
+  row.append(
+    el(
+      "span",
+      "rp-note",
+      "active areas come from `hammunition maps activate`; a chip changes this browser only",
+    ),
+  );
   return row;
 }
 
@@ -279,8 +339,12 @@ export function render(root, { data, el }) {
   // first paint computes nothing. A chosen centre recomputes every row here.
   const store = storage();
   const chosen = store ? loadCentre(store) : null;
-  const rows = chosen ? withCentre(payload.rows ?? [], chosen) : (payload.rows ?? []);
-  const measured = Boolean(chosen || payload.station);
+  const choice = store ? loadAreaChoice(store) : loadAreaChoice(null);
+  const chips = areaChips(payload, choice);
+  const view = viewRows(payload, chosen, choice);
+  const { fallback, rows } = view;
+  const centred = view.centre;
+  const measured = Boolean(centred || payload.station);
   const offered = facets(rows);
 
   // A saved filter for a band, mode or source this machine no longer has would
@@ -299,8 +363,10 @@ export function render(root, { data, el }) {
   const parts = [];
 
   const filters = el("div", "rp-filters");
-  filters.append(centreRow(el, payload, chosen));
+  filters.append(centreRow(el, payload, chosen, fallback.centre, choice));
+  if (fallback.message) filters.append(el("p", "rp-note rp-area-centre", fallback.message));
   if (centreError) filters.append(el("p", "error", centreError));
+  filters.append(areaRow(el, payload, chips, choice));
   filters.append(multiRow(el, "BAND", "bands", offered.bands, offered.bandCounts, rerender));
   if (payload.has_modes) {
     filters.append(
@@ -354,6 +420,8 @@ export function render(root, { data, el }) {
   const coverage = measured ? coverageNote(rows, state.withinKm) : null;
   if (coverage) parts.push(el("p", "rp-note rp-coverage", coverage));
 
+  const cut = areaCutNote(payload);
+  if (cut) parts.push(el("p", "rp-note rp-areacut", cut));
   if (payload.truncated) {
     parts.push(
       el("p", "rp-note", `${payload.truncated} farther repeaters were left out to keep this panel light.`),

@@ -54,16 +54,20 @@ class NoaaScalesSource:
 
         # SWPC keys by day offset as a string: "-1" yesterday, "0" today.
         today = payload.get("0") or {}
+        if not isinstance(today, dict):
+            raise FetchError(f"{cfg.url}: today's entry was not an object")
         scales = {}
         for letter in ("R", "S", "G"):
             entry = today.get(letter) or {}
+            if not isinstance(entry, dict):
+                entry = {}
             try:
                 number = int(entry.get("Scale") or 0)
             except (TypeError, ValueError):
                 number = 0
             scales[letter] = {
                 "scale": number,
-                "text": (entry.get("Text") or "none").strip(),
+                "text": str(entry.get("Text") or "none").strip(),
                 "level": _SCALE_LEVEL.get(number, "critical"),
                 "label": f"{letter}{number}" if number else f"{letter}0",
             }

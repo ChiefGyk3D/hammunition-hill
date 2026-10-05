@@ -58,6 +58,13 @@ ENGINE_TIMEOUT_SECONDS = 20.0
 # panel can say so. 6000 rows is roughly 1.5 MB.
 MAX_ROWS = 6000
 
+# Rows of areas the engine has not activated are carried beside the active
+# ones, so a chip can add an area for one browser session without a second
+# trip to the engine. They are a separate, smaller list: the map and every
+# other reader of `rows` see the active areas only, and a large inactive area
+# can never crowd an active one out of the cut.
+INACTIVE_MAX_ROWS = 3000
+
 # The engine's mode vocabulary, in its order (Hammunition's `repeaters.MODES`),
 # and the digital details a source may supply. Anything else in a document is
 # dropped: a front end shows what the engine promises, not what it happens to
@@ -167,6 +174,10 @@ def unavailable(reason: str) -> dict[str, Any]:
         "layers": [],
         "skipped": [],
         "rows": [],
+        "other_rows": [],
+        "other_truncated": 0,
+        "areas": [],
+        "has_areas": False,
         "bands": [],
         "modes": [],
         "has_modes": False,
@@ -237,6 +248,36 @@ def _row_of(raw: Mapping[str, Any], origin: tuple[float, float] | None) -> dict[
     return row
 
 
+def _areas_of(
+    layers: Sequence[Mapping[str, Any]], rows: Sequence[Mapping[str, Any]]
+) -> list[dict[str, Any]]:
+    """The areas the layers belong to, in layer order, each with its middle.
+
+    The middle is the mean of its rows' positions: a state's repeaters spread
+    over the state, and the engine carries no boundary to take a centroid of.
+    An area with no row has no middle (null), and the panel never centres on it.
+    """
+    areas: dict[str, dict[str, Any]] = {}
+    for layer in layers:
+        area = layer.get("area")
+        if not isinstance(area, str) or not area:
+            continue
+        entry = areas.setdefault(
+            area, {"area": area, "active": False, "layers": [], "rows": 0, "centre": None}
+        )
+        entry["layers"].append(str(layer.get("id", "")))
+        entry["active"] = entry["active"] or layer.get("active") is not False
+        entry["rows"] += int(layer.get("rows") or 0)
+    for entry in areas.values():
+        mine = [r for r in rows if r["layer"] in entry["layers"]]
+        if mine:
+            entry["centre"] = {
+                "lat": round(sum(r["lat"] for r in mine) / len(mine), 4),
+                "lon": round(sum(r["lon"] for r in mine) / len(mine), 4),
+            }
+    return list(areas.values())
+
+
 def build_data(
     listing: Mapping[str, Any],
     station: Mapping[str, Any] | None,
@@ -264,21 +305,34 @@ def build_data(
 
     grid, origin = _station_point(station, fallback_latlon)
 
-    rows = [
+    all_rows = [
         r
         for raw in listing.get("rows") or []
         if isinstance(raw, Mapping) and (r := _row_of(raw, origin)) is not None
     ]
+    # An engine that predates areas (Hammunition D-082) prints no `active` on a
+    # layer: everything is then active, and the panel hides the area chips.
+    has_areas = any(isinstance(layer.get("active"), bool) for layer in layers)
+    inactive_ids: set[str] = {
+        str(layer.get("id", "")) for layer in layers if layer.get("active") is False
+    }
+    areas = _areas_of(layers, all_rows)
+    rows = [r for r in all_rows if r["layer"] not in inactive_ids]
+    other_rows = [r for r in all_rows if r["layer"] in inactive_ids]
     # Nearest first, which is what the panel is for. With no origin the
     # engine's order stands: sorting on an absent distance would only shuffle.
     if origin is not None:
         rows.sort(key=lambda r: (r["km"], r["callsign"] or ""))
+        other_rows.sort(key=lambda r: (r["km"], r["callsign"] or ""))
     truncated = max(0, len(rows) - max_rows)
     rows = rows[:max_rows]
+    other_truncated = max(0, len(other_rows) - INACTIVE_MAX_ROWS)
+    other_rows = other_rows[:INACTIVE_MAX_ROWS]
 
-    present = {r["band"] for r in rows if r["band"]}
+    shown = rows + other_rows
+    present = {r["band"] for r in shown if r["band"]}
     bands = [b for b in BAND_ORDER if b in present]
-    modes_present = {m for r in rows for m in r["modes"]}
+    modes_present = {m for r in shown for m in r["modes"]}
     # An engine that predates the vocabulary prints neither `centre` nor a
     # `modes` list on its rows; the panel then hides the chips and says so.
     has_modes = "centre" in listing or any(
@@ -300,6 +354,8 @@ def build_data(
         "layers": [
             {
                 "id": str(layer.get("id", "")),
+                "area": layer["area"] if isinstance(layer.get("area"), str) else None,
+                "active": layer.get("active") is not False,
                 "name": str(layer.get("name", "")),
                 "day": str(layer.get("day", "")),
                 "rows": int(layer.get("rows") or 0),
@@ -311,6 +367,10 @@ def build_data(
         ],
         "skipped": skipped,
         "rows": rows,
+        "other_rows": other_rows,
+        "other_truncated": other_truncated,
+        "areas": areas,
+        "has_areas": has_areas,
         "bands": bands,
         "modes": [m for m in MODES if m in modes_present],
         "has_modes": has_modes,
@@ -398,6 +458,16 @@ def public_data(data: Any) -> dict[str, Any]:
             else:
                 kept.append(row)
     out["rows"] = kept
+    # The rows of areas that are not active: the same rule, the same count.
+    other = out.get("other_rows")
+    other_kept: list[Any] = []
+    if isinstance(other, list):
+        for row in other:
+            if not isinstance(row, dict) or row.get("personal_use") or _names_personal_use(row):
+                withheld += 1
+            else:
+                other_kept.append(row)
+    out["other_rows"] = other_kept
     out["withheld"] = withheld
 
     layers = out.get("layers")
@@ -407,6 +477,15 @@ def public_data(data: Any) -> dict[str, Any]:
         if isinstance(layer, dict)
         and not layer.get("personal_use")
         and not _names_personal_use(layer)
+    ]
+    # An area whose every layer was removed goes with them: its name and middle
+    # would say where the withheld rows are.
+    kept_ids = {layer.get("id") for layer in out["layers"]}
+    areas = out.get("areas")
+    out["areas"] = [
+        a
+        for a in (areas if isinstance(areas, list) else [])
+        if isinstance(a, dict) and any(i in kept_ids for i in a.get("layers") or [])
     ]
     skipped = out.get("skipped")
     out["skipped"] = [
@@ -418,9 +497,10 @@ def public_data(data: Any) -> dict[str, Any]:
     ]
     out["has_personal_use"] = False
     # The bands present are those of the rows kept.
-    present = {r.get("band") for r in kept if isinstance(r, dict)}
+    shown = [r for r in kept + other_kept if isinstance(r, dict)]
+    present = {r.get("band") for r in shown}
     out["bands"] = [b for b in BAND_ORDER if b in present]
-    modes_present = {m for r in kept if isinstance(r, dict) for m in r.get("modes") or []}
+    modes_present = {m for r in shown for m in r.get("modes") or []}
     out["modes"] = [m for m in MODES if m in modes_present]
     out["has_modes"] = bool(out.get("has_modes"))
     return out

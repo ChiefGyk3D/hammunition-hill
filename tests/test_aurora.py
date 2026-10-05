@@ -148,6 +148,15 @@ async def test_scales_read_today_not_yesterday():
     assert data["scales"]["G"]["scale"] == 4
 
 
+async def test_scales_of_the_wrong_shape_are_a_fetch_error_or_zeros_never_a_crash():
+    """Found by the fuzz target: a string where a day or a scale entry is an object."""
+    with pytest.raises(FetchError):
+        await run(NoaaScalesSource(), json.dumps({"0": "x"}))
+    data = await run(NoaaScalesSource(), json.dumps({"0": {"R": "x", "S": 5, "G": {"Text": 7}}}))
+    assert data["scales"]["R"]["scale"] == 0 and data["scales"]["S"]["scale"] == 0
+    assert data["scales"]["G"]["text"] == "7"
+
+
 async def test_a_null_scale_reads_as_zero():
     """SWPC sends null rather than 0 when nothing is happening."""
     data = await run(NoaaScalesSource(), SCALES_BODY)
