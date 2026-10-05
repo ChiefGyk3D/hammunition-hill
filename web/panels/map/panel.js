@@ -35,10 +35,11 @@ import {
   DEFAULT_FILTERS,
   centreFromPoint,
   filterRows,
+  loadAreaChoice,
   loadCentre,
   loadFilters,
   saveCentre,
-  withCentre,
+  viewRows,
 } from "../../lib/repeaters.js";
 
 const state = {
@@ -291,9 +292,16 @@ function draw(canvas, data, station) {
     }
     // Measured from the chosen centre when there is one, so "within 50 km"
     // means the same on the map as in the table.
-    const centre = chosenCentre();
-    const all = data.repeaters?.data?.rows ?? [];
-    const rows = filterRows(centre ? withCentre(all, centre) : all, filters);
+    // The same set the table shows: the engine's active areas plus this
+    // session's chips, measured from the same centre.
+    let choice = loadAreaChoice(null);
+    try {
+      choice = loadAreaChoice(window.localStorage);
+    } catch {
+      // Blocked storage: the engine's active areas.
+    }
+    const payload = data.repeaters?.data ?? {};
+    const rows = filterRows(viewRows(payload, chosenCentre(), choice).rows, filters);
     for (const row of rows.slice(0, REPEATER_MARKERS)) {
       drawMarker(ctx, row.lat, row.lon, view, { color: bandColor(row.band), radius: 2.2 });
     }

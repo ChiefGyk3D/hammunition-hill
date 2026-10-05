@@ -92,13 +92,16 @@ several states ahead of an emergency and **activate** the ones you are in
   and whether it is active.
 - The AREAS row has one chip per area on this machine, with its repeater count.
   Lit chips are shown. **A chip changes this browser only**, never the engine:
-  press a lit chip to hide that area, an unlit one to show it. The choice is kept
+  press a lit chip to hide that area, an unlit one to show it, on the table **and
+  on the map's RPTR layer**, which draw the same set (the engine's active areas
+  plus the areas you added minus the ones you dropped), measured from the same
+  centre. The choice is kept
   in `localStorage` (`hh.repeaters.areas`) as a difference from the engine's own
-  list, so it follows the engine when you activate something else. The map's
-  RPTR layer draws the engine's active areas and does not follow these chips.
+  list, so it follows the engine when you activate something else.
 - The loaded-but-inactive areas' rows travel in the snapshot in a separate list
   (`other_rows`, at most 3000, nearest first) so a chip needs nothing from the
-  engine to add them. The RepeaterBook rule applies to them exactly as to the
+  engine to add them. When that cap cuts rows, the page says so in one line:
+  `hammunition maps activate` is the full answer. The RepeaterBook rule applies to them exactly as to the
   rest: another host gets none of them, and no area whose layers are
   RepeaterBook's.
 - **The centre follows the area when the station is far from it.** With no centre

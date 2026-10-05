@@ -175,6 +175,7 @@ def unavailable(reason: str) -> dict[str, Any]:
         "skipped": [],
         "rows": [],
         "other_rows": [],
+        "other_truncated": 0,
         "areas": [],
         "has_areas": False,
         "bands": [],
@@ -325,6 +326,7 @@ def build_data(
         other_rows.sort(key=lambda r: (r["km"], r["callsign"] or ""))
     truncated = max(0, len(rows) - max_rows)
     rows = rows[:max_rows]
+    other_truncated = max(0, len(other_rows) - INACTIVE_MAX_ROWS)
     other_rows = other_rows[:INACTIVE_MAX_ROWS]
 
     shown = rows + other_rows
@@ -366,6 +368,7 @@ def build_data(
         "skipped": skipped,
         "rows": rows,
         "other_rows": other_rows,
+        "other_truncated": other_truncated,
         "areas": areas,
         "has_areas": has_areas,
         "bands": bands,

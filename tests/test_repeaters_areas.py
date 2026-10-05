@@ -143,7 +143,7 @@ needs_node = pytest.mark.skipif(node is None, reason="node not installed")
 DRIVER = """
 import {
   areaChips, toggleArea, rowsForAreas, areaCentre, AREA_FAR_KM, AREAS_KEY,
-  sanitizeAreaChoice, loadAreaChoice, saveAreaChoice,
+  sanitizeAreaChoice, loadAreaChoice, saveAreaChoice, viewRows, areaCutNote,
 } from "__LIB__";
 
 const data = __DATA__;
@@ -186,6 +186,25 @@ out.far = AREA_FAR_KM;
 out.oldChips = areaChips(old, none);
 out.oldRows = calls(rowsForAreas(old, none));
 out.oldCentre = areaCentre(old, none);
+
+// What the map draws is viewRows: the same set as the table.
+const mapCalls = (choice, chosen = null) => calls(viewRows(data, chosen, choice).rows);
+out.map = {
+  default: mapCalls(none),
+  addMI: mapCalls(toggleArea(none, "MI", data)),
+  addMIFL: mapCalls(toggleArea(toggleArea(none, "MI", data), "FL", data)),
+  dropOH: mapCalls(toggleArea(none, "OH", data)),
+  dropAfterAdd: mapCalls(toggleArea(toggleArea(none, "MI", data), "MI", data)),
+};
+out.mapSameAsTable =
+  JSON.stringify(mapCalls(withMI)) === JSON.stringify(calls(rowsForAreas(data, withMI)));
+out.mapCentre = [
+  viewRows(data, null, none).centre.label,
+  viewRows(data, { kind: "point", lat: 1, lon: 2, label: "x" }, none).centre.label,
+  viewRows(data, null, { ...none, station: true }).centre,
+];
+out.cut = [areaCutNote(data), areaCutNote({ ...data, other_truncated: 120 }),
+  areaCutNote({ ...old, other_truncated: 120 })];
 
 // Storage.
 const make = () => {
@@ -324,3 +343,38 @@ def test_garbage_in_storage_costs_the_field_never_the_panel(js):
 def test_the_panel_never_writes_to_the_engine_and_the_commands_are_unchanged():
     assert repeaters.LIST_ARGV == ("maps", "repeaters", "list", "--json")
     assert repeaters.STATION_ARGV == ("station", "show", "--json")
+
+
+@needs_node
+def test_a_chip_add_puts_that_areas_markers_on_the_map_and_a_drop_removes_them(js):
+    m = js["map"]
+    assert m["default"] == ["K1OPN", "W8OHA", "W8OHB"]
+    assert m["addMI"] == ["K1OPN", "W8MIA", "W8OHA", "W8OHB"]
+    assert m["addMIFL"] == ["K1OPN", "W4FLA", "W8MIA", "W8OHA", "W8OHB"]
+    assert m["dropOH"] == ["K1OPN"]
+    assert m["dropAfterAdd"] == m["default"]
+    assert js["mapSameAsTable"] is True
+
+
+@needs_node
+def test_the_map_and_the_table_share_one_centre_rule(js):
+    assert js["mapCentre"] == ["OH", "x", None]
+
+
+@needs_node
+def test_the_cap_line_appears_only_when_the_other_areas_were_cut(js):
+    assert js["cut"][0] == "" and js["cut"][2] == ""
+    assert "cut at 3000 rows" in js["cut"][1] and "hammunition maps activate" in js["cut"][1]
+
+
+def test_the_map_panel_draws_what_the_table_shows():
+    source = (ROOT / "web/panels/map/panel.js").read_text(encoding="utf-8")
+    assert "viewRows(" in source and "loadAreaChoice" in source
+
+
+def test_the_collector_counts_the_other_areas_rows_it_cut(monkeypatch):
+    monkeypatch.setattr(repeaters, "INACTIVE_MAX_ROWS", 1)
+    assert build()["other_truncated"] == 1
+    assert (
+        build()["other_rows"] and build(docs.pre_areas_listing_document())["other_truncated"] == 0
+    )

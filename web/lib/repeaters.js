@@ -479,3 +479,29 @@ export function areaCentre(payload, choice) {
       "Set a centre of your own, or press STATION to measure from the station.",
   };
 }
+
+/**
+ * The rows both the table and the map draw, and the centre they are measured
+ * from: the active areas plus this session's additions minus its drops, then
+ * measured from the operator's own centre, else the area fallback, else as the
+ * collector measured them. One function, so the two views cannot disagree.
+ */
+export function viewRows(payload, chosen, choice) {
+  const source = rowsForAreas(payload, choice);
+  const fallback = chosen ? { centre: null, message: "" } : areaCentre(payload, choice);
+  const centre = chosen ?? fallback.centre;
+  return {
+    rows: centre ? withCentre(source, centre) : source,
+    centre,
+    fallback,
+  };
+}
+
+/** One plain line when the other areas' rows were cut at the collector's cap, else "". */
+export function areaCutNote(payload, cap = 3000) {
+  const cut = payload?.has_areas ? Number(payload.other_truncated) || 0 : 0;
+  return cut > 0
+    ? `The inactive areas were cut at ${cap} rows (${cut} left out); ` +
+        "`hammunition maps activate` is the full answer."
+    : "";
+}

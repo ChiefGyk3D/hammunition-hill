@@ -20,7 +20,7 @@ import { bandColor } from "../../lib/bandcolors.js";
 import {
   CENTRE_EVENT,
   DEFAULT_FILTERS,
-  areaCentre,
+  areaCutNote,
   areaChips,
   bearingLabel,
   clearCentre,
@@ -36,14 +36,13 @@ import {
   modeText,
   offsetLabel,
   parseCentre,
-  rowsForAreas,
   saveAreaChoice,
   saveCentre,
   saveFilters,
   shortcutModes,
   toggle,
   toggleArea,
-  withCentre,
+  viewRows,
 } from "../../lib/repeaters.js";
 
 const MAX_ROWS = 60;
@@ -342,10 +341,9 @@ export function render(root, { data, el }) {
   const chosen = store ? loadCentre(store) : null;
   const choice = store ? loadAreaChoice(store) : loadAreaChoice(null);
   const chips = areaChips(payload, choice);
-  const fallback = chosen ? { centre: null, message: "" } : areaCentre(payload, choice);
-  const centred = chosen ?? fallback.centre;
-  const source = rowsForAreas(payload, choice);
-  const rows = centred ? withCentre(source, centred) : source;
+  const view = viewRows(payload, chosen, choice);
+  const { fallback, rows } = view;
+  const centred = view.centre;
   const measured = Boolean(centred || payload.station);
   const offered = facets(rows);
 
@@ -422,6 +420,8 @@ export function render(root, { data, el }) {
   const coverage = measured ? coverageNote(rows, state.withinKm) : null;
   if (coverage) parts.push(el("p", "rp-note rp-coverage", coverage));
 
+  const cut = areaCutNote(payload);
+  if (cut) parts.push(el("p", "rp-note rp-areacut", cut));
   if (payload.truncated) {
     parts.push(
       el("p", "rp-note", `${payload.truncated} farther repeaters were left out to keep this panel light.`),
