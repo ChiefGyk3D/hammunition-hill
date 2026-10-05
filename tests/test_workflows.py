@@ -130,6 +130,10 @@ ALLOWED_WRITES = {
     ("release.yml", "container", "id-token"),
     ("release.yml", "container", "attestations"),
     ("release.yml", "container", "security-events"),
+    # The OIDC token for the Doppler fetch of the board App's key. The shared
+    # project-sync.yml writes to the board with that App's token, never with
+    # this repository's GITHUB_TOKEN, so contents stays read.
+    ("project-sync.yml", "sync", "id-token"),
     # Enabling auto-merge on a Dependabot pull request.
     ("dependabot-auto-merge.yml", "auto-merge", "contents"),
     ("dependabot-auto-merge.yml", "auto-merge", "pull-requests"),

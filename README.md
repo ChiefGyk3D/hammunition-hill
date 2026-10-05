@@ -771,7 +771,9 @@ Branch protection requires these checks:
 - `package / Build, verify` (the release workflow's pull request build of the wheel, sdist and `.deb`; it publishes only on a tag)
 
 The `Security` workflow (CodeQL, gitleaks, Semgrep, dependency review and the
-dependency audit) reports separately.
+dependency audit) reports separately. `Project sync` keeps the suite board
+(Renegade-Penguin project 1) in step with this repository's issues through the
+shared `project-sync.yml`; it is not a required check.
 
 ## Contributing
 
