@@ -2,7 +2,7 @@
 
 Complete feature inventory. Every subsystem, honestly marked.
 
-**Version 1.0.0.** It runs, it is useful, and every endpoint it ships with has
+**Version 1.3.0.** It runs, it is useful, and every endpoint it ships with has
 been fetched and parsed on real hardware rather than assumed. The distinction
 this page cares about is between *working*, *partial*, and *not written*,
 because "planned" in a README has a habit of reading like "present". 1.0 does
