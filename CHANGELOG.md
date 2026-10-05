@@ -24,6 +24,13 @@ saying so.
 
 ### Added
 
+- **The repeaters panel follows Hammunition's active areas**, closing #87 (the
+  engine side is Hammunition #342). The collector keeps the active layers' rows
+  in `rows` and the other loaded areas' in `other_rows`; the panel gains AREAS
+  chips to add or drop an area for this browser session only (`localStorage`),
+  and the centre falls back to the first active area's middle when the station
+  is more than 300 km from it, saying so on the page. An engine without the
+  `active` field keeps today's behaviour with the chips hidden.
 - **Atheris fuzz targets for the parsers** (`fuzz/`), run on every pull request
   for 30 s each and weekly for 600 s each by the shared GYST `python-fuzz.yml`
   (`fuzz` in `ci.yml`, and in `all-green`'s `needs`): the RBN and DX cluster

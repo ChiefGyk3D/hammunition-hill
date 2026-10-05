@@ -273,3 +273,98 @@ def empty_listing() -> dict[str, Any]:
     doc = copy.deepcopy(listing_document())
     doc.update(layers=[], skipped=[], rows=[], merged=0, credits=[])
     return doc
+
+
+def _layer(layer_id: str, area: str | None, active: bool, rows: int, rb: bool) -> dict[str, Any]:
+    return {
+        "id": layer_id,
+        "area": area,
+        "active": active,
+        "name": "RepeaterBook" if rb else "Open Repeater",
+        "description": REPEATERBOOK_CREDIT if rb else OPEN_CREDIT,
+        "day": "2026-10-03",
+        "rows": rows,
+        "sources": ["repeaterbook-api" if rb else "open-repeater-json"],
+        "personal_use": rb,
+        "unverified": rb,
+        "files": ["rows.json"],
+    }
+
+
+def areas_listing_document() -> dict[str, Any]:
+    """The `repeaters-list` of an engine with areas (Hammunition D-082): layers
+    per state with `area` and `active`. OH is active, MI and FL are loaded and
+    not; a layer that belongs to no area is always active. Two Ohio rows, one
+    Michigan, one Florida, one open row in Connecticut (so the station, FN31pr,
+    is far from Ohio, about 750 km, and next to the open row). Invented callsigns.
+    """
+    rows = [
+        _row(
+            callsign="W8OHA",
+            output_hz=146_940_000,
+            place="Columbus, OH",
+            lat=39.9612,
+            lon=-82.9988,
+            source="repeaterbook-api",
+            layer="repeaterbook-OH",
+            personal_use=True,
+        ),
+        _row(
+            callsign="W8OHB",
+            output_hz=147_240_000,
+            place="Cleveland, OH",
+            lat=41.4993,
+            lon=-81.6944,
+            source="repeaterbook-api",
+            layer="repeaterbook-OH",
+            personal_use=True,
+        ),
+        _row(
+            callsign="W8MIA",
+            output_hz=146_760_000,
+            place="Detroit, MI",
+            lat=42.3314,
+            lon=-83.0458,
+            source="repeaterbook-api",
+            layer="repeaterbook-MI",
+            personal_use=True,
+        ),
+        _row(
+            callsign="W4FLA",
+            output_hz=145_190_000,
+            place="Miami, FL",
+            lat=25.7617,
+            lon=-80.1918,
+            source="repeaterbook-api",
+            layer="repeaterbook-FL",
+            personal_use=True,
+        ),
+        _row(
+            callsign="K1OPN",
+            output_hz=146_610_000,
+            place="Hartford, CT",
+            lat=41.7658,
+            lon=-72.6734,
+        ),
+    ]
+    doc = copy.deepcopy(listing_document())
+    doc["layers"] = [
+        _layer("open-repeater", None, True, 1, False),
+        _layer("repeaterbook-OH", "OH", True, 2, True),
+        _layer("repeaterbook-MI", "MI", False, 1, True),
+        _layer("repeaterbook-FL", "FL", False, 1, True),
+    ]
+    doc["skipped"] = []
+    doc["rows"] = rows
+    doc["merged"] = 0
+    doc["credits"] = [OPEN_CREDIT, REPEATERBOOK_CREDIT]
+    return doc
+
+
+def pre_areas_listing_document() -> dict[str, Any]:
+    """The same layers as an engine that predates areas prints them: `id` but
+    neither `area` nor `active`, and every layer's rows in `rows`."""
+    doc = areas_listing_document()
+    for layer in doc["layers"]:
+        del layer["area"], layer["active"]
+    return doc

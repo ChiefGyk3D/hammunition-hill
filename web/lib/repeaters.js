@@ -353,3 +353,129 @@ export function clearCentre(storage) {
     // Nothing to clear.
   }
 }
+
+// --- the areas the engine has active ----------------------------------------
+//
+// Hammunition's area of operations (D-082): the operator loads several states
+// ahead of an emergency and activates the ones they are in. The collector
+// hands over the active areas' rows in `rows` (which the map also reads) and
+// the rest in `other_rows`, so a chip here can add an area for this browser
+// session without asking anyone for anything. What a chip changes is this
+// browser's choice only: it is kept as a difference from the engine's own
+// active list, so when the engine's list moves the operator's changes still
+// mean "this one too" and "not this one", not a stale copy of the whole list.
+// Nothing here ever writes to the engine.
+
+export const AREAS_KEY = "hh.repeaters.areas";
+
+// The centre falls back to the middle of the first active area when the
+// station is farther than this from it. A US state is about 300 to 500 km
+// across, so a station farther than this from the middle of an area is
+// outside it, not beside it, and its own position would rank every repeater
+// in the area by its distance from somewhere the operator is not going.
+export const AREA_FAR_KM = 300;
+
+const AREA_ID = /^[A-Za-z0-9]{1,8}$/;
+const areaIds = (value) =>
+  Array.isArray(value)
+    ? [...new Set(value.filter((v) => typeof v === "string" && AREA_ID.test(v)))].slice(0, MAX_CHIPS * 5)
+    : [];
+
+/** What this session changed: areas added, areas dropped, and "measure from the station". */
+export function sanitizeAreaChoice(raw) {
+  const r = raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
+  const add = areaIds(r.add);
+  return {
+    add,
+    drop: areaIds(r.drop).filter((a) => !add.includes(a)),
+    station: r.station === true,
+  };
+}
+
+export function loadAreaChoice(storage) {
+  try {
+    return sanitizeAreaChoice(JSON.parse(storage.getItem(AREAS_KEY)));
+  } catch {
+    return sanitizeAreaChoice(null);
+  }
+}
+
+export function saveAreaChoice(storage, choice) {
+  try {
+    storage.setItem(AREAS_KEY, JSON.stringify(sanitizeAreaChoice(choice)));
+  } catch {
+    // Not remembered; still in effect for this view.
+  }
+}
+
+/**
+ * The areas of a snapshot with `on` (shown now) and `engine` (active in the
+ * engine). Empty when the engine predates areas: there is nothing to choose.
+ */
+export function areaChips(payload, choice) {
+  if (!payload?.has_areas) return [];
+  const c = sanitizeAreaChoice(choice);
+  return (payload.areas ?? []).map((a) => ({
+    area: a.area,
+    rows: a.rows ?? 0,
+    centre: a.centre ?? null,
+    engine: a.active === true,
+    on: (a.active === true || c.add.includes(a.area)) && !c.drop.includes(a.area),
+  }));
+}
+
+/** The choice after the chip for `area` is pressed. A new object. */
+export function toggleArea(choice, area, payload) {
+  const c = sanitizeAreaChoice(choice);
+  const chip = areaChips(payload, c).find((a) => a.area === area);
+  if (!chip) return c;
+  const add = c.add.filter((a) => a !== area);
+  const drop = c.drop.filter((a) => a !== area);
+  // Turning it off: an engine-active area is dropped; one this session added is just un-added.
+  if (chip.on) return { ...c, add, drop: chip.engine ? [...drop, area] : drop };
+  return { ...c, add: chip.engine ? add : [...add, area], drop };
+}
+
+/**
+ * The rows to show: the active layers' and the other areas' together, minus
+ * the rows of any area this session has turned off. A layer that belongs to no
+ * area is always shown. Without area support in the engine, `rows` as they are.
+ */
+export function rowsForAreas(payload, choice) {
+  const rows = payload?.rows ?? [];
+  if (!payload?.has_areas) return rows;
+  const on = new Set(areaChips(payload, choice).filter((a) => a.on).map((a) => a.area));
+  const areaOf = new Map((payload.layers ?? []).map((l) => [l.id, l.area ?? null]));
+  const shown = (row) => {
+    const area = areaOf.get(row.layer) ?? null;
+    return area === null || on.has(area);
+  };
+  return [...rows, ...(payload.other_rows ?? [])].filter(shown);
+}
+
+/**
+ * The centre to use when the operator has set none: the middle of the first
+ * area on, when the station is absent or farther than AREA_FAR_KM from it.
+ * `{centre, message}`; centre is null when the station stands.
+ */
+export function areaCentre(payload, choice) {
+  const c = sanitizeAreaChoice(choice);
+  if (c.station) return { centre: null, message: "" };
+  const first = areaChips(payload, c).find((a) => a.on && a.centre);
+  if (!first) return { centre: null, message: "" };
+  const station = payload.station;
+  const away = station
+    ? distanceKm(station.lat, station.lon, first.centre.lat, first.centre.lon)
+    : null;
+  if (away !== null && away <= AREA_FAR_KM) return { centre: null, message: "" };
+  const centre = { kind: "area", lat: first.centre.lat, lon: first.centre.lon, label: first.area };
+  const why = away === null
+    ? "no station position is set"
+    : `the station is ${Math.round(away)} km from it, more than ${AREA_FAR_KM} km`;
+  return {
+    centre,
+    message:
+      `Distances are measured from the middle of ${first.area}, the first active area, because ${why}. ` +
+      "Set a centre of your own, or press STATION to measure from the station.",
+  };
+}

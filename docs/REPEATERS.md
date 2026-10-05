@@ -79,6 +79,45 @@ station's own value. The engine's `--within`, `--band` and `--mode` are not used
 either: the page filters in the browser, so nothing you filter for reaches a
 command line.
 
+## Areas: where you are, not everything you loaded
+
+Hammunition (since its area-of-operations work, Hammunition #342) lets you load
+several states ahead of an emergency and **activate** the ones you are in
+(`hammunition maps activate OH`). Hill follows that:
+
+- The collector puts the **active** areas' repeaters in the snapshot's `rows`,
+  which is what the table and the map's RPTR layer read. A layer that belongs to
+  no area (your own import, OpenStreetMap, ETCC) is always shown. Per-state
+  layers are `repeaterbook-<AREA>`; the engine says which area a layer belongs to
+  and whether it is active.
+- The AREAS row has one chip per area on this machine, with its repeater count.
+  Lit chips are shown. **A chip changes this browser only**, never the engine:
+  press a lit chip to hide that area, an unlit one to show it. The choice is kept
+  in `localStorage` (`hh.repeaters.areas`) as a difference from the engine's own
+  list, so it follows the engine when you activate something else. The map's
+  RPTR layer draws the engine's active areas and does not follow these chips.
+- The loaded-but-inactive areas' rows travel in the snapshot in a separate list
+  (`other_rows`, at most 3000, nearest first) so a chip needs nothing from the
+  engine to add them. The RepeaterBook rule applies to them exactly as to the
+  rest: another host gets none of them, and no area whose layers are
+  RepeaterBook's.
+- **The centre follows the area when the station is far from it.** With no centre
+  of your own, and the station more than **300 km** from the middle of the first
+  area that is on (or no station set), distances are measured from the middle of
+  that area and the page says so in a sentence. 300 km is about what a state
+  spans, so a station farther than that is outside the area, not beside it, and
+  its own position would rank the area's repeaters from somewhere you are not
+  going. The middle is the mean of that area's repeaters' positions: the engine
+  carries no boundary to take a centroid of. A centre you set yourself always
+  wins, and STATION measures from the station instead (kept, until you press
+  AREA).
+- An engine that predates areas prints no `active` on a layer. Everything is then
+  shown as before, the chips are absent and the AREAS row says "update the engine
+  for areas".
+
+Not measured: against a real engine with areas loaded; the fixtures are the
+document's shape (three states, invented callsigns).
+
 ## Choosing the centre
 
 Distance, bearing, the "within" filter and the sort order are measured from a
