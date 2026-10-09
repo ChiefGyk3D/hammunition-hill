@@ -52,7 +52,7 @@ RUN pip install --no-cache-dir --require-hashes -r /tmp/runtime.txt \
     && pip uninstall -y pip \
     && rm /tmp/*.whl /tmp/runtime.txt \
     && apt-get update -qq \
-    && apt-get install -y --no-install-recommends --only-upgrade libpcre2-8-0 \
+    && apt-get upgrade -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # An unprivileged user, a config mount point, and nothing writable but data.
