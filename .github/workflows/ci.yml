@@ -40,7 +40,7 @@ env:
 
 jobs:
   ci:
-    uses: ChiefGyk3D/git-your-ship-together/.github/workflows/python-ci.yml@bcd2cf02a7dfc353d084ffd9c4d7ccd00b5f25c7 # v1.18.0
+    uses: ChiefGyk3D/git-your-ship-together/.github/workflows/python-ci.yml@faba0b7d1ab65e9033bef1acfa93d6d57b5808c0 # v1.21.0
     permissions:
       contents: read
       id-token: write   # Doppler OIDC, when an identity is configured; python-ci keeps it off the test job
@@ -57,7 +57,7 @@ jobs:
       # -W error promotes DeprecationWarnings to failures. A warning ignored
       # for three releases becomes a breakage on the fourth.
       test-command: pytest -q --durations=10 -W error::DeprecationWarning
-      lint-install-command: pip install --disable-pip-version-check "ruff>=0.5"
+      lint-install-command: pip install --disable-pip-version-check "ruff==0.16.9"
       # `ruff format --check` is enforced, with the data tables in prefix.py,
       # severity.py and bands.py fenced off by `# fmt: off`: those are data,
       # laid out as tables because that is how they are read and reviewed.
@@ -115,7 +115,7 @@ jobs:
     # how to find) and long on the weekly schedule above (600 s each, which is
     # where new findings come from). It is the same job either way, so there is
     # one place to read the targets' results and one name for the merge gate.
-    uses: ChiefGyk3D/git-your-ship-together/.github/workflows/python-fuzz.yml@bcd2cf02a7dfc353d084ffd9c4d7ccd00b5f25c7 # v1.18.0
+    uses: ChiefGyk3D/git-your-ship-together/.github/workflows/python-fuzz.yml@faba0b7d1ab65e9033bef1acfa93d6d57b5808c0 # v1.21.0
     permissions:
       contents: read
     with:
@@ -131,7 +131,7 @@ jobs:
 
   shell:
     # bash-ci.yml over the packaging scripts (build.sh, postinst, prerm).
-    uses: ChiefGyk3D/git-your-ship-together/.github/workflows/bash-ci.yml@bcd2cf02a7dfc353d084ffd9c4d7ccd00b5f25c7 # v1.18.0
+    uses: ChiefGyk3D/git-your-ship-together/.github/workflows/bash-ci.yml@faba0b7d1ab65e9033bef1acfa93d6d57b5808c0 # v1.21.0
     permissions:
       contents: read
     with:
